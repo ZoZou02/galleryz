@@ -6,7 +6,7 @@ function setup() {
 function draw() {
   background(200);
   camera(-100, -500, -100, 0, 0, 0, 0, 1, 0);
-//   orbitControl();
+  orbitControl();
   noStroke();
   ambientLight(150);
   directionalLight(255, 255, 255, 45, 45, 45);
