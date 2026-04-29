@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GalleryZ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 12px;
+        }
+
+        .header h1 span {
+            color: #fd2d5c;
+        }
+
+        .header p {
+            font-size: 16px;
+            color: #888888;
+        }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .nav-card {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 32px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .nav-card:hover {
+            border-color: #fd2d5c;
+            box-shadow: 0 8px 24px rgba(253, 45, 92, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .nav-card-icon {
+            width: 48px;
+            height: 48px;
+            background-color: #fd2d5c;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .nav-card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #000000;
+        }
+
+        .nav-card-desc {
+            font-size: 14px;
+            color: #888888;
+            line-height: 1.6;
+        }
+
+        .footer {
+            margin-top: 80px;
+            text-align: center;
+            color: #aaaaaa;
+            font-size: 14px;
+        }
+
+        @media (max-width: 640px) {
+            .header h1 {
+                font-size: 36px;
+            }
+
+            .nav-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Gallery<span>Z</span></h1>
+        <p>探索视觉与创意的交织</p>
+    </div>
+
+    <nav class="nav-grid">
+        <a href="light/index.html" class="nav-card">
+            <div class="nav-card-icon">L</div>
+            <div class="nav-card-title">Light</div>
+            <div class="nav-card-desc">光影互动艺术体验</div>
+        </a>
+    </nav>
+
+    <footer class="footer">
+        &copy; 2026 GalleryZ. All rights reserved.
+    </footer>
+</body>
+</html>
