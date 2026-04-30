@@ -9,13 +9,21 @@ function draw() {
   orbitControl();
   noStroke();
   ambientLight(150);
-  directionalLight(255, 255, 255, 45, 45, 45);
   
   let row = 10;
   let col = 10;
   let gap = 100;
-  let r = 5; //圆柱半径
-  let h = 60; //圆柱高度
+  let r = 5;
+  let h = 60;
+  
+  let lightAngle = radians(frameCount * 0.5);
+  let lightX = cos(lightAngle);
+  let lightZ = sin(lightAngle);
+  let lightY = 1;
+  let lightDir = createVector(lightX, lightY, lightZ).normalize();
+  let shadowLength = h * 0.75;
+  
+  directionalLight(255, 255, 255, lightX, lightY, lightZ);
 
   // ========== 先画底部平面(地板) ==========
   push();
@@ -30,26 +38,41 @@ function draw() {
       let px = (x - 2) * gap;
       let pz = (z - 2) * gap;
       
-      push();
-      
-      // 影子中心在地板上，和圆柱底部中心对齐偏移
-      translate(px+h/2, h/2 - 0.1, pz+3*r);
-      // 关键：不做任何旋转，直接平贴在地板上
-      rotateX(HALF_PI); // 让平面躺平
-      rotateZ(90)
-      
-      // 调整影子大小：宽度=圆柱直径，长度=顺着光源拉长
-      fill(0, 70); // 半透明黑色
-      scale(r*2, h*1.2, 1); // 宽=直径，长=圆柱高度*系数，控制影子长度
-      plane(1, 1); // 用1x1平面，靠scale调整
-      pop();
+      drawCylinderShadow(px, pz, r, h, lightDir, shadowLength);
 
       push();
       translate(px, 0, pz);
-
       fill(251, 251, 251);
       cylinder(r, h);
       pop();
     }
   }
+}
+
+function drawCylinderShadow(cx, cz, r, h, lightDir, shadowLength) {
+  push();
+  translate(cx, h/2 - 0.1, cz);
+  rotateX(HALF_PI);
+  
+  let angle = atan2(lightDir.z, lightDir.x);
+  rotateZ(angle - HALF_PI);
+  
+  fill(0, 60);
+  
+  let len = shadowLength;
+  
+  beginShape();
+  vertex(-r, 0);
+  vertex(r, 0);
+  
+  for (let a = 0; a <= PI; a += 0.1) {
+    let x = r * cos(a);
+    let y = len + r * sin(a);
+    vertex(x, y);
+  }
+  
+  vertex(-r, len);
+  endShape(CLOSE);
+  
+  pop();
 }
