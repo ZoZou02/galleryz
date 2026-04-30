@@ -30,6 +30,7 @@ function createSketch(config) {
       p.createCanvas(canvasWidth, canvasHeight);
       p.background(config.bgColor);
       p.strokeWeight(1);
+      p.noCursor();
     };
 
     p.windowResized = function () {
