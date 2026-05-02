@@ -66,6 +66,9 @@ let nextFruitLevel = 0;    // 下一个要放置的水果等级
 let dangerLineY = 150;
 let dangerTime = 0;
 let dangerCooldownStart = 0;
+let gameOverAnimating = false; // 游戏结束动画中
+let gameOverExplodeIndex = 0; // 当前爆炸水果索引
+let gameOverExplodeTime = 0; // 上次爆炸时间
 
 // ============================================================
 //  资源加载状态
@@ -77,13 +80,11 @@ let imagesReady = false;
 let debugLoadStatus = '';
 
 // ============================================================
-//  释放队列（控制连续点击时的水果投放节奏）
+//  释放控制
 // ============================================================
 
-let dropQueue = [];          // 待执行的释放队列，每个元素为 mouseX
-let dropTimerId = null;      // setTimeout id
-let dropDelay = 500;         // 连续释放时每次间隔毫秒
-let dropExecuting = false;   // 是否正在执行释放
+let lastDropTime = 0;        // 上次成功释放的时间戳
+let dropDelay = 500;         // 释放间隔（毫秒）
 
 // ============================================================
 //  音效管理
@@ -204,10 +205,10 @@ function preload() {
 function setup() {
     createCanvas(GAME_WIDTH, GAME_HEIGHT);
 
-    // 初始化音效
     SoundManager.init();
     SoundManager.load('falling', 'sound/falling.mp3');
     SoundManager.load('merge', 'sound/bubble.mp3');
+    SoundManager.load('gameover', 'sound/gameover.mp3');
 
     // ---------- 加载水果动画帧 ----------
     let totalToLoad = 0;
@@ -300,9 +301,13 @@ function draw() {
     drawCurrentFruit();
     drawUI();
 
+    if (gameOverAnimating) {
+        updateGameOverAnimation();
+        return;
+    }
+
     if (!gameOver && checkGameOver()) {
-        gameOver = true;
-        showGameOverModal(score);
+        startGameOverAnimation();
     }
 }
 
@@ -333,7 +338,9 @@ function drawDangerLine() {
 
 /** 绘制所有已落下的水果（含动画） */
 function drawFruits() {
-    for (let fruit of fruits) {
+    for (let i = 0; i < fruits.length; i++) {
+        let fruit = fruits[i];
+        if (gameOverAnimating && i < gameOverExplodeIndex) continue; // 爆炸过的不绘制
         let pos = fruit.body.position;
         let level = fruit.level;
 
@@ -430,8 +437,8 @@ function drawUI() {
     textAlign(RIGHT, TOP);
     let nextFruitInfo = FRUITS[nextFruitLevel];
     let nextFrames = fruitAnimations[nextFruitLevel];
-    let nextIndex = getAnimationFrameIndex(nextFrames, previewOffset2);
-    let nextImg = nextFrames ? nextFrames[nextIndex] : null;
+    let frameIndex = getAnimationFrameIndex(nextFrames, previewOffset2);
+    let nextImg = nextFrames ? nextFrames[frameIndex] : null;
     if (nextImg) {
         imageMode(CENTER);
         image(nextImg, GAME_WIDTH - 30, 25, 20, 20);
@@ -461,26 +468,15 @@ function drawUI() {
 //  交互逻辑
 // ============================================================
 
-/** 点击事件：将释放请求加入队列，由队列逐个执行 */
+/** 点击事件：检查间隔，满足条件立即释放 */
 function mousePressed() {
     if (gameOver || !imagesReady) return;
-    dropQueue.push(mouseX);
-    if (!dropExecuting) {
-        executeNextDrop();
-    }
-}
 
-/** 从队列中取出一个释放请求并执行 */
-function executeNextDrop() {
-    if (dropQueue.length === 0) {
-        dropExecuting = false;
-        return;
-    }
-    dropExecuting = true;
+    let now = millis();
+    if (now - lastDropTime < dropDelay) return;
 
-    let mouseXAtClick = dropQueue.shift();
     let fruitInfo = FRUITS[currentFruitLevel];
-    let x = constrain(mouseXAtClick, WALL_THICKNESS + fruitInfo.radius, GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius);
+    let x = constrain(mouseX, WALL_THICKNESS + fruitInfo.radius, GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius);
 
     let body = Bodies.circle(x, 50, fruitInfo.radius, {
         restitution: PHYSICS.restitution,
@@ -496,12 +492,7 @@ function executeNextDrop() {
     currentFruitLevel = nextFruitLevel;
     nextFruitLevel = getRandomInitialLevel();
 
-    // 队列还有剩余则延迟执行下一个
-    if (dropQueue.length > 0) {
-        dropTimerId = setTimeout(() => executeNextDrop(), dropDelay);
-    } else {
-        dropExecuting = false;
-    }
+    lastDropTime = now;
 }
 
 // ============================================================
@@ -649,6 +640,64 @@ function checkGameOver() {
 //  游戏重启
 // ============================================================
 
+// ============================================================
+//  游戏结束动画
+// ============================================================
+
+/** 开始游戏结束流程：排序水果、播放结束音效、进入爆炸动画 */
+function startGameOverAnimation() {
+    gameOver = true;
+    gameOverAnimating = true;
+    gameOverExplodeIndex = 0;
+    gameOverExplodeTime = 0;
+
+    // 按水果顶部 y 坐标从高到低排序（从上到下）
+    fruits.sort((a, b) => {
+        let aTop = a.body.position.y - FRUITS[a.level].radius;
+        let bTop = b.body.position.y - FRUITS[b.level].radius;
+        return aTop - bTop;
+    });
+
+    SoundManager.play('gameover');
+}
+
+/** 逐帧执行爆炸动画 */
+function updateGameOverAnimation() {
+    if (gameOverExplodeIndex >= fruits.length) {
+        // 所有水果爆炸完成，清空数组，显示弹窗
+        fruits = [];
+        gameOverAnimating = false;
+        showGameOverModal(score);
+        return;
+    }
+
+    let now = millis();
+    if (now - gameOverExplodeTime > 80) { // 每80ms爆炸一个
+        let fruit = fruits[gameOverExplodeIndex];
+        let level = fruit.level;
+
+        // 播放 bubble 音效（按等级变调）
+        SoundManager.play('merge', { rate: map(level, 1, 10, 0.7, 2.2) });
+
+        // 移除物理体
+        Composite.remove(world, fruit.body);
+
+        // 添加爆炸特效
+        let pos = fruit.body.position;
+        let radius = FRUITS[level].radius;
+        mergeEffects.push({
+            x: pos.x,
+            y: pos.y,
+            radius: radius,
+            alpha: 255,
+            expanding: true
+        });
+
+        gameOverExplodeIndex++;
+        gameOverExplodeTime = now;
+    }
+}
+
 /** 清理所有状态重新开始 */
 function restartGame() {
     for (let fruit of fruits) {
@@ -658,13 +707,12 @@ function restartGame() {
     mergeEffects = [];
     score = 0;
     gameOver = false;
+    gameOverAnimating = false;
+    gameOverExplodeIndex = 0;
+    gameOverExplodeTime = 0;
     dangerTime = 0;
     dangerCooldownStart = 0;
-
-    // 清空释放队列
-    dropQueue = [];
-    dropExecuting = false;
-    if (dropTimerId) { clearTimeout(dropTimerId); dropTimerId = null; }
+    lastDropTime = 0;
 
     currentFruitLevel = getRandomInitialLevel();
     nextFruitLevel = getRandomInitialLevel();
@@ -676,14 +724,14 @@ function showGameOverModal(finalScore) {
     let scoreDisplay = document.getElementById('final-score');
     if (modal && scoreDisplay) {
         scoreDisplay.textContent = finalScore;
-        modal.classList.remove('hidden');
+        modal.classList.add('visible');
     }
 }
 
 /** 从弹窗按钮触发重启 */
 function restartFromModal() {
     let modal = document.getElementById('game-over-modal');
-    if (modal) modal.classList.add('hidden');
+    if (modal) modal.classList.remove('visible');
     restartGame();
 }
 

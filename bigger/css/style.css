@@ -30,10 +30,23 @@ canvas {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
 }
 
-#game-over-modal.hidden {
-    display: none;
+#game-over-modal.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#game-over-modal .modal-content {
+    transform: scale(0.6);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#game-over-modal.visible .modal-content {
+    transform: scale(1);
 }
 
 .modal-content {
