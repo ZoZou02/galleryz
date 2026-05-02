@@ -12,7 +12,7 @@ const { Engine, World, Bodies, Body, Events, Composite } = Matter;
 
 /** 画布尺寸与墙壁 */
 const GAME_WIDTH = 400;
-const GAME_HEIGHT = 800;
+const GAME_HEIGHT = 700;
 const WALL_THICKNESS = 20;
 
 /** 物理引擎参数 */
@@ -35,13 +35,13 @@ const FRUITS = [
     { name: '樱桃',    radius: 24,  color: '#E74C3C', score: 6,   folder: 'images/level1/',  prefix: '1-idle-',  frames: 5 },
     { name: '橘子',    radius: 32,  color: '#F39C12', score: 12,  folder: 'images/level2/',  prefix: '2-idle-',  frames: 5 },
     { name: '柠檬',    radius: 40,  color: '#F1C40F', score: 20,  folder: 'images/level3/',  prefix: '3-idle-',  frames: 5 },
-    { name: '猕猴桃',  radius: 50,  color: '#8BC34A', score: 30,  folder: 'images/level4/',  prefix: '4-idle-',  frames: 5 },
-    { name: '番茄',    radius: 60,  color: '#E67E22', score: 42,  folder: 'images/level5/',  prefix: '5-idle-',  frames: 5 },
-    { name: '桃子',    radius: 70,  color: '#FFB6C1', score: 56,  folder: 'images/level6/',  prefix: '6-idle-',  frames: 5 },
-    { name: '菠萝',    radius: 80,  color: '#FFD700', score: 72,  folder: 'images/level7/',  prefix: '7-idle-',  frames: 5 },
-    { name: '椰子',    radius: 90,  color: '#D2691E', score: 90,  folder: 'images/level8/',  prefix: '8-idle-',  frames: 5 },
-    { name: '半个西瓜', radius: 100, color: '#2ECC71', score: 110, folder: 'images/level9/',  prefix: '9-idle-',  frames: 5 },
-    { name: '大西瓜',  radius: 112, color: '#27AE60', score: 132, folder: 'images/level10/', prefix: '10-idle-', frames: 5 }
+    { name: '猕猴桃',  radius: 48,  color: '#8BC34A', score: 30,  folder: 'images/level4/',  prefix: '4-idle-',  frames: 5 },
+    { name: '番茄',    radius: 54,  color: '#E67E22', score: 42,  folder: 'images/level5/',  prefix: '5-idle-',  frames: 5 },
+    { name: '桃子',    radius: 60,  color: '#FFB6C1', score: 56,  folder: 'images/level6/',  prefix: '6-idle-',  frames: 5 },
+    { name: '菠萝',    radius: 66,  color: '#FFD700', score: 72,  folder: 'images/level7/',  prefix: '7-idle-',  frames: 5 },
+    { name: '椰子',    radius: 72,  color: '#D2691E', score: 64,  folder: 'images/level8/',  prefix: '8-idle-',  frames: 5 },
+    { name: '半个西瓜', radius: 78, color: '#2ECC71', score: 70, folder: 'images/level9/',  prefix: '9-idle-',  frames: 5 },
+    { name: '大西瓜',  radius: 84, color: '#27AE60', score: 76, folder: 'images/level10/', prefix: '10-idle-', frames: 5 }
 ];
 
 /** 动画参数 */
@@ -90,16 +90,31 @@ let dropDelay = 500;         // 释放间隔（毫秒）
 //  音效管理
 // ============================================================
 
+/**
+ * 语音音效配置
+ * voiceVariants[level] = 该等级拥有的语音变种数量
+ * voiceChance = 释放时播放语音的概率（0-1）
+ */
+const VOICE_CFG = {
+    voiceVariants: [],
+    voiceChance: 0.35,
+    _init() {
+        for (let i = 0; i < FRUITS.length; i++) {
+            this.voiceVariants[i] = 1; // 每个等级 1 个语音变种（试用）
+        }
+    }
+};
+VOICE_CFG._init();
+
 const SoundManager = {
     ctx: null,
     buffers: {},
+    _voiceBufs: [],            // [level] = [buf0, buf1, ...]
 
-    /** 初始化音频上下文（需在用户交互后调用） */
     init() {
         this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     },
 
-    /** 加载音效文件到缓冲区 */
     load(name, url) {
         return fetch(url)
             .then(res => res.arrayBuffer())
@@ -107,30 +122,23 @@ const SoundManager = {
             .then(audioBuf => { this.buffers[name] = audioBuf; });
     },
 
-    /**
-     * 播放音效
-     * @param {string} name - 音效名称
-     * @param {object} opts - { rate:倍速, volume:音量0-1, duration:播放秒数 }
-     */
     play(name, opts = {}) {
         if (!this.ctx) return;
         let buf = this.buffers[name];
         if (!buf) return;
+        this._playBufDirect(buf, opts);
+    },
 
-        if (this.ctx.state === 'suspended') {
-            this.ctx.resume();
-        }
-
+    _playBufDirect(buf, opts = {}) {
+        if (!this.ctx || !buf) return;
+        if (this.ctx.state === 'suspended') this.ctx.resume();
         let source = this.ctx.createBufferSource();
         source.buffer = buf;
         let gain = this.ctx.createGain();
-
         source.playbackRate.value = opts.rate || 1;
         gain.gain.value = opts.volume != null ? opts.volume : 1;
-
         source.connect(gain);
         gain.connect(this.ctx.destination);
-
         if (opts.duration != null) {
             source.start(0, 0, opts.duration);
         } else {
@@ -138,30 +146,62 @@ const SoundManager = {
         }
     },
 
-    /** 放置水果音效（仅播放前1秒） */
-    playFalling() {
-        this.play('falling', { duration: 1 });
-    },
+    // ---------- 语音加载 ----------
 
-    // ---------- 合成音效队列（避免连续合成时音效重叠） ----------
-
-    _mergeQueue: [],
-    _mergeTimerId: null,
-    _mergeDelay: 120,        // 连续合成时每次音效间隔毫秒
-
-    /** 将合成音效加入队列，自动按序播放 */
-    playMerge(newLevel) {
-        this._mergeQueue.push(newLevel);
-        if (this._mergeQueue.length === 1) {
-            this._playNextMerge();
+    _loadVoiceLevel(level) {
+        if (!this._voiceBufs[level]) this._voiceBufs[level] = [];
+        let count = VOICE_CFG.voiceVariants[level] || 0;
+        for (let v = 0; v < count; v++) {
+            let url = 'sound/level' + level + '/level' + level + '-' + v + '.mp3';
+            let idx = v;
+            fetch(url)
+                .then(res => res.arrayBuffer())
+                .then(buf => this.ctx.decodeAudioData(buf))
+                .then(audioBuf => { this._voiceBufs[level][idx] = audioBuf; })
+                .catch(() => {});
         }
     },
 
-    /** 从队列中逐个取出播放 */
+    _pickVoice(level) {
+        let bufs = this._voiceBufs[level];
+        if (!bufs || bufs.length === 0) return null;
+        let valid = bufs.filter(b => !!b);
+        if (valid.length === 0) return null;
+        return valid[floor(random(valid.length))];
+    },
+
+    // ---------- 释放音效 ----------
+
+    playDrop(level) {
+        if (random() < VOICE_CFG.voiceChance) {
+            let buf = this._pickVoice(level);
+            if (buf) { this._playBufDirect(buf, { duration: 1.5 }); return; }
+        }
+        this.play('falling', { duration: 1 });
+    },
+
+    // ---------- 合成音效队列 ----------
+
+    _mergeQueue: [],
+    _mergeTimerId: null,
+    _mergeDelay: 120,
+
+    playMerge(newLevel) {
+        this._mergeQueue.push(newLevel);
+        if (this._mergeQueue.length === 1) this._playNextMerge();
+    },
+
     _playNextMerge() {
         if (this._mergeQueue.length === 0) return;
         let level = this._mergeQueue.shift();
-        this.play('merge', { rate: map(level, 1, 10, 0.7, 2.2) });
+
+        let buf = this._pickVoice(level);
+        if (buf) {
+            this._playBufDirect(buf, { rate: map(level, 1, 10, 0.85, 1.3), duration: 2 });
+        } else {
+            this.play('merge', { rate: map(level, 1, 10, 0.7, 2.2) });
+        }
+
         if (this._mergeQueue.length > 0) {
             this._mergeTimerId = setTimeout(() => this._playNextMerge(), this._mergeDelay);
         }
@@ -206,9 +246,14 @@ function setup() {
     createCanvas(GAME_WIDTH, GAME_HEIGHT);
 
     SoundManager.init();
-    SoundManager.load('falling', 'sound/falling.mp3');
-    SoundManager.load('merge', 'sound/bubble.mp3');
-    SoundManager.load('gameover', 'sound/gameover.mp3');
+    SoundManager.load('falling', 'sound/falling.wav');
+    SoundManager.load('merge', 'sound/bubble.wav');
+    SoundManager.load('gameover', 'sound/gameover.wav');
+
+    // 加载各等级语音音效
+    for (let i = 0; i < FRUITS.length; i++) {
+        SoundManager._loadVoiceLevel(i);
+    }
 
     // ---------- 加载水果动画帧 ----------
     let totalToLoad = 0;
@@ -487,7 +532,7 @@ function mousePressed() {
     Composite.add(world, body);
     fruits.push({ body, level: currentFruitLevel, animationOffset: Math.floor(Math.random() * 3000) });
 
-    SoundManager.playFalling();
+    SoundManager.playDrop(currentFruitLevel);
 
     currentFruitLevel = nextFruitLevel;
     nextFruitLevel = getRandomInitialLevel();
