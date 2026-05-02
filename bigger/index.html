@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合成大西瓜</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/p5@2.2.2/lib/p5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+</head>
+<body>
+    <div id="game-over-modal" class="hidden">
+        <div class="modal-content">
+            <h1>游戏结束</h1>
+            <p>最终分数</p>
+            <div id="final-score" class="score-display">0</div>
+            <button id="restart-btn" onclick="restartFromModal()">重新开始</button>
+        </div>
+    </div>
+    <script src="sketch.js"></script>
+</body>
+</html>
