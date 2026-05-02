@@ -29,25 +29,26 @@ const DIFFICULTY = {
     dangerTimeoutSeconds: 3     // 水果超过危险线后几秒判负
 };
 
-/** 水果配置：名称、半径、颜色、分数、动画路径、帧数 */
+/** 水果配置：名称、半径、颜色、分数、动画路径等 */
 const FRUITS = [
-    { name: '葡萄',    radius: 16,  color: '#9B59B6', score: 2,   folder: 'images/level0/',  prefix: '0-idle-',  frames: 5 },
-    { name: '樱桃',    radius: 24,  color: '#E74C3C', score: 6,   folder: 'images/level1/',  prefix: '1-idle-',  frames: 5 },
-    { name: '橘子',    radius: 32,  color: '#F39C12', score: 12,  folder: 'images/level2/',  prefix: '2-idle-',  frames: 5 },
-    { name: '柠檬',    radius: 40,  color: '#F1C40F', score: 20,  folder: 'images/level3/',  prefix: '3-idle-',  frames: 5 },
-    { name: '猕猴桃',  radius: 48,  color: '#8BC34A', score: 30,  folder: 'images/level4/',  prefix: '4-idle-',  frames: 5 },
-    { name: '番茄',    radius: 54,  color: '#E67E22', score: 42,  folder: 'images/level5/',  prefix: '5-idle-',  frames: 5 },
-    { name: '桃子',    radius: 60,  color: '#FFB6C1', score: 56,  folder: 'images/level6/',  prefix: '6-idle-',  frames: 5 },
-    { name: '菠萝',    radius: 66,  color: '#FFD700', score: 72,  folder: 'images/level7/',  prefix: '7-idle-',  frames: 5 },
-    { name: '椰子',    radius: 72,  color: '#D2691E', score: 64,  folder: 'images/level8/',  prefix: '8-idle-',  frames: 5 },
-    { name: '半个西瓜', radius: 78, color: '#2ECC71', score: 70, folder: 'images/level9/',  prefix: '9-idle-',  frames: 5 },
-    { name: '大西瓜',  radius: 84, color: '#27AE60', score: 76, folder: 'images/level10/', prefix: '10-idle-', frames: 5 }
+    { name: '葡萄',    radius: 16,  color: '#9B59B6', score: 2,   folder: 'images/level0/',  idlePrefix: '0-idle-', idleFrames: 4, hitFile: '0-hit.png' },
+    { name: '樱桃',    radius: 24,  color: '#E74C3C', score: 6,   folder: 'images/level1/',  idlePrefix: '1-idle-', idleFrames: 4, hitFile: '1-hit.png' },
+    { name: '橘子',    radius: 32,  color: '#F39C12', score: 12,  folder: 'images/level2/',  idlePrefix: '2-idle-', idleFrames: 4, hitFile: '2-hit.png' },
+    { name: '柠檬',    radius: 40,  color: '#F1C40F', score: 20,  folder: 'images/level3/',  idlePrefix: '3-idle-', idleFrames: 4, hitFile: '3-hit.png' },
+    { name: '猕猴桃',  radius: 48,  color: '#8BC34A', score: 30,  folder: 'images/level4/',  idlePrefix: '4-idle-', idleFrames: 4, hitFile: '4-hit.png' },
+    { name: '番茄',    radius: 54,  color: '#E67E22', score: 42,  folder: 'images/level5/',  idlePrefix: '5-idle-', idleFrames: 4, hitFile: '5-hit.png' },
+    { name: '桃子',    radius: 60,  color: '#FFB6C1', score: 56,  folder: 'images/level6/',  idlePrefix: '6-idle-', idleFrames: 4, hitFile: '6-hit.png' },
+    { name: '菠萝',    radius: 66,  color: '#FFD700', score: 72,  folder: 'images/level7/',  idlePrefix: '7-idle-', idleFrames: 4, hitFile: '7-hit.png' },
+    { name: '椰子',    radius: 72,  color: '#D2691E', score: 64,  folder: 'images/level8/',  idlePrefix: '8-idle-', idleFrames: 4, hitFile: '8-hit.png' },
+    { name: '半个西瓜', radius: 78, color: '#2ECC71', score: 70, folder: 'images/level9/',  idlePrefix: '9-idle-', idleFrames: 4, hitFile: '9-hit.png' },
+    { name: '大西瓜',  radius: 84, color: '#27AE60', score: 76, folder: 'images/level10/', idlePrefix: '10-idle-', idleFrames: 4, hitFile: '10-hit.png' }
 ];
 
 /** 动画参数 */
 const ANIM = {
     frameDuration: 50,     // 每帧显示多少毫秒
-    loopDelay: 2000        // 一轮动画播放完后停多少毫秒
+    loopDelay: 2000,       // 一轮动画播放完后停多少毫秒
+    hitDuration: 200       // 碰撞动画持续多少毫秒
 };
 
 // ============================================================
@@ -56,7 +57,7 @@ const ANIM = {
 
 let engine;
 let world;
-let fruits = [];          // { body, level, animationOffset }
+let fruits = [];          // { body, level, animationOffset, state: 'idle' | 'hit', hitStartTime: 0, isNewDrop: boolean }
 let score = 0;
 let gameOver = false;
 let currentFruitLevel = 0; // 当前待放置水果等级
@@ -74,7 +75,7 @@ let gameOverExplodeTime = 0; // 上次爆炸时间
 //  资源加载状态
 // ============================================================
 
-let fruitAnimations = []; // 每个等级的动画帧数组 [ [frame0,...], ... ]
+let fruitAnimations = []; // [ { idle: [], hit: [] } 每个等级的 idle 和 hit 帧
 let mergeEffects = [];
 let imagesReady = false;
 let debugLoadStatus = '';
@@ -100,7 +101,8 @@ const VOICE_CFG = {
     voiceChance: 0.35,
     _init() {
         for (let i = 0; i < FRUITS.length; i++) {
-            this.voiceVariants[i] = 1; // 每个等级 1 个语音变种（试用）
+            // 所有等级释放都可能有语音；仅后6种（5-10）合成有语音
+            this.voiceVariants[i] = 1;
         }
     }
 };
@@ -170,41 +172,46 @@ const SoundManager = {
         return valid[floor(random(valid.length))];
     },
 
+    _voiceDelay: 350,            // 语音延迟多少毫秒后播放
+    _mergeVoiceTimerId: null,    // 合成语音 debounce 定时器
+
     // ---------- 释放音效 ----------
 
+    /**
+     * 释放水果：先播 falling，一定概率延迟播放语音
+     */
     playDrop(level) {
-        if (random() < VOICE_CFG.voiceChance) {
-            let buf = this._pickVoice(level);
-            if (buf) { this._playBufDirect(buf, { duration: 1.5 }); return; }
-        }
         this.play('falling', { duration: 1 });
+        if (random() < VOICE_CFG.voiceChance) {
+            setTimeout(() => {
+                let buf = this._pickVoice(level);
+                if (buf) this._playBufDirect(buf, { duration: 1.5 });
+            }, this._voiceDelay);
+        }
     },
 
-    // ---------- 合成音效队列 ----------
+    // ---------- 合成音效 ----------
 
-    _mergeQueue: [],
-    _mergeTimerId: null,
-    _mergeDelay: 120,
-
+    /**
+     * 合成水果：先播 bubble，语音延迟且连续合成只播最后一个
+     */
     playMerge(newLevel) {
-        this._mergeQueue.push(newLevel);
-        if (this._mergeQueue.length === 1) this._playNextMerge();
-    },
+        this.play('merge', { rate: map(newLevel, 1, 10, 0.7, 2.2) });
 
-    _playNextMerge() {
-        if (this._mergeQueue.length === 0) return;
-        let level = this._mergeQueue.shift();
-
-        let buf = this._pickVoice(level);
-        if (buf) {
-            this._playBufDirect(buf, { rate: map(level, 1, 10, 0.85, 1.3), duration: 2 });
-        } else {
-            this.play('merge', { rate: map(level, 1, 10, 0.7, 2.2) });
-        }
-
-        if (this._mergeQueue.length > 0) {
-            this._mergeTimerId = setTimeout(() => this._playNextMerge(), this._mergeDelay);
-        }
+        // debounce：清除之前待播放的语音，只保留最新的
+        if (this._mergeVoiceTimerId) clearTimeout(this._mergeVoiceTimerId);
+        this._mergeVoiceTimerId = setTimeout(() => {
+            // 仅后6种（等级5-10）合成时有语音
+            if (newLevel >= 5) {
+                let buf = this._pickVoice(newLevel);
+                if (buf) {
+                    // 水果等级越高，音调越低 /* 需删除：下面 rate 整行 */
+                    let rate = map(newLevel, 5, 10, 1.15, 0.85); /* 需删除 */
+                    this._playBufDirect(buf, { rate: rate, duration: 2 }); /* 需删除：把 rate 改成 1 */
+                }
+            }
+            this._mergeVoiceTimerId = null;
+        }, this._voiceDelay + 100);
     }
 };
 
@@ -214,6 +221,7 @@ const SoundManager = {
 
 /**
  * 基于真实时间计算当前动画帧索引，保证不同帧率设备效果一致
+ * 播放顺序：0→1→2→3→1→0 循环
  * @param {Array} frames - 动画帧数组
  * @param {number} offset - 毫秒偏移，让不同水果异步播放
  * @returns {number} 当前应显示的帧索引
@@ -222,14 +230,19 @@ function getAnimationFrameIndex(frames, offset = 0) {
     let totalFrames = frames.length;
     if (totalFrames === 0) return 0;
 
-    let duration = totalFrames * ANIM.frameDuration;
+    // 定义播放序列：0→1→2→3→1→0
+    let playSequence = [0, 1, 2, 3, 1, 0];
+    let sequenceLength = playSequence.length;
+
+    let duration = sequenceLength * ANIM.frameDuration;
     let cycleLength = duration + ANIM.loopDelay;
     let t = (millis() + offset) % cycleLength;
 
     if (t < duration) {
-        return floor(t / ANIM.frameDuration) % totalFrames;
+        let sequenceIndex = floor(t / ANIM.frameDuration) % sequenceLength;
+        return playSequence[sequenceIndex];
     } else {
-        return totalFrames - 1; // 停顿期间停在最后一帧（即复制的第0帧）
+        return 0; // 停顿期间停在第0帧
     }
 }
 
@@ -262,32 +275,29 @@ function setup() {
     let perLevelExpected = [];
 
     for (let i = 0; i < FRUITS.length; i++) {
-        let expected = FRUITS[i].frames;
-        perLevelExpected[i] = expected;
+        fruitAnimations[i] = { idle: [], hit: null };
+        let expectedIdle = FRUITS[i].idleFrames;
+        perLevelExpected[i] = expectedIdle + 1; // idle帧(0-3) + 1个hit帧
         perLevelLoaded[i] = 0;
-        fruitAnimations[i] = new Array(expected).fill(null);
-        totalToLoad += expected;
+        fruitAnimations[i].idle = new Array(expectedIdle).fill(null);
+        totalToLoad += perLevelExpected[i];
     }
 
+    // 加载 idle 帧和 hit 帧
     for (let levelIndex = 0; levelIndex < FRUITS.length; levelIndex++) {
         let fruitInfo = FRUITS[levelIndex];
 
-        for (let frameIdx = 0; frameIdx < fruitInfo.frames; frameIdx++) {
-            let imgPath = fruitInfo.folder + fruitInfo.prefix + frameIdx + '.png';
+        // 1. 加载 idle 动画帧 (0-3)
+        for (let frameIdx = 0; frameIdx < fruitInfo.idleFrames; frameIdx++) {
+            let imgPath = fruitInfo.folder + fruitInfo.idlePrefix + frameIdx + '.png';
 
-            // IIFE 捕获当前 level/frame 值，避免异步回调闭包问题
-            (function (level, fIdx, expected) {
+            (function (level, fIdx) {
                 loadImage(
                     imgPath,
                     (img) => {
-                        fruitAnimations[level][fIdx] = img; // 按正确位置插入，不依赖加载顺序
+                        fruitAnimations[level].idle[fIdx] = img;
                         loadedCount++;
                         perLevelLoaded[level]++;
-
-                        // 该等级全部帧加载完：末尾追加第0帧副本（实现无缝循环）
-                        if (perLevelLoaded[level] === expected) {
-                            fruitAnimations[level].push(fruitAnimations[level][0]);
-                        }
 
                         if (loadedCount === totalToLoad) {
                             imagesReady = true;
@@ -298,16 +308,39 @@ function setup() {
                         debugLoadStatus = 'Failed: ' + imgPath;
                         loadedCount++;
                         perLevelLoaded[level]++;
-                        if (perLevelLoaded[level] === expected) {
-                            fruitAnimations[level].push(fruitAnimations[level][0]);
-                        }
                         if (loadedCount === totalToLoad) {
                             imagesReady = true;
                         }
                     }
                 );
-            })(levelIndex, frameIdx, fruitInfo.frames);
+            })(levelIndex, frameIdx);
         }
+
+        // 2. 加载 hit 单帧
+        let hitPath = fruitInfo.folder + fruitInfo.hitFile;
+        (function (level) {
+            loadImage(
+                hitPath,
+                (img) => {
+                    fruitAnimations[level].hit = img;
+                    loadedCount++;
+                    perLevelLoaded[level]++;
+
+                    if (loadedCount === totalToLoad) {
+                        imagesReady = true;
+                        debugLoadStatus = 'All ' + totalToLoad + ' frames loaded!';
+                    }
+                },
+                (err) => {
+                    debugLoadStatus = 'Failed: ' + hitPath;
+                    loadedCount++;
+                    perLevelLoaded[level]++;
+                    if (loadedCount === totalToLoad) {
+                        imagesReady = true;
+                    }
+                }
+            );
+        })(levelIndex);
     }
 
     // ---------- 物理引擎 ----------
@@ -333,9 +366,11 @@ function getRandomInitialLevel() {
     return floor(random(0, DIFFICULTY.initialFruitMaxLevel + 1));
 }
 
-/** 主循环：更新物理 → 绘制画面 → 检测结束 */
+/** 主循环：更新物理 → 更新水果状态 → 绘制画面 → 检测结束 */
 function draw() {
     Engine.update(engine, 1000 / 60);
+
+    if (!gameOverAnimating) updateFruitStates();
 
     background('#FFE5B4');
 
@@ -381,6 +416,22 @@ function drawDangerLine() {
     noStroke();
 }
 
+/** 更新所有水果状态（hit 转 idle） */
+function updateFruitStates() {
+    let now = millis();
+    for (let fruit of fruits) {
+        if (!fruit.state) fruit.state = 'idle';
+        if (fruit.state === 'hit' && fruit.hitStartTime && (now - fruit.hitStartTime) >= ANIM.hitDuration) {
+            fruit.state = 'idle';
+        }
+        if (!fruit.isNewDrop) continue;
+        let v = fruit.body.velocity;
+        if (Math.abs(v.y) < 0.1 && Math.abs(v.x) < 0.1) {
+            fruit.isNewDrop = false;
+        }
+    }
+}
+
 /** 绘制所有已落下的水果（含动画） */
 function drawFruits() {
     for (let i = 0; i < fruits.length; i++) {
@@ -394,9 +445,17 @@ function drawFruits() {
         rotate(fruit.body.angle);
 
         let fruitInfo = FRUITS[level];
-        let frames = fruitAnimations[level];
-        let frameIndex = getAnimationFrameIndex(frames, fruit.animationOffset || 0);
-        let img = frames ? frames[frameIndex] : null;
+        let animData = fruitAnimations[level];
+        let img = null;
+
+        let state = fruit.state || 'idle';
+        if (state === 'hit' && animData && animData.hit) {
+            img = animData.hit;
+        } else if (animData && animData.idle) {
+            let frames = animData.idle;
+            let frameIndex = getAnimationFrameIndex(frames, fruit.animationOffset || 0);
+            img = frames ? frames[frameIndex] : null;
+        }
 
         if (img) {
             imageMode(CENTER);
@@ -427,9 +486,14 @@ function drawCurrentFruit() {
     let fruitInfo = FRUITS[currentFruitLevel];
     let x = constrain(mouseX, WALL_THICKNESS + fruitInfo.radius, GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius);
     let y = 50;
-    let frames = fruitAnimations[currentFruitLevel];
-    let frameIndex = getAnimationFrameIndex(frames, previewOffset1);
-    let img = frames ? frames[frameIndex] : null;
+    let animData = fruitAnimations[currentFruitLevel];
+    let img = null;
+
+    if (animData && animData.idle) {
+        let frames = animData.idle;
+        let frameIndex = getAnimationFrameIndex(frames, previewOffset1);
+        img = frames ? frames[frameIndex] : null;
+    }
 
     push();
 
@@ -471,7 +535,8 @@ function drawUI() {
     text(debugLoadStatus, 10, 40);
     let info = '';
     for (let i = 0; i < 3 && i < fruitAnimations.length; i++) {
-        info += 'Level' + i + ': ' + (fruitAnimations[i] ? fruitAnimations[i].length : 0) + '  ';
+        let idleLen = (fruitAnimations[i] && fruitAnimations[i].idle) ? fruitAnimations[i].idle.length : 0;
+        info += 'Level' + i + ': ' + idleLen + '  ';
     }
     text(info, 10, 55);
 
@@ -481,9 +546,13 @@ function drawUI() {
     // 下一个水果预览
     textAlign(RIGHT, TOP);
     let nextFruitInfo = FRUITS[nextFruitLevel];
-    let nextFrames = fruitAnimations[nextFruitLevel];
-    let frameIndex = getAnimationFrameIndex(nextFrames, previewOffset2);
-    let nextImg = nextFrames ? nextFrames[frameIndex] : null;
+    let nextAnim = fruitAnimations[nextFruitLevel];
+    let nextImg = null;
+    if (nextAnim && nextAnim.idle) {
+        let nextFrames = nextAnim.idle;
+        let frameIndex = getAnimationFrameIndex(nextFrames, previewOffset2);
+        nextImg = nextFrames ? nextFrames[frameIndex] : null;
+    }
     if (nextImg) {
         imageMode(CENTER);
         image(nextImg, GAME_WIDTH - 30, 25, 20, 20);
@@ -530,7 +599,14 @@ function mousePressed() {
     });
 
     Composite.add(world, body);
-    fruits.push({ body, level: currentFruitLevel, animationOffset: Math.floor(Math.random() * 3000) });
+    fruits.push({
+        body,
+        level: currentFruitLevel,
+        animationOffset: Math.floor(Math.random() * 3000),
+        state: 'idle',
+        hitStartTime: 0,
+        isNewDrop: true
+    });
 
     SoundManager.playDrop(currentFruitLevel);
 
@@ -545,7 +621,17 @@ function mousePressed() {
 // ============================================================
 
 /**
- * 碰撞回调：检测两个相同等级水果碰撞，触发合成
+ * 触发水果 hit 状态
+ */
+function triggerHitState(fruitObj) {
+    fruitObj.state = 'hit';
+    fruitObj.hitStartTime = millis();
+}
+
+/**
+ * 碰撞回调：
+ * - 检测新下落水果砸到其他水果/墙壁，触发 hit 动画
+ * - 检测两个相同等级水果碰撞，触发合成
  * 使用 processedFruits 避免同一帧内重复合成
  */
 function handleCollision(event) {
@@ -558,12 +644,21 @@ function handleCollision(event) {
         let bodyA = pair.bodyA;
         let bodyB = pair.bodyB;
 
+        // 先检测是否是新下落碰撞：是否有 isNewDrop 的水果
+        let fruitA = fruits.find(f => f.body === bodyA);
+        let fruitB = fruits.find(f => f.body === bodyB);
+
+        let hasNewDrop = (fruitA && fruitA.isNewDrop) || (fruitB && fruitB.isNewDrop);
+        if (hasNewDrop) {
+            // 碰撞到水果或墙壁：都触发两个水果（如果是水果）的 hit
+            if (fruitA) triggerHitState(fruitA);
+            if (fruitB) triggerHitState(fruitB);
+        }
+
+        // 合成检测
         if (processedFruits.has(bodyA.id) || processedFruits.has(bodyB.id)) {
             continue;
         }
-
-        let fruitA = fruits.find(f => f.body === bodyA);
-        let fruitB = fruits.find(f => f.body === bodyB);
 
         if (fruitA && fruitB && fruitA.level === fruitB.level) {
             let level = fruitA.level;
@@ -593,7 +688,14 @@ function handleCollision(event) {
                 density: PHYSICS.density
             });
             Composite.add(world, newBody);
-            fruits.push({ body: newBody, level: newLevel, animationOffset: Math.floor(Math.random() * 3000) });
+            fruits.push({
+                body: newBody,
+                level: newLevel,
+                animationOffset: Math.floor(Math.random() * 3000),
+                state: 'idle',
+                hitStartTime: 0,
+                isNewDrop: false
+            });
 
             score += newFruitInfo.score;
 
