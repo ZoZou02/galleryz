@@ -32,16 +32,16 @@ const DIFFICULTY = {
 /** 水果配置：名称、半径、颜色、分数、动画路径等 */
 const FRUITS = [
     { name: '葡萄',    radius: 16,  color: '#9B59B6', score: 2,   folder: 'images/level0/',  idlePrefix: '0-idle-', idleFrames: 4, hitFile: '0-hit.png' },
-    { name: '樱桃',    radius: 24,  color: '#E74C3C', score: 6,   folder: 'images/level1/',  idlePrefix: '1-idle-', idleFrames: 4, hitFile: '1-hit.png' },
-    { name: '橘子',    radius: 32,  color: '#F39C12', score: 12,  folder: 'images/level2/',  idlePrefix: '2-idle-', idleFrames: 4, hitFile: '2-hit.png' },
-    { name: '柠檬',    radius: 40,  color: '#F1C40F', score: 20,  folder: 'images/level3/',  idlePrefix: '3-idle-', idleFrames: 4, hitFile: '3-hit.png' },
-    { name: '猕猴桃',  radius: 48,  color: '#8BC34A', score: 30,  folder: 'images/level4/',  idlePrefix: '4-idle-', idleFrames: 4, hitFile: '4-hit.png' },
-    { name: '番茄',    radius: 54,  color: '#E67E22', score: 42,  folder: 'images/level5/',  idlePrefix: '5-idle-', idleFrames: 4, hitFile: '5-hit.png' },
-    { name: '桃子',    radius: 60,  color: '#FFB6C1', score: 56,  folder: 'images/level6/',  idlePrefix: '6-idle-', idleFrames: 4, hitFile: '6-hit.png' },
-    { name: '菠萝',    radius: 66,  color: '#FFD700', score: 72,  folder: 'images/level7/',  idlePrefix: '7-idle-', idleFrames: 4, hitFile: '7-hit.png' },
-    { name: '椰子',    radius: 72,  color: '#D2691E', score: 64,  folder: 'images/level8/',  idlePrefix: '8-idle-', idleFrames: 4, hitFile: '8-hit.png' },
-    { name: '半个西瓜', radius: 78, color: '#2ECC71', score: 70, folder: 'images/level9/',  idlePrefix: '9-idle-', idleFrames: 4, hitFile: '9-hit.png' },
-    { name: '大西瓜',  radius: 84, color: '#27AE60', score: 76, folder: 'images/level10/', idlePrefix: '10-idle-', idleFrames: 4, hitFile: '10-hit.png' }
+    { name: '樱桃',    radius: 22,  color: '#E74C3C', score: 6,   folder: 'images/level1/',  idlePrefix: '1-idle-', idleFrames: 4, hitFile: '1-hit.png' },
+    { name: '橘子',    radius: 28,  color: '#F39C12', score: 12,  folder: 'images/level2/',  idlePrefix: '2-idle-', idleFrames: 4, hitFile: '2-hit.png' },
+    { name: '柠檬',    radius: 34,  color: '#F1C40F', score: 20,  folder: 'images/level3/',  idlePrefix: '3-idle-', idleFrames: 4, hitFile: '3-hit.png' },
+    { name: '猕猴桃',  radius: 40,  color: '#8BC34A', score: 30,  folder: 'images/level4/',  idlePrefix: '4-idle-', idleFrames: 4, hitFile: '4-hit.png' },
+    { name: '番茄',    radius: 50,  color: '#E67E22', score: 42,  folder: 'images/level5/',  idlePrefix: '5-idle-', idleFrames: 4, hitFile: '5-hit.png' },
+    { name: '桃子',    radius: 56,  color: '#FFB6C1', score: 56,  folder: 'images/level6/',  idlePrefix: '6-idle-', idleFrames: 4, hitFile: '6-hit.png' },
+    { name: '菠萝',    radius: 62,  color: '#FFD700', score: 72,  folder: 'images/level7/',  idlePrefix: '7-idle-', idleFrames: 4, hitFile: '7-hit.png' },
+    { name: '椰子',    radius: 68,  color: '#D2691E', score: 64,  folder: 'images/level8/',  idlePrefix: '8-idle-', idleFrames: 4, hitFile: '8-hit.png' },
+    { name: '半个西瓜', radius: 74, color: '#2ECC71', score: 70, folder: 'images/level9/',  idlePrefix: '9-idle-', idleFrames: 4, hitFile: '9-hit.png' },
+    { name: '大西瓜',  radius: 80, color: '#27AE60', score: 76, folder: 'images/level10/', idlePrefix: '10-idle-', idleFrames: 4, hitFile: '10-hit.png' }
 ];
 
 /** 动画参数 */
