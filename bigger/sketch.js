@@ -88,6 +88,7 @@ let debugLoadStatus = '';
 let backImage = null; // 背景图片
 let frontImage = null; // 前景图片
 let panelImage = null; // 水果框底部背景
+let loadingHidden = false; // 加载页是否已隐藏
 
 // ============================================================
 //  释放控制
@@ -419,6 +420,20 @@ function getRandomInitialLevel() {
 
 /** 主循环：更新物理 → 更新水果状态 → 绘制画面 → 检测结束 */
 function draw() {
+    if (!loadingHidden && imagesReady) {
+        let loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+            setTimeout(() => {
+                if (loadingScreen.parentNode) loadingScreen.parentNode.removeChild(loadingScreen);
+            }, 500);
+        }
+        loadingHidden = true;
+        return;
+    }
+
+    if (!imagesReady) return;
+
     Engine.update(engine, 1000 / 60);
 
     if (!gameOverAnimating) updateFruitStates();
