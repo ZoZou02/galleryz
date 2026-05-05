@@ -11,9 +11,15 @@ const { Engine, World, Bodies, Body, Events, Composite } = Matter;
 // ============================================================
 
 /** 画布尺寸与墙壁 */
-const GAME_WIDTH = 400;
-const GAME_HEIGHT = 700;
+const GAME_WIDTH = 350;
+const GAME_HEIGHT = 612;
 const WALL_THICKNESS = 20;
+
+/** 面板背景尺寸及游戏区偏移 */
+const PANEL_WIDTH = 425;
+const PANEL_HEIGHT = 768;
+const GAME_OFFSET_X = (PANEL_WIDTH - GAME_WIDTH) / 2;
+const GAME_OFFSET_Y = (PANEL_WIDTH - GAME_WIDTH) / 2;
 
 /** 物理引擎参数 */
 const PHYSICS = {
@@ -31,17 +37,17 @@ const DIFFICULTY = {
 
 /** 水果配置：名称、半径、颜色、分数、动画路径等 */
 const FRUITS = [
-    { name: '葡萄',    radius: 16,  color: '#9B59B6', score: 2,   folder: 'images/level0/',  idlePrefix: '0-idle-', idleFrames: 4, hitFile: '0-hit.png' },
-    { name: '樱桃',    radius: 22,  color: '#E74C3C', score: 6,   folder: 'images/level1/',  idlePrefix: '1-idle-', idleFrames: 4, hitFile: '1-hit.png' },
+    { name: '葡萄',    radius: 14,  color: '#9B59B6', score: 2,   folder: 'images/level0/',  idlePrefix: '0-idle-', idleFrames: 4, hitFile: '0-hit.png' },
+    { name: '樱桃',    radius: 21,  color: '#E74C3C', score: 6,   folder: 'images/level1/',  idlePrefix: '1-idle-', idleFrames: 4, hitFile: '1-hit.png' },
     { name: '橘子',    radius: 28,  color: '#F39C12', score: 12,  folder: 'images/level2/',  idlePrefix: '2-idle-', idleFrames: 4, hitFile: '2-hit.png' },
-    { name: '柠檬',    radius: 34,  color: '#F1C40F', score: 20,  folder: 'images/level3/',  idlePrefix: '3-idle-', idleFrames: 4, hitFile: '3-hit.png' },
-    { name: '猕猴桃',  radius: 40,  color: '#8BC34A', score: 30,  folder: 'images/level4/',  idlePrefix: '4-idle-', idleFrames: 4, hitFile: '4-hit.png' },
-    { name: '番茄',    radius: 50,  color: '#E67E22', score: 42,  folder: 'images/level5/',  idlePrefix: '5-idle-', idleFrames: 4, hitFile: '5-hit.png' },
-    { name: '桃子',    radius: 56,  color: '#FFB6C1', score: 56,  folder: 'images/level6/',  idlePrefix: '6-idle-', idleFrames: 4, hitFile: '6-hit.png' },
-    { name: '菠萝',    radius: 62,  color: '#FFD700', score: 72,  folder: 'images/level7/',  idlePrefix: '7-idle-', idleFrames: 4, hitFile: '7-hit.png' },
-    { name: '椰子',    radius: 68,  color: '#D2691E', score: 64,  folder: 'images/level8/',  idlePrefix: '8-idle-', idleFrames: 4, hitFile: '8-hit.png' },
-    { name: '半个西瓜', radius: 74, color: '#2ECC71', score: 70, folder: 'images/level9/',  idlePrefix: '9-idle-', idleFrames: 4, hitFile: '9-hit.png' },
-    { name: '大西瓜',  radius: 80, color: '#27AE60', score: 76, folder: 'images/level10/', idlePrefix: '10-idle-', idleFrames: 4, hitFile: '10-hit.png' }
+    { name: '柠檬',    radius: 35,  color: '#F1C40F', score: 20,  folder: 'images/level3/',  idlePrefix: '3-idle-', idleFrames: 4, hitFile: '3-hit.png' },
+    { name: '猕猴桃',  radius: 42,  color: '#8BC34A', score: 30,  folder: 'images/level4/',  idlePrefix: '4-idle-', idleFrames: 4, hitFile: '4-hit.png' },
+    { name: '番茄',    radius: 47,  color: '#E67E22', score: 42,  folder: 'images/level5/',  idlePrefix: '5-idle-', idleFrames: 4, hitFile: '5-hit.png' },
+    { name: '桃子',    radius: 52,  color: '#FFB6C1', score: 56,  folder: 'images/level6/',  idlePrefix: '6-idle-', idleFrames: 4, hitFile: '6-hit.png' },
+    { name: '菠萝',    radius: 58,  color: '#FFD700', score: 72,  folder: 'images/level7/',  idlePrefix: '7-idle-', idleFrames: 4, hitFile: '7-hit.png' },
+    { name: '椰子',    radius: 63,  color: '#D2691E', score: 64,  folder: 'images/level8/',  idlePrefix: '8-idle-', idleFrames: 4, hitFile: '8-hit.png' },
+    { name: '半个西瓜', radius: 68, color: '#2ECC71', score: 70, folder: 'images/level9/',  idlePrefix: '9-idle-', idleFrames: 4, hitFile: '9-hit.png' },
+    { name: '大西瓜',  radius: 74, color: '#27AE60', score: 76, folder: 'images/level10/', idlePrefix: '10-idle-', idleFrames: 4, hitFile: '10-hit.png' }
 ];
 
 /** 动画参数 */
@@ -64,7 +70,7 @@ let currentFruitLevel = 0; // 当前待放置水果等级
 let nextFruitLevel = 0;    // 下一个要放置的水果等级
 
 /** 危险线判定相关 */
-let dangerLineY = 150;
+let dangerLineY = 131;
 let dangerTime = 0;
 let dangerCooldownStart = 0;
 let gameOverAnimating = false; // 游戏结束动画中
@@ -79,6 +85,9 @@ let fruitAnimations = []; // [ { idle: [], hit: [] } 每个等级的 idle 和 hi
 let mergeEffects = [];
 let imagesReady = false;
 let debugLoadStatus = '';
+let backImage = null; // 背景图片
+let frontImage = null; // 前景图片
+let panelImage = null; // 水果框底部背景
 
 // ============================================================
 //  释放控制
@@ -256,7 +265,7 @@ function preload() {
 
 /** 初始化画布、音效、图片、物理引擎 */
 function setup() {
-    createCanvas(GAME_WIDTH, GAME_HEIGHT);
+    createCanvas(PANEL_WIDTH, PANEL_HEIGHT);
 
     SoundManager.init();
     SoundManager.load('falling', 'sound/falling.wav');
@@ -282,6 +291,48 @@ function setup() {
         fruitAnimations[i].idle = new Array(expectedIdle).fill(null);
         totalToLoad += perLevelExpected[i];
     }
+
+    // 加载背景、前景和面板图片
+    totalToLoad += 3; // back.png + front.png + 0-panel.png
+    loadImage('images/0-back.png', (img) => {
+        backImage = img;
+        loadedCount++;
+        if (loadedCount === totalToLoad) {
+            imagesReady = true;
+            debugLoadStatus = 'All ' + totalToLoad + ' frames loaded!';
+        }
+    }, () => {
+        loadedCount++;
+        if (loadedCount === totalToLoad) {
+            imagesReady = true;
+        }
+    });
+    loadImage('images/0-front.png', (img) => {
+        frontImage = img;
+        loadedCount++;
+        if (loadedCount === totalToLoad) {
+            imagesReady = true;
+            debugLoadStatus = 'All ' + totalToLoad + ' frames loaded!';
+        }
+    }, () => {
+        loadedCount++;
+        if (loadedCount === totalToLoad) {
+            imagesReady = true;
+        }
+    });
+    loadImage('images/0-panel.png', (img) => {
+        panelImage = img;
+        loadedCount++;
+        if (loadedCount === totalToLoad) {
+            imagesReady = true;
+            debugLoadStatus = 'All ' + totalToLoad + ' frames loaded!';
+        }
+    }, () => {
+        loadedCount++;
+        if (loadedCount === totalToLoad) {
+            imagesReady = true;
+        }
+    });
 
     // 加载 idle 帧和 hit 帧
     for (let levelIndex = 0; levelIndex < FRUITS.length; levelIndex++) {
@@ -348,10 +399,10 @@ function setup() {
     world = engine.world;
     world.gravity.y = PHYSICS.gravity;
 
-    // 创建左、右、底三面墙壁
-    let leftWall = Bodies.rectangle(WALL_THICKNESS / 2, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT, { isStatic: true });
-    let rightWall = Bodies.rectangle(GAME_WIDTH - WALL_THICKNESS / 2, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT, { isStatic: true });
-    let bottomWall = Bodies.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - WALL_THICKNESS / 2, GAME_WIDTH, WALL_THICKNESS, { isStatic: true });
+    // 创建左、右、底三面墙壁（加上面板偏移）
+    let leftWall = Bodies.rectangle(GAME_OFFSET_X + WALL_THICKNESS / 2, GAME_OFFSET_Y + GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT, { isStatic: true });
+    let rightWall = Bodies.rectangle(GAME_OFFSET_X + GAME_WIDTH - WALL_THICKNESS / 2, GAME_OFFSET_Y + GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT, { isStatic: true });
+    let bottomWall = Bodies.rectangle(GAME_OFFSET_X + GAME_WIDTH / 2, GAME_OFFSET_Y + GAME_HEIGHT - WALL_THICKNESS / 2, GAME_WIDTH, WALL_THICKNESS, { isStatic: true });
     Composite.add(world, [leftWall, rightWall, bottomWall]);
 
     // 监听碰撞事件
@@ -374,12 +425,36 @@ function draw() {
 
     background('#FFE5B4');
 
+    // 绘制面板背景（全画布尺寸，比水果框大）
+    if (panelImage) {
+        imageMode(CORNER);
+        image(panelImage, 0, 0, PANEL_WIDTH, PANEL_HEIGHT);
+    }
+
+    // 游戏区统一偏移到面板中央
+    push();
+    translate(GAME_OFFSET_X, GAME_OFFSET_Y);
+
+    // 绘制背景图片（水果后面，在游戏区内）
+    if (backImage) {
+        imageMode(CORNER);
+        image(backImage, 0, 0, GAME_WIDTH, GAME_HEIGHT);
+    }
+
     drawWalls();
     drawDangerLine();
     drawFruits();
     drawMergeEffects();
     drawCurrentFruit();
     drawUI();
+
+    // 绘制前景图片（水果前面，在游戏区内）
+    if (frontImage) {
+        imageMode(CORNER);
+        image(frontImage, 0, 0, GAME_WIDTH, GAME_HEIGHT);
+    }
+
+    pop();
 
     if (gameOverAnimating) {
         updateGameOverAnimation();
@@ -397,11 +472,7 @@ function draw() {
 
 /** 绘制三面墙壁 */
 function drawWalls() {
-    noStroke();
-    fill('#8B4513');
-    rect(0, 0, WALL_THICKNESS, GAME_HEIGHT);
-    rect(GAME_WIDTH - WALL_THICKNESS, 0, WALL_THICKNESS, GAME_HEIGHT);
-    rect(0, GAME_HEIGHT - WALL_THICKNESS, GAME_WIDTH, WALL_THICKNESS);
+    // 墙壁已设为透明，由背景图片提供视觉效果
 }
 
 /** 绘制危险线（有危险时闪烁加粗） */
@@ -441,7 +512,7 @@ function drawFruits() {
         let level = fruit.level;
 
         push();
-        translate(pos.x, pos.y);
+        translate(pos.x - GAME_OFFSET_X, pos.y - GAME_OFFSET_Y);
         rotate(fruit.body.angle);
 
         let fruitInfo = FRUITS[level];
@@ -484,7 +555,8 @@ function drawCurrentFruit() {
     if (gameOver) return;
 
     let fruitInfo = FRUITS[currentFruitLevel];
-    let x = constrain(mouseX, WALL_THICKNESS + fruitInfo.radius, GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius);
+    let gameMouseX = mouseX - GAME_OFFSET_X;
+    let x = constrain(gameMouseX, WALL_THICKNESS + fruitInfo.radius, GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius);
     let y = 50;
     let animData = fruitAnimations[currentFruitLevel];
     let img = null;
@@ -523,11 +595,13 @@ function drawCurrentFruit() {
 
 /** 绘制 UI：分数、下一个水果预览、危险倒计时、调试信息 */
 function drawUI() {
-    fill(0);
-    noStroke();
+    fill(255);
+    stroke(0);
+    strokeWeight(2);
+    textStyle(BOLD);
     textSize(20);
-    textAlign(LEFT, TOP);
-    text('分数: ' + score, 10, 10);
+    textAlign(CENTER, TOP);
+    text(score, GAME_WIDTH / 2, -25);
 
     // 调试信息
     textSize(12);
@@ -561,7 +635,7 @@ function drawUI() {
         ellipse(GAME_WIDTH - 30, 25, 20);
     }
     fill(0);
-    text('下一个', GAME_WIDTH - 50, 20);
+    text(GAME_WIDTH - 50, 20);
 
     // 危险倒计时
     if (dangerTime > 0) {
@@ -590,9 +664,10 @@ function mousePressed() {
     if (now - lastDropTime < dropDelay) return;
 
     let fruitInfo = FRUITS[currentFruitLevel];
-    let x = constrain(mouseX, WALL_THICKNESS + fruitInfo.radius, GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius);
+    let gameMouseX = mouseX - GAME_OFFSET_X;
+    let x = constrain(gameMouseX, WALL_THICKNESS + fruitInfo.radius, GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius);
 
-    let body = Bodies.circle(x, 50, fruitInfo.radius, {
+    let body = Bodies.circle(GAME_OFFSET_X + x, GAME_OFFSET_Y + 50, fruitInfo.radius, {
         restitution: PHYSICS.restitution,
         friction: PHYSICS.friction,
         density: PHYSICS.density
@@ -726,7 +801,7 @@ function drawMergeEffects() {
         noFill();
         stroke(255, effect.alpha);
         strokeWeight(3);
-        ellipse(effect.x, effect.y, effect.radius * 2);
+        ellipse(effect.x - GAME_OFFSET_X, effect.y - GAME_OFFSET_Y, effect.radius * 2);
     }
 }
 
@@ -743,7 +818,7 @@ function checkGameOver() {
     let hasStableFruitAbove = false;
 
     for (let fruit of fruits) {
-        let fruitTop = fruit.body.position.y - FRUITS[fruit.level].radius;
+        let fruitTop = fruit.body.position.y - GAME_OFFSET_Y - FRUITS[fruit.level].radius;
         if (fruitTop < dangerLineY) {
             let v = fruit.body.velocity;
             let speed = sqrt(v.x * v.x + v.y * v.y);

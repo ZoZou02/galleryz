@@ -7,7 +7,7 @@
 body {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: 100vh;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
@@ -15,7 +15,6 @@ body {
 canvas {
     display: block;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    border-radius: 10px;
 }
 
 /* 游戏结束弹窗 */
