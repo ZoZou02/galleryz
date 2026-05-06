@@ -266,6 +266,7 @@ function preload() {
 /** 初始化画布、音效、图片、物理引擎 */
 function setup() {
     createCanvas(PANEL_WIDTH, PANEL_HEIGHT);
+    windowResized();
 
     SoundManager.init();
     SoundManager.load('falling', 'sound/falling.wav');
@@ -318,6 +319,14 @@ function setup() {
 /** 随机获取初始水果等级 */
 function getRandomInitialLevel() {
     return floor(random(0, DIFFICULTY.initialFruitMaxLevel + 1));
+}
+
+/** 窗口大小变化时等比缩放 canvas，适配不同屏幕比例 */
+function windowResized() {
+    let scale = min(windowWidth / PANEL_WIDTH, windowHeight / PANEL_HEIGHT);
+    let c = drawingContext.canvas;
+    c.style.width = PANEL_WIDTH * scale + 'px';
+    c.style.height = PANEL_HEIGHT * scale + 'px';
 }
 
 /** 主循环：更新物理 → 更新水果状态 → 绘制画面 → 检测结束 */
