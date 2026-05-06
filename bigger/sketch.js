@@ -81,7 +81,9 @@ let gameOverExplodeTime = 0; // 上次爆炸时间
 //  资源加载状态
 // ============================================================
 
-let fruitAnimations = []; // [ { idle: [], hit: [] } 每个等级的 idle 和 hit 帧
+let spritesheetImage = null; // 雪碧图（5列×11行，列0-3:idle帧，列4:hit帧）
+let frameW = 0; // 雪碧图每帧宽度
+let frameH = 0; // 雪碧图每帧高度
 let mergeEffects = [];
 let imagesReady = false;
 let debugLoadStatus = '';
@@ -237,11 +239,7 @@ const SoundManager = {
  * @param {number} offset - 毫秒偏移，让不同水果异步播放
  * @returns {number} 当前应显示的帧索引
  */
-function getAnimationFrameIndex(frames, offset = 0) {
-    let totalFrames = frames.length;
-    if (totalFrames === 0) return 0;
-
-    // 定义播放序列：0→1→2→3→1→0
+function getAnimationFrameIndex(offset = 0) {
     let playSequence = [0, 1, 2, 3, 1, 0];
     let sequenceLength = playSequence.length;
 
@@ -253,7 +251,7 @@ function getAnimationFrameIndex(frames, offset = 0) {
         let sequenceIndex = floor(t / ANIM.frameDuration) % sequenceLength;
         return playSequence[sequenceIndex];
     } else {
-        return 0; // 停顿期间停在第0帧
+        return 0;
     }
 }
 
@@ -279,122 +277,25 @@ function setup() {
         SoundManager._loadVoiceLevel(i);
     }
 
-    // ---------- 加载水果动画帧 ----------
-    let totalToLoad = 0;
+    // ---------- 加载资源（雪碧图 + 背景/前景/面板） ----------
     let loadedCount = 0;
-    let perLevelLoaded = [];
-    let perLevelExpected = [];
+    let totalToLoad = 4; // spritesheet + back + front + panel
 
-    for (let i = 0; i < FRUITS.length; i++) {
-        fruitAnimations[i] = { idle: [], hit: null };
-        let expectedIdle = FRUITS[i].idleFrames;
-        perLevelExpected[i] = expectedIdle + 1; // idle帧(0-3) + 1个hit帧
-        perLevelLoaded[i] = 0;
-        fruitAnimations[i].idle = new Array(expectedIdle).fill(null);
-        totalToLoad += perLevelExpected[i];
+    function onImgLoad() {
+        loadedCount++;
+        if (loadedCount === totalToLoad) imagesReady = true;
     }
 
-    // 加载背景、前景和面板图片
-    totalToLoad += 3; // back.png + front.png + 0-panel.png
-    loadImage('images/0-back.png', (img) => {
-        backImage = img;
-        loadedCount++;
-        if (loadedCount === totalToLoad) {
-            imagesReady = true;
-            debugLoadStatus = 'All ' + totalToLoad + ' frames loaded!';
-        }
-    }, () => {
-        loadedCount++;
-        if (loadedCount === totalToLoad) {
-            imagesReady = true;
-        }
-    });
-    loadImage('images/0-front.png', (img) => {
-        frontImage = img;
-        loadedCount++;
-        if (loadedCount === totalToLoad) {
-            imagesReady = true;
-            debugLoadStatus = 'All ' + totalToLoad + ' frames loaded!';
-        }
-    }, () => {
-        loadedCount++;
-        if (loadedCount === totalToLoad) {
-            imagesReady = true;
-        }
-    });
-    loadImage('images/0-panel.png', (img) => {
-        panelImage = img;
-        loadedCount++;
-        if (loadedCount === totalToLoad) {
-            imagesReady = true;
-            debugLoadStatus = 'All ' + totalToLoad + ' frames loaded!';
-        }
-    }, () => {
-        loadedCount++;
-        if (loadedCount === totalToLoad) {
-            imagesReady = true;
-        }
-    });
+    loadImage('images/spritesheet.png', (img) => {
+        spritesheetImage = img;
+        frameW = img.width / 5;
+        frameH = img.height / 11;
+        onImgLoad();
+    }, onImgLoad);
 
-    // 加载 idle 帧和 hit 帧
-    for (let levelIndex = 0; levelIndex < FRUITS.length; levelIndex++) {
-        let fruitInfo = FRUITS[levelIndex];
-
-        // 1. 加载 idle 动画帧 (0-3)
-        for (let frameIdx = 0; frameIdx < fruitInfo.idleFrames; frameIdx++) {
-            let imgPath = fruitInfo.folder + fruitInfo.idlePrefix + frameIdx + '.png';
-
-            (function (level, fIdx) {
-                loadImage(
-                    imgPath,
-                    (img) => {
-                        fruitAnimations[level].idle[fIdx] = img;
-                        loadedCount++;
-                        perLevelLoaded[level]++;
-
-                        if (loadedCount === totalToLoad) {
-                            imagesReady = true;
-                            debugLoadStatus = 'All ' + totalToLoad + ' frames loaded!';
-                        }
-                    },
-                    (err) => {
-                        debugLoadStatus = 'Failed: ' + imgPath;
-                        loadedCount++;
-                        perLevelLoaded[level]++;
-                        if (loadedCount === totalToLoad) {
-                            imagesReady = true;
-                        }
-                    }
-                );
-            })(levelIndex, frameIdx);
-        }
-
-        // 2. 加载 hit 单帧
-        let hitPath = fruitInfo.folder + fruitInfo.hitFile;
-        (function (level) {
-            loadImage(
-                hitPath,
-                (img) => {
-                    fruitAnimations[level].hit = img;
-                    loadedCount++;
-                    perLevelLoaded[level]++;
-
-                    if (loadedCount === totalToLoad) {
-                        imagesReady = true;
-                        debugLoadStatus = 'All ' + totalToLoad + ' frames loaded!';
-                    }
-                },
-                (err) => {
-                    debugLoadStatus = 'Failed: ' + hitPath;
-                    loadedCount++;
-                    perLevelLoaded[level]++;
-                    if (loadedCount === totalToLoad) {
-                        imagesReady = true;
-                    }
-                }
-            );
-        })(levelIndex);
-    }
+    loadImage('images/0-back.png', (img) => { backImage = img; onImgLoad(); }, onImgLoad);
+    loadImage('images/0-front.png', (img) => { frontImage = img; onImgLoad(); }, onImgLoad);
+    loadImage('images/0-panel.png', (img) => { panelImage = img; onImgLoad(); }, onImgLoad);
 
     // ---------- 物理引擎 ----------
     engine = Engine.create();
@@ -503,12 +404,11 @@ function drawLevelIcons() {
 
     for (let i = 0; i < FRUITS.length; i++) {
         let x = margin + iconSize / 2 + i * iconSize;
-        let animData = fruitAnimations[i];
-        let img = (animData && animData.idle && animData.idle[0]) ? animData.idle[0] : null;
 
-        if (img) {
+        if (spritesheetImage && frameW > 0) {
+            let srcY = i * frameH;
             imageMode(CENTER);
-            image(img, x, y, iconSize, iconSize);
+            image(spritesheetImage, x, y, iconSize, iconSize, 0, srcY, frameW, frameH);
         } else {
             fill(FRUITS[i].color);
             noStroke();
@@ -545,11 +445,11 @@ function updateFruitStates() {
     }
 }
 
-/** 绘制所有已落下的水果（含动画） */
+/** 绘制所有已落下的水果（含动画，从雪碧图裁剪） */
 function drawFruits() {
     for (let i = 0; i < fruits.length; i++) {
         let fruit = fruits[i];
-        if (gameOverAnimating && i < gameOverExplodeIndex) continue; // 爆炸过的不绘制
+        if (gameOverAnimating && i < gameOverExplodeIndex) continue;
         let pos = fruit.body.position;
         let level = fruit.level;
 
@@ -558,21 +458,20 @@ function drawFruits() {
         rotate(fruit.body.angle);
 
         let fruitInfo = FRUITS[level];
-        let animData = fruitAnimations[level];
-        let img = null;
-
         let state = fruit.state || 'idle';
-        if (state === 'hit' && animData && animData.hit) {
-            img = animData.hit;
-        } else if (animData && animData.idle) {
-            let frames = animData.idle;
-            let frameIndex = getAnimationFrameIndex(frames, fruit.animationOffset || 0);
-            img = frames ? frames[frameIndex] : null;
-        }
+        let dw = fruitInfo.radius * 2.2;
+        let dh = fruitInfo.radius * 2.2;
 
-        if (img) {
+        if (spritesheetImage && frameW > 0) {
+            let srcY = level * frameH;
+            let srcX;
+            if (state === 'hit') {
+                srcX = 4 * frameW;
+            } else {
+                srcX = getAnimationFrameIndex(fruit.animationOffset || 0) * frameW;
+            }
             imageMode(CENTER);
-            image(img, 0, 0, fruitInfo.radius * 2.2, fruitInfo.radius * 2.2);
+            image(spritesheetImage, 0, 0, dw, dh, srcX, srcY, frameW, frameH);
         } else {
             fill(fruitInfo.color);
             stroke(0, 50);
@@ -600,21 +499,17 @@ function drawCurrentFruit() {
     let gameMouseX = mouseX - GAME_OFFSET_X;
     let x = constrain(gameMouseX, WALL_THICKNESS + fruitInfo.radius, GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius);
     let y = 50;
-    let animData = fruitAnimations[currentFruitLevel];
-    let img = null;
-
-    if (animData && animData.idle) {
-        let frames = animData.idle;
-        let frameIndex = getAnimationFrameIndex(frames, previewOffset1);
-        img = frames ? frames[frameIndex] : null;
-    }
 
     push();
 
-    if (img) {
+    if (spritesheetImage && frameW > 0) {
+        let srcX = getAnimationFrameIndex(previewOffset1) * frameW;
+        let srcY = currentFruitLevel * frameH;
+        let dw = fruitInfo.radius * 2.2;
+        let dh = fruitInfo.radius * 2.2;
         imageMode(CENTER);
         tint(255, 180);
-        image(img, x, y, fruitInfo.radius * 2.2, fruitInfo.radius * 2.2);
+        image(spritesheetImage, x, y, dw, dh, srcX, srcY, frameW, frameH);
     } else {
         fill(fruitInfo.color, 180);
         stroke(0, 80);
@@ -649,12 +544,6 @@ function drawUI() {
     textSize(12);
     fill(255, 0, 0);
     text(debugLoadStatus, 10, 40);
-    let info = '';
-    for (let i = 0; i < 3 && i < fruitAnimations.length; i++) {
-        let idleLen = (fruitAnimations[i] && fruitAnimations[i].idle) ? fruitAnimations[i].idle.length : 0;
-        info += 'Level' + i + ': ' + idleLen + '  ';
-    }
-    text(info, 10, 55);
 
     textSize(20);
     fill(0);
@@ -662,16 +551,12 @@ function drawUI() {
     // 下一个水果预览
     textAlign(RIGHT, TOP);
     let nextFruitInfo = FRUITS[nextFruitLevel];
-    let nextAnim = fruitAnimations[nextFruitLevel];
-    let nextImg = null;
-    if (nextAnim && nextAnim.idle) {
-        let nextFrames = nextAnim.idle;
-        let frameIndex = getAnimationFrameIndex(nextFrames, previewOffset2);
-        nextImg = nextFrames ? nextFrames[frameIndex] : null;
-    }
-    if (nextImg) {
+
+    if (spritesheetImage && frameW > 0) {
+        let srcX = getAnimationFrameIndex(previewOffset2) * frameW;
+        let srcY = nextFruitLevel * frameH;
         imageMode(CENTER);
-        image(nextImg, GAME_WIDTH - 30, 25, 20, 20);
+        image(spritesheetImage, GAME_WIDTH - 30, 25, 20, 20, srcX, srcY, frameW, frameH);
     } else {
         fill(nextFruitInfo.color);
         ellipse(GAME_WIDTH - 30, 25, 20);
