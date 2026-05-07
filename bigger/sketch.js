@@ -194,20 +194,11 @@ const SoundManager = {
         return valid[floor(random(valid.length))];
     },
 
-    _voiceDelay: 350,            // 语音延迟多少毫秒后播放
-    _mergeVoiceQueue: [],       // 合成语音播放队列
-    _mergeVoiceProcessing: false, // 是否正在处理队列
-
-    _processMergeVoiceQueue() {
-        if (this._mergeVoiceProcessing || this._mergeVoiceQueue.length === 0) return;
-        this._mergeVoiceProcessing = true;
-        let item = this._mergeVoiceQueue.shift();
-        setTimeout(() => {
-            if (item.buf) this._playBuf(item.buf, { rate: item.rate, duration: 2 });
-            this._mergeVoiceProcessing = false;
-            this._processMergeVoiceQueue();
-        }, 300);
-    },
+    _voiceDelay: 350,              // 语音延迟多少毫秒后播放
+    _mergeVoiceTimerId: null,      // 合成语音 debounce 定时器
+    _mergeMaxLevel: -1,            // 当前窗口内合成出的最高等级
+    _mergeMaxBuf: null,            // 最高等级的语音 buffer
+    _mergeMaxRate: 1,              // 最高等级的音调
 
     // ---------- 释放音效 ----------
 
@@ -227,20 +218,32 @@ const SoundManager = {
     // ---------- 合成音效 ----------
 
     /**
-     * 合成水果：先播 bubble，语音入队按序播放
+     * 合成水果：先播 bubble，语音延迟且连续合成只播最高等级的那个
      */
     playMerge(newLevel) {
         this.play('merge', { rate: map(newLevel, 1, 10, 0.7, 2.2) });
 
-        if (newLevel >= 5) {
+        if (newLevel >= 5 && newLevel > this._mergeMaxLevel) {
+            // 仅后6种（等级5-10）合成时有语音，同一个窗口内只保留最高等级
             let buf = this._pickVoice(newLevel);
             if (buf) {
+                this._mergeMaxLevel = newLevel;
+                this._mergeMaxBuf = buf;
                 // 水果等级越高，音调越低 /* 需删除：下面 rate 整行 */
-                let rate = map(newLevel, 5, 10, 1.15, 0.85); /* 需删除 */
-                this._mergeVoiceQueue.push({ buf, rate }); /* 需删除：把 rate 改成 1 */
-                this._processMergeVoiceQueue();
+                this._mergeMaxRate = map(newLevel, 5, 10, 1.15, 0.85); /* 需删除 */
             }
         }
+
+        if (this._mergeVoiceTimerId) clearTimeout(this._mergeVoiceTimerId);
+        this._mergeVoiceTimerId = setTimeout(() => {
+            if (this._mergeMaxBuf) {
+                this._playBuf(this._mergeMaxBuf, { rate: this._mergeMaxRate, duration: 2 }); /* 需删除：把 rate 改成 1 */
+            }
+            this._mergeVoiceTimerId = null;
+            this._mergeMaxLevel = -1;
+            this._mergeMaxBuf = null;
+            this._mergeMaxRate = 1;
+        }, this._voiceDelay + 100);
     }
 };
 
@@ -529,7 +532,7 @@ function drawCurrentFruit() {
     let fruitInfo = FRUITS[currentFruitLevel];
     let gameMouseX = mouseX - GAME_OFFSET_X;
     let x = constrain(gameMouseX, WALL_THICKNESS + fruitInfo.radius, GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius);
-    let y = 50;
+    let y = 80;
 
     push();
 
@@ -539,7 +542,7 @@ function drawCurrentFruit() {
         let dw = fruitInfo.radius * 2.2;
         let dh = fruitInfo.radius * 2.2;
         imageMode(CENTER);
-        tint(255, 180);
+        tint(255, 255);
         image(spritesheetImage, x, y, dw, dh, srcX, srcY, frameW, frameH);
     } else {
         fill(fruitInfo.color, 180);
@@ -893,8 +896,10 @@ function restartGame() {
     dangerTime = 0;
     dangerCooldownStart = 0;
     lastDropTime = 0;
-    SoundManager._mergeVoiceQueue = [];
-    SoundManager._mergeVoiceProcessing = false;
+    SoundManager._mergeVoiceTimerId = null;
+    SoundManager._mergeMaxLevel = -1;
+    SoundManager._mergeMaxBuf = null;
+    SoundManager._mergeMaxRate = 1;
 
     currentFruitLevel = getRandomInitialLevel();
     nextFruitLevel = getRandomInitialLevel();
