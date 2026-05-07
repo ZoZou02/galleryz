@@ -141,12 +141,21 @@ const SoundManager = {
         if (!this.ctx) return;
         let buf = this.buffers[name];
         if (!buf) return;
-        this._playBufDirect(buf, opts);
+        this._playBuf(buf, opts);
     },
 
-    _playBufDirect(buf, opts = {}) {
+    _playBuf(buf, opts = {}) {
         if (!this.ctx || !buf) return;
-        if (this.ctx.state === 'suspended') this.ctx.resume();
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume().then(() => this._startSource(buf, opts));
+            return;
+        }
+        if (this.ctx.state !== 'running') return;
+        this._startSource(buf, opts);
+    },
+
+    _startSource(buf, opts) {
+        if (!this.ctx || this.ctx.state !== 'running') return;
         let source = this.ctx.createBufferSource();
         source.buffer = buf;
         let gain = this.ctx.createGain();
@@ -163,7 +172,7 @@ const SoundManager = {
 
     // ---------- 语音加载 ----------
 
-    _loadVoiceLevel(level) {
+    _loadVoiceLevel(level, onLoad) {
         if (!this._voiceBufs[level]) this._voiceBufs[level] = [];
         let count = VOICE_CFG.voiceVariants[level] || 0;
         for (let v = 0; v < count; v++) {
@@ -172,8 +181,8 @@ const SoundManager = {
             fetch(url)
                 .then(res => res.arrayBuffer())
                 .then(buf => this.ctx.decodeAudioData(buf))
-                .then(audioBuf => { this._voiceBufs[level][idx] = audioBuf; })
-                .catch(() => {});
+                .then(audioBuf => { this._voiceBufs[level][idx] = audioBuf; if (onLoad) onLoad(); })
+                .catch(() => { if (onLoad) onLoad(); });
         }
     },
 
@@ -186,7 +195,19 @@ const SoundManager = {
     },
 
     _voiceDelay: 350,            // 语音延迟多少毫秒后播放
-    _mergeVoiceTimerId: null,    // 合成语音 debounce 定时器
+    _mergeVoiceQueue: [],       // 合成语音播放队列
+    _mergeVoiceProcessing: false, // 是否正在处理队列
+
+    _processMergeVoiceQueue() {
+        if (this._mergeVoiceProcessing || this._mergeVoiceQueue.length === 0) return;
+        this._mergeVoiceProcessing = true;
+        let item = this._mergeVoiceQueue.shift();
+        setTimeout(() => {
+            if (item.buf) this._playBuf(item.buf, { rate: item.rate, duration: 2 });
+            this._mergeVoiceProcessing = false;
+            this._processMergeVoiceQueue();
+        }, 300);
+    },
 
     // ---------- 释放音效 ----------
 
@@ -198,7 +219,7 @@ const SoundManager = {
         if (random() < VOICE_CFG.voiceChance) {
             setTimeout(() => {
                 let buf = this._pickVoice(level);
-                if (buf) this._playBufDirect(buf, { duration: 2.5 });
+                if (buf) this._playBuf(buf, { duration: 2.5 });
             }, this._voiceDelay);
         }
     },
@@ -206,25 +227,20 @@ const SoundManager = {
     // ---------- 合成音效 ----------
 
     /**
-     * 合成水果：先播 bubble，语音延迟且连续合成只播最后一个
+     * 合成水果：先播 bubble，语音入队按序播放
      */
     playMerge(newLevel) {
         this.play('merge', { rate: map(newLevel, 1, 10, 0.7, 2.2) });
 
-        // debounce：清除之前待播放的语音，只保留最新的
-        if (this._mergeVoiceTimerId) clearTimeout(this._mergeVoiceTimerId);
-        this._mergeVoiceTimerId = setTimeout(() => {
-            // 仅后6种（等级5-10）合成时有语音
-            if (newLevel >= 5) {
-                let buf = this._pickVoice(newLevel);
-                if (buf) {
-                    // 水果等级越高，音调越低 /* 需删除：下面 rate 整行 */
-                    let rate = map(newLevel, 5, 10, 1.15, 0.85); /* 需删除 */
-                    this._playBufDirect(buf, { rate: rate, duration: 2 }); /* 需删除：把 rate 改成 1 */
-                }
+        if (newLevel >= 5) {
+            let buf = this._pickVoice(newLevel);
+            if (buf) {
+                // 水果等级越高，音调越低 /* 需删除：下面 rate 整行 */
+                let rate = map(newLevel, 5, 10, 1.15, 0.85); /* 需删除 */
+                this._mergeVoiceQueue.push({ buf, rate }); /* 需删除：把 rate 改成 1 */
+                this._processMergeVoiceQueue();
             }
-            this._mergeVoiceTimerId = null;
-        }, this._voiceDelay + 100);
+        }
     }
 };
 
@@ -269,16 +285,8 @@ function setup() {
     windowResized();
 
     SoundManager.init();
-    SoundManager.load('falling', 'sound/falling.wav');
-    SoundManager.load('merge', 'sound/bubble.wav');
-    SoundManager.load('gameover', 'sound/gameover.wav');
 
-    // 加载各等级语音音效
-    for (let i = 0; i < FRUITS.length; i++) {
-        SoundManager._loadVoiceLevel(i);
-    }
-
-    // ---------- 加载资源（雪碧图 + 背景/前景/面板） ----------
+    // ---------- 加载资源（统一计数，全部就绪才进入游戏） ----------
     let loadedCount = 0;
     let totalToLoad = 4; // spritesheet + back + front + panel
 
@@ -287,6 +295,7 @@ function setup() {
         if (loadedCount === totalToLoad) imagesReady = true;
     }
 
+    // 雪碧图
     loadImage('images/spritesheet.png', (img) => {
         spritesheetImage = img;
         frameW = img.width / 5;
@@ -294,9 +303,22 @@ function setup() {
         onImgLoad();
     }, onImgLoad);
 
+    // 背景/前景/面板
     loadImage('images/0-back.png', (img) => { backImage = img; onImgLoad(); }, onImgLoad);
     loadImage('images/0-front.png', (img) => { frontImage = img; onImgLoad(); }, onImgLoad);
     loadImage('images/0-panel.png', (img) => { panelImage = img; onImgLoad(); }, onImgLoad);
+
+    // 核心音效
+    totalToLoad += 3;
+    SoundManager.load('falling', 'sound/falling.wav').then(onImgLoad).catch(onImgLoad);
+    SoundManager.load('merge', 'sound/bubble.wav').then(onImgLoad).catch(onImgLoad);
+    SoundManager.load('gameover', 'sound/gameover.wav').then(onImgLoad).catch(onImgLoad);
+
+    // 语音音效
+    for (let i = 0; i < FRUITS.length; i++) {
+        totalToLoad += VOICE_CFG.voiceVariants[i] || 0;
+        SoundManager._loadVoiceLevel(i, onImgLoad);
+    }
 
     // ---------- 物理引擎 ----------
     engine = Engine.create();
@@ -871,6 +893,8 @@ function restartGame() {
     dangerTime = 0;
     dangerCooldownStart = 0;
     lastDropTime = 0;
+    SoundManager._mergeVoiceQueue = [];
+    SoundManager._mergeVoiceProcessing = false;
 
     currentFruitLevel = getRandomInitialLevel();
     nextFruitLevel = getRandomInitialLevel();
