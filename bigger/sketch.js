@@ -19,7 +19,7 @@ const WALL_THICKNESS = 20;
 const PANEL_WIDTH = 425;
 const PANEL_HEIGHT = 768;
 const GAME_OFFSET_X = (PANEL_WIDTH - GAME_WIDTH) / 2;
-const GAME_OFFSET_Y = (PANEL_WIDTH - GAME_WIDTH) / 2;
+const GAME_OFFSET_Y = (PANEL_WIDTH - GAME_WIDTH) / 2 - 20;
 
 /** 物理引擎参数 */
 const PHYSICS = {
@@ -57,6 +57,18 @@ const ANIM = {
     hitDuration: 200       // 碰撞动画持续多少毫秒
 };
 
+/**
+ * 合成音频配置 —— 提供参数化控制接口
+ * - delay_time: 合成判断延迟（毫秒），碰撞后等待此时间才执行合成
+ * - base_pitch: 合成音效的基础音调（等级0时）
+ * - pitch_per_level: 每提升一级水果，音调增加的幅度
+ */
+const MERGE_AUDIO_CFG = {
+    delay_time: 80,
+    base_pitch: 0.7,
+    pitch_per_level: 0.20
+};
+
 // ============================================================
 //  游戏状态
 // ============================================================
@@ -64,6 +76,7 @@ const ANIM = {
 let engine;
 let world;
 let fruits = [];          // { body, level, animationOffset, state: 'idle' | 'hit', hitStartTime: 0, isNewDrop: boolean }
+let pendingMerges = [];   // { fruitA, fruitB, newLevel, startTime, processed }
 let score = 0;
 let gameOver = false;
 let currentFruitLevel = 0; // 当前待放置水果等级
@@ -154,20 +167,41 @@ const SoundManager = {
         this._startSource(buf, opts);
     },
 
+    /**
+     * 创建并启动一个音频源
+     * @param {AudioBuffer} buf   - 音频 buffer
+     * @param {Object} opts       - { rate, volume, duration, pitchRamp? {from,to}, volumeRamp? {from,to} }
+     *                               若提供 pitchRamp/volumeRamp，则通过 Web Audio API
+     *                               的 linearRampToValueAtTime 实现平滑渐变
+     */
     _startSource(buf, opts) {
         if (!this.ctx || this.ctx.state !== 'running') return;
         let source = this.ctx.createBufferSource();
         source.buffer = buf;
         let gain = this.ctx.createGain();
-        source.playbackRate.value = opts.rate || 1;
-        gain.gain.value = opts.volume != null ? opts.volume : 1;
         source.connect(gain);
         gain.connect(this.ctx.destination);
-        if (opts.duration != null) {
-            source.start(0, 0, opts.duration);
+
+        let now = this.ctx.currentTime;
+        let dur = opts.duration != null ? opts.duration : buf.duration;
+
+        // 音调：支持渐变 ramp 或固定值
+        if (opts.pitchRamp) {
+            source.playbackRate.setValueAtTime(opts.pitchRamp.from, now);
+            source.playbackRate.linearRampToValueAtTime(opts.pitchRamp.to, now + dur);
         } else {
-            source.start(0);
+            source.playbackRate.value = opts.rate || 1;
         }
+
+        // 音量：支持渐变 ramp 或固定值
+        if (opts.volumeRamp) {
+            gain.gain.setValueAtTime(opts.volumeRamp.from, now);
+            gain.gain.linearRampToValueAtTime(opts.volumeRamp.to, now + dur);
+        } else {
+            gain.gain.value = opts.volume != null ? opts.volume : 1;
+        }
+
+        source.start(now, 0, dur);
     },
 
     // ---------- 语音加载 ----------
@@ -218,10 +252,11 @@ const SoundManager = {
     // ---------- 合成音效 ----------
 
     /**
-     * 合成水果：先播 bubble，语音延迟且连续合成只播最高等级的那个
+     * 合成水果：bubble 音调查看水果等级，等级越高音调越高
      */
     playMerge(newLevel) {
-        this.play('merge', { rate: map(newLevel, 1, 10, 0.7, 2.2) });
+        let rate = MERGE_AUDIO_CFG.base_pitch + newLevel * MERGE_AUDIO_CFG.pitch_per_level;
+        this.play('merge', { rate });
 
         if (newLevel >= 5 && newLevel > this._mergeMaxLevel) {
             // 仅后6种（等级5-10）合成时有语音，同一个窗口内只保留最高等级
@@ -371,6 +406,7 @@ function draw() {
     if (!imagesReady) return;
 
     Engine.update(engine, 1000 / 60);
+    processPendingMerges();
 
     if (!gameOverAnimating) updateFruitStates();
 
@@ -572,7 +608,7 @@ function drawUI() {
     textStyle(BOLD);
     textSize(20);
     textAlign(CENTER, TOP);
-    text(score.toLocaleString(), GAME_WIDTH / 2, -25);
+    text(score.toLocaleString(), GAME_WIDTH / 2, -5);
 
     // 调试信息
     textSize(12);
@@ -667,8 +703,8 @@ function triggerHitState(fruitObj) {
 /**
  * 碰撞回调：
  * - 检测新下落水果砸到其他水果/墙壁，触发 hit 动画
- * - 检测两个相同等级水果碰撞，触发合成
- * 使用 processedFruits 避免同一帧内重复合成
+ * - 检测两个相同等级水果碰撞，加入延迟合成队列（不立即合并）
+ * 使用 processedFruits 避免同一帧内重复处理
  */
 function handleCollision(event) {
     if (gameOver) return;
@@ -702,6 +738,9 @@ function handleCollision(event) {
             // 已是最高等级则不再合成
             if (level >= FRUITS.length - 1) continue;
 
+            // 已被纳入其他待处理合成中则跳过
+            if (fruitA._pendingMergeId != null || fruitB._pendingMergeId != null) continue;
+
             let newLevel = level + 1;
             let newPos = {
                 x: (fruitA.body.position.x + fruitB.body.position.x) / 2,
@@ -711,39 +750,71 @@ function handleCollision(event) {
             processedFruits.add(bodyA.id);
             processedFruits.add(bodyB.id);
 
-            // 移除两个旧水果
-            Composite.remove(world, fruitA.body);
-            Composite.remove(world, fruitB.body);
-            fruits = fruits.filter(f => f.body !== fruitA.body && f.body !== fruitB.body);
-
-            // 创建合成后的新水果
-            let newFruitInfo = FRUITS[newLevel];
-            let newBody = Bodies.circle(newPos.x, newPos.y, newFruitInfo.radius, {
-                restitution: PHYSICS.restitution,
-                friction: PHYSICS.friction,
-                density: PHYSICS.density
+            // 标记两个水果为待合成状态，加入延迟队列
+            let mergeId = Date.now() + Math.random();
+            fruitA._pendingMergeId = mergeId;
+            fruitB._pendingMergeId = mergeId;
+            pendingMerges.push({
+                fruitA, fruitB, newLevel, newPos, mergeId,
+                startTime: millis()
             });
-            Composite.add(world, newBody);
-            fruits.push({
-                body: newBody,
-                level: newLevel,
-                animationOffset: Math.floor(Math.random() * 3000),
-                state: 'idle',
-                hitStartTime: 0,
-                isNewDrop: false
-            });
-
-            score += newFruitInfo.score;
-
-            // 合成特效
-            mergeEffects.push({
-                x: newPos.x, y: newPos.y,
-                radius: newFruitInfo.radius,
-                alpha: 255, expanding: true
-            });
-
-            SoundManager.playMerge(newLevel);
         }
+    }
+}
+
+/**
+ * 逐帧处理延迟合成队列：
+ * 碰撞后等待 ${delay_time} 毫秒才执行合成，期间水果保持可见
+ */
+function processPendingMerges() {
+    let now = millis();
+    for (let i = pendingMerges.length - 1; i >= 0; i--) {
+        let pm = pendingMerges[i];
+        if (now - pm.startTime < MERGE_AUDIO_CFG.delay_time) continue;
+
+        // 检查两个水果是否仍在场（可能已被其他合成分支消耗）
+        let fa = fruits.find(f => f._pendingMergeId === pm.mergeId && f.body === pm.fruitA.body);
+        let fb = fruits.find(f => f._pendingMergeId === pm.mergeId && f.body === pm.fruitB.body);
+        if (!fa || !fb) {
+            pendingMerges.splice(i, 1);
+            continue;
+        }
+
+        // 移除两个旧水果
+        Composite.remove(world, fa.body);
+        Composite.remove(world, fb.body);
+        fruits = fruits.filter(f => f._pendingMergeId !== pm.mergeId);
+
+        // 创建合成后的新水果
+        let newFruitInfo = FRUITS[pm.newLevel];
+        let newBody = Bodies.circle(pm.newPos.x, pm.newPos.y, newFruitInfo.radius, {
+            restitution: PHYSICS.restitution,
+            friction: PHYSICS.friction,
+            density: PHYSICS.density
+        });
+        Composite.add(world, newBody);
+        fruits.push({
+            body: newBody,
+            level: pm.newLevel,
+            animationOffset: Math.floor(Math.random() * 3000),
+            state: 'idle',
+            hitStartTime: 0,
+            isNewDrop: false
+        });
+
+        score += newFruitInfo.score;
+
+        // 合成特效
+        mergeEffects.push({
+            x: pm.newPos.x, y: pm.newPos.y,
+            radius: newFruitInfo.radius,
+            alpha: 255, expanding: true
+        });
+
+        // 合成音效（延迟后播放，带音调/音量渐变）
+        SoundManager.playMerge(pm.newLevel);
+
+        pendingMerges.splice(i, 1);
     }
 }
 
@@ -887,6 +958,7 @@ function restartGame() {
         Composite.remove(world, fruit.body);
     }
     fruits = [];
+    pendingMerges = [];
     mergeEffects = [];
     score = 0;
     gameOver = false;
