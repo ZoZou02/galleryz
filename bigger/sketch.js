@@ -12,14 +12,14 @@ const { Engine, World, Bodies, Body, Events, Composite } = Matter;
 
 /** 画布尺寸与墙壁 */
 const GAME_WIDTH = 350;
-const GAME_HEIGHT = 612;
+const GAME_HEIGHT = 550;
 const WALL_THICKNESS = 20;
 
 /** 面板背景尺寸及游戏区偏移 */
 const PANEL_WIDTH = 425;
 const PANEL_HEIGHT = 768;
 const GAME_OFFSET_X = (PANEL_WIDTH - GAME_WIDTH) / 2;
-const GAME_OFFSET_Y = (PANEL_WIDTH - GAME_WIDTH) / 2 - 20;
+const GAME_OFFSET_Y = (PANEL_WIDTH - GAME_WIDTH) / 2 - 10;
 
 /** 物理引擎参数 */
 const PHYSICS = {
@@ -83,7 +83,7 @@ let currentFruitLevel = 0; // 当前待放置水果等级
 let nextFruitLevel = 0;    // 下一个要放置的水果等级
 
 /** 危险线判定相关 */
-let dangerLineY = 131;
+let dangerLineY = 100;
 let dangerTime = 0;
 let dangerCooldownStart = 0;
 let gameOverAnimating = false; // 游戏结束动画中
@@ -100,9 +100,8 @@ let frameH = 0; // 雪碧图每帧高度
 let mergeEffects = [];
 let imagesReady = false;
 let debugLoadStatus = '';
-let backImage = null; // 背景图片
 let frontImage = null; // 前景图片
-let panelImage = null; // 水果框底部背景
+let panelImage = null; // 面板背景（整合了背景+面板）
 let loadingHidden = false; // 加载页是否已隐藏
 
 // ============================================================
@@ -326,7 +325,7 @@ function setup() {
 
     // ---------- 加载资源（统一计数，全部就绪才进入游戏） ----------
     let loadedCount = 0;
-    let totalToLoad = 4; // spritesheet + back + front + panel
+    let totalToLoad = 3; // spritesheet + front + panel
 
     function onImgLoad() {
         loadedCount++;
@@ -341,10 +340,9 @@ function setup() {
         onImgLoad();
     }, onImgLoad);
 
-    // 背景/前景/面板
-    loadImage('images/0-back.png', (img) => { backImage = img; onImgLoad(); }, onImgLoad);
+    // 前景/面板
     loadImage('images/0-front.png', (img) => { frontImage = img; onImgLoad(); }, onImgLoad);
-    loadImage('images/0-panel.png', (img) => { panelImage = img; onImgLoad(); }, onImgLoad);
+    loadImage('images/1-panel.png', (img) => { panelImage = img; onImgLoad(); }, onImgLoad);
 
     // 核心音效
     totalToLoad += 3;
@@ -410,7 +408,7 @@ function draw() {
 
     if (!gameOverAnimating) updateFruitStates();
 
-    background('#FFE5B4');
+    // background('#FFE5B4');
 
     // 绘制面板背景（全画布尺寸，比水果框大）
     if (panelImage) {
@@ -421,12 +419,6 @@ function draw() {
     // 游戏区统一偏移到面板中央
     push();
     translate(GAME_OFFSET_X, GAME_OFFSET_Y);
-
-    // 绘制背景图片（水果后面，在游戏区内）
-    if (backImage) {
-        imageMode(CORNER);
-        image(backImage, 0, 0, GAME_WIDTH, GAME_HEIGHT);
-    }
 
     drawWalls();
     drawDangerLine();
@@ -470,7 +462,7 @@ function drawLevelIcons() {
     let iconSize = iconRadius * 2.2;
     let totalWidth = FRUITS.length * iconSize;
     let margin = (PANEL_WIDTH - totalWidth) / 2;
-    let y = GAME_HEIGHT + 120;
+    let y = GAME_HEIGHT + 170;
 
     for (let i = 0; i < FRUITS.length; i++) {
         let x = margin + iconSize / 2 + i * iconSize;
@@ -608,7 +600,7 @@ function drawUI() {
     textStyle(BOLD);
     textSize(20);
     textAlign(CENTER, TOP);
-    text(score.toLocaleString(), GAME_WIDTH / 2, -5);
+    text(score.toLocaleString(), GAME_WIDTH / 2, 0);
 
     // 调试信息
     textSize(12);
