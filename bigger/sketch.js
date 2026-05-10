@@ -79,6 +79,7 @@ let fruits = [];          // { body, level, animationOffset, state: 'idle' | 'hi
 let pendingMerges = [];   // { fruitA, fruitB, newLevel, startTime, processed }
 let score = 0;
 let gameOver = false;
+let gameStarted = false;
 let currentFruitLevel = 0; // 当前待放置水果等级
 let nextFruitLevel = 0;    // 下一个要放置的水果等级
 
@@ -447,6 +448,14 @@ function draw() {
     }
 
     if (!imagesReady) return;
+
+    if (!gameStarted) {
+        if (panelImage) {
+            imageMode(CORNER);
+            image(panelImage, 0, 0, PANEL_WIDTH, PANEL_HEIGHT);
+        }
+        return;
+    }
 
     Engine.update(engine, 1000 / 60);
     processPendingMerges();
@@ -893,7 +902,7 @@ function drawUI() {
 
 /** 点击事件：检查间隔，满足条件立即释放 */
 function mousePressed() {
-    if (gameOver || !imagesReady) return;
+    if (gameOver || !gameStarted || !imagesReady) return;
 
     let now = millis();
     if (now - lastDropTime < dropDelay) return;
@@ -1241,3 +1250,13 @@ function restartFromModal() {
 }
 
 window.restartFromModal = restartFromModal;
+
+function startGame() {
+    let startScreen = document.getElementById('start-screen');
+    if (startScreen) {
+        startScreen.classList.add('hidden');
+    }
+    gameStarted = true;
+}
+
+window.startGame = startGame;

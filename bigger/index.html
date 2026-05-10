@@ -10,9 +10,13 @@
     <link rel="icon" type="image/x-icon" href="assets/favicon/favicon.ico">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-touch-icon.png">
     <link rel="manifest" href="assets/favicon/site.webmanifest">
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#b75b64">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="css/style.css" version="0.6.0">
+    <link rel="stylesheet" href="css/style.css" version="0.8.0">
     <script src="https://cdn.jsdelivr.net/npm/p5@2.2.2/lib/p5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
 </head>
@@ -23,14 +27,33 @@
             <p class="loading-text">加载中...</p>
         </div>
     </div>
-    <div id="game-over-modal">
-        <div class="modal-content">
-            <h1>游戏结束</h1>
-            <p>最终分数</p>
-            <div id="final-score" class="score-display">0</div>
-            <button id="restart-btn" onclick="restartFromModal()">重新开始</button>
+
+    <div id="start-screen">
+        <div class="start-bg-deco"></div>
+        <div class="start-content">
+            <div class="title-area">
+                <div class="title-deco-line"></div>
+                <div class="title-text">合成大GB</div>
+                <div class="title-deco-line"></div>
+            </div>
+            <button id="start-btn" onclick="startGame()">
+                <span class="btn-text">开始游戏</span>
+                <span class="btn-star">★</span>
+            </button>
         </div>
     </div>
-    <script src="sketch.js" version="0.6.0"></script>
+
+    <div id="game-over-modal">
+        <div class="modal-bg-deco"></div>
+        <div class="modal-content">
+            <div class="modal-stamp">GAME OVER</div>
+            <h1>游戏结束</h1>
+            <div class="score-label">最终分数</div>
+            <div id="final-score" class="score-display">0</div>
+            <div class="score-stars"></div>
+            <button id="restart-btn" onclick="restartFromModal()">再来一局</button>
+        </div>
+    </div>
+    <script src="sketch.js" version="0.8.0"></script>
 </body>
 </html>
