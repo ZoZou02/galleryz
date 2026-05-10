@@ -32,29 +32,29 @@ const PHYSICS = {
 /** 游戏难度 */
 const DIFFICULTY = {
     initialFruitMaxLevel: 4,    // 初始随机水果最高等级（0-4 共5种）
-    dangerTimeoutSeconds: 3     // 水果超过危险线后几秒判负
+    dangerTimeoutSeconds: 5     // 水果超过危险线后几秒判负
 };
 
 /** 水果配置：名称、半径、颜色、分数、动画路径等 */
 const FRUITS = [
-    { name: '👽',    radius: 14,  color: '#9B59B6', score: 10,   folder: 'images/level0/',  idlePrefix: '0-idle-', idleFrames: 4, hitFile: '0-hit.png' },
-    { name: '残杀',    radius: 21,  color: '#E74C3C', score: 20,   folder: 'images/level1/',  idlePrefix: '1-idle-', idleFrames: 4, hitFile: '1-hit.png' },
+    { name: '👽',    radius: 16,  color: '#9B59B6', score: 10,   folder: 'images/level0/',  idlePrefix: '0-idle-', idleFrames: 4, hitFile: '0-hit.png' },
+    { name: '残杀',    radius: 22,  color: '#E74C3C', score: 20,   folder: 'images/level1/',  idlePrefix: '1-idle-', idleFrames: 4, hitFile: '1-hit.png' },
     { name: '口几口',    radius: 28,  color: '#F39C12', score: 30,  folder: 'images/level2/',  idlePrefix: '2-idle-', idleFrames: 4, hitFile: '2-hit.png' },
-    { name: '象姐',    radius: 35,  color: '#F1C40F', score: 40,  folder: 'images/level3/',  idlePrefix: '3-idle-', idleFrames: 4, hitFile: '3-hit.png' },
-    { name: '芙老大',  radius: 42,  color: '#8BC34A', score: 50,  folder: 'images/level4/',  idlePrefix: '4-idle-', idleFrames: 4, hitFile: '4-hit.png' },
-    { name: '牧牧川',    radius: 47,  color: '#E67E22', score: 60,  folder: 'images/level5/',  idlePrefix: '5-idle-', idleFrames: 4, hitFile: '5-hit.png' },
+    { name: '象姐',    radius: 34,  color: '#F1C40F', score: 40,  folder: 'images/level3/',  idlePrefix: '3-idle-', idleFrames: 4, hitFile: '3-hit.png' },
+    { name: '芙老大',  radius: 38,  color: '#8BC34A', score: 50,  folder: 'images/level4/',  idlePrefix: '4-idle-', idleFrames: 4, hitFile: '4-hit.png' },
+    { name: '牧牧川',    radius: 44,  color: '#E67E22', score: 60,  folder: 'images/level5/',  idlePrefix: '5-idle-', idleFrames: 4, hitFile: '5-hit.png' },
     { name: '抽子',    radius: 52,  color: '#FFB6C1', score: 70,  folder: 'images/level6/',  idlePrefix: '6-idle-', idleFrames: 4, hitFile: '6-hit.png' },
-    { name: '悠姆帕',    radius: 58,  color: '#FFD700', score: 80,  folder: 'images/level7/',  idlePrefix: '7-idle-', idleFrames: 4, hitFile: '7-hit.png' },
-    { name: '鸟哥',    radius: 63,  color: '#D2691E', score: 90,  folder: 'images/level8/',  idlePrefix: '8-idle-', idleFrames: 4, hitFile: '8-hit.png' },
-    { name: '李哥', radius: 68, color: '#2ECC71', score: 100, folder: 'images/level9/',  idlePrefix: '9-idle-', idleFrames: 4, hitFile: '9-hit.png' },
-    { name: 'GEE',  radius: 74, color: '#27AE60', score: 150, folder: 'images/level10/', idlePrefix: '10-idle-', idleFrames: 4, hitFile: '10-hit.png' }
+    { name: '悠姆帕',    radius: 56,  color: '#FFD700', score: 80,  folder: 'images/level7/',  idlePrefix: '7-idle-', idleFrames: 4, hitFile: '7-hit.png' },
+    { name: '鸟哥',    radius: 62,  color: '#D2691E', score: 90,  folder: 'images/level8/',  idlePrefix: '8-idle-', idleFrames: 4, hitFile: '8-hit.png' },
+    { name: '李哥', radius: 66, color: '#2ECC71', score: 100, folder: 'images/level9/',  idlePrefix: '9-idle-', idleFrames: 4, hitFile: '9-hit.png' },
+    { name: 'GEE',  radius: 70, color: '#27AE60', score: 150, folder: 'images/level10/', idlePrefix: '10-idle-', idleFrames: 4, hitFile: '10-hit.png' }
 ];
 
 /** 动画参数 */
 const ANIM = {
     frameDuration: 50,     // 每帧显示多少毫秒
     loopDelay: 2000,       // 一轮动画播放完后停多少毫秒
-    hitDuration: 200       // 碰撞动画持续多少毫秒
+    hitDuration: 300       // 碰撞动画持续多少毫秒
 };
 
 /**
@@ -110,6 +110,45 @@ let loadingHidden = false; // 加载页是否已隐藏
 
 let lastDropTime = 0;        // 上次成功释放的时间戳
 let dropDelay = 500;         // 释放间隔（毫秒）
+
+// ============================================================
+//  扭蛋动画
+// ============================================================
+
+let eggImage = null;
+let eggState = 'closed';     // 'closing' | 'closed' | 'opening' | 'open'
+let eggCloseStartTime = 0;
+let eggClosedTime = 0;
+let eggOpenStartTime = 0;
+const EGG_ANIM = {
+    closeDuration: 80,      // 闭合动画持续时间(ms)
+    closedDelay: 180,        // 闭合后等待多久开始展开(ms)
+    openDuration: 400,       // 展开动画持续时间(ms)
+    maxAngle: Math.PI / 4.0  // 最大展开角度(弧度)
+};
+
+// ============================================================
+//  侧边灯（两侧各7个圆形黄灯，过线/合成提示）
+//  参考街机厅灯光：呼吸、交替闪烁、旋转跑马灯
+// ============================================================
+
+const SIDE_LIGHTS_COUNT = 7;
+let sideLights = [];           // { y, glow: 0~1, phase: 0 }
+let sideLightMode = 'breath';  // 'breath' | 'danger' | 'merge'
+let sideLightMergeLevel = 0;
+let sideLightMergeEndTime = 0;
+let sideLightBreathTime = 0;
+const SIDE_LIGHTS_CFG = {
+    offGlow: 0.2,             // 暗黄色亮度 (0~1)
+    onGlow: 1.0,              // 亮黄色亮度 (0~1)
+    breathPeriod: 2200,       // 呼吸周期(ms)
+    breathGlowMin: 0.35,      // 呼吸最低亮度
+    breathGlowMax: 1.0,      // 呼吸最高亮度
+    dangerBlinkInterval: 320, // 危险红亮灭交替间隔(ms)
+    mergeDuration: 1800,      // 合成灯效持续(ms)
+    mergePulseWidth: 100,     // 合成时每灯亮多久(ms)
+    fadeSpeed: 0.15           // 亮度过渡速度
+};
 
 // ============================================================
 //  音效管理
@@ -344,6 +383,10 @@ function setup() {
     loadImage('images/0-front.png', (img) => { frontImage = img; onImgLoad(); }, onImgLoad);
     loadImage('images/1-panel.png', (img) => { panelImage = img; onImgLoad(); }, onImgLoad);
 
+    // 扭蛋
+    totalToLoad += 1;
+    loadImage('images/0-egg.png', (img) => { eggImage = img; onImgLoad(); }, onImgLoad);
+
     // 核心音效
     totalToLoad += 3;
     SoundManager.load('falling', 'sound/falling.wav').then(onImgLoad).catch(onImgLoad);
@@ -372,6 +415,8 @@ function setup() {
 
     currentFruitLevel = getRandomInitialLevel();
     nextFruitLevel = getRandomInitialLevel();
+
+    initSideLights();
 }
 
 /** 随机获取初始水果等级 */
@@ -407,8 +452,8 @@ function draw() {
     processPendingMerges();
 
     if (!gameOverAnimating) updateFruitStates();
-
-    // background('#FFE5B4');
+    updateEggAnimation();
+    updateSideLights();
 
     // 绘制面板背景（全画布尺寸，比水果框大）
     if (panelImage) {
@@ -435,6 +480,7 @@ function draw() {
 
     pop();
 
+    drawSideLights();
     drawLevelIcons();
 
     if (gameOverAnimating) {
@@ -491,6 +537,114 @@ function drawDangerLine() {
     noStroke();
 }
 
+/** 初始化侧边灯位置 */
+function initSideLights() {
+    sideLights = [];
+    let startY = dangerLineY + 52;
+    let endY = GAME_HEIGHT - WALL_THICKNESS - 145;
+    let spacing = (endY - startY) / (SIDE_LIGHTS_COUNT - 1);
+    for (let i = 0; i < SIDE_LIGHTS_COUNT; i++) {
+        sideLights.push({ y: startY + i * spacing, glow: SIDE_LIGHTS_CFG.offGlow, phase: i / SIDE_LIGHTS_COUNT });
+    }
+    sideLightMode = 'breath';
+    sideLightMergeLevel = 0;
+    sideLightMergeEndTime = 0;
+    sideLightBreathTime = millis();
+}
+
+/** 每帧更新侧边灯亮度 —— 呼吸 / 危险交替亮灭 / 合成旋转跑马灯 */
+function updateSideLights() {
+    let now = millis();
+    let isDanger = dangerTime > 0;
+
+    if (isDanger) {
+        sideLightMode = 'danger';
+    } else if (sideLightMode === 'danger') {
+        sideLightMode = 'breath';
+        sideLightBreathTime = now;
+    }
+
+    if (sideLightMode === 'merge' && now >= sideLightMergeEndTime) {
+        sideLightMode = 'breath';
+        sideLightBreathTime = now;
+    }
+
+    for (let i = 0; i < sideLights.length; i++) {
+        let target;
+
+        if (sideLightMode === 'danger') {
+            let tick = floor(now / SIDE_LIGHTS_CFG.dangerBlinkInterval);
+            let groupOn = (tick % 2 === 0) ? (i % 2 === 0) : (i % 2 === 1);
+            target = groupOn ? SIDE_LIGHTS_CFG.onGlow : SIDE_LIGHTS_CFG.offGlow;
+        } else if (sideLightMode === 'merge') {
+            let sweepMs = map(sideLightMergeLevel, 1, 10, 1200, 600);
+            let windowRatio = 0.18;
+            let sweepPos = ((now % sweepMs) / sweepMs);
+            let dist = (sweepPos - i / SIDE_LIGHTS_COUNT + 1) % 1;
+            dist = min(dist, 1 - dist);
+            let inWindow = dist < windowRatio;
+            target = inWindow ? SIDE_LIGHTS_CFG.onGlow : SIDE_LIGHTS_CFG.offGlow;
+        } else {
+            let elapsed = now - sideLightBreathTime;
+            let period = SIDE_LIGHTS_CFG.breathPeriod;
+            let baseAngle = (elapsed % period) / period * TWO_PI;
+            let offset = sideLights[i].phase * TWO_PI;
+            let rawSin = sin(baseAngle + offset);
+            let val = (rawSin + 1) / 2;
+            target = SIDE_LIGHTS_CFG.breathGlowMin + val * (SIDE_LIGHTS_CFG.breathGlowMax - SIDE_LIGHTS_CFG.breathGlowMin);
+        }
+
+        sideLights[i].glow += (target - sideLights[i].glow) * SIDE_LIGHTS_CFG.fadeSpeed;
+    }
+}
+
+/** 绘制两侧圆形黄灯（暗黄/亮黄双色，红色警告） */
+function drawSideLights() {
+    let isDanger = sideLightMode === 'danger';
+    let lightRadius = 20;
+    let leftX = GAME_OFFSET_X - 18;
+    let rightX = GAME_OFFSET_X + GAME_WIDTH + 18;
+    let offR = 234, offG = 187, offB = 100;
+    let onR = 255, onG = 230, onB = 60;
+    let dangerR = 255, dangerG = 40, dangerB = 40;
+
+    for (let i = 0; i < sideLights.length; i++) {
+        let light = sideLights[i];
+        let t = constrain(light.glow, 0, 1);
+
+        if (t < 0.01) continue;
+
+        let r, g, b;
+        if (isDanger) {
+            r = dangerR; g = dangerG; b = dangerB;
+        } else {
+            r = lerp(offR, onR, t);
+            g = lerp(offG, onG, t);
+            b = lerp(offB, onB, t);
+        }
+
+        let coreAlpha = t * 255;
+        let glowAlpha = t * 100;
+
+        noStroke();
+        fill(r, g, b, glowAlpha);
+        ellipse(leftX, GAME_OFFSET_Y + light.y, lightRadius , lightRadius);
+        ellipse(rightX, GAME_OFFSET_Y + light.y, lightRadius, lightRadius);
+
+        fill(r, g, b, coreAlpha);
+        ellipse(leftX, GAME_OFFSET_Y + light.y, lightRadius, lightRadius);
+        ellipse(rightX, GAME_OFFSET_Y + light.y, lightRadius, lightRadius);
+    }
+}
+
+/** 合成时触发旋转跑马灯，等级越高旋转越快 */
+function triggerSideLightsFlash(level) {
+    if (level < 1) return;
+    sideLightMode = 'merge';
+    sideLightMergeLevel = constrain(level, 1, 10);
+    sideLightMergeEndTime = millis() + SIDE_LIGHTS_CFG.mergeDuration;
+}
+
 /** 更新所有水果状态（hit 转 idle） */
 function updateFruitStates() {
     let now = millis();
@@ -505,6 +659,80 @@ function updateFruitStates() {
             fruit.isNewDrop = false;
         }
     }
+}
+
+/** 扭蛋展开动画状态更新 */
+function updateEggAnimation() {
+    if (gameOver) return;
+    if (eggState === 'closing') {
+        if (millis() - eggCloseStartTime > EGG_ANIM.closeDuration) {
+            eggState = 'closed';
+            eggClosedTime = millis();
+        }
+    } else if (eggState === 'closed') {
+        if (eggClosedTime === 0) eggClosedTime = millis();
+        if (millis() - eggClosedTime > EGG_ANIM.closedDelay) {
+            eggState = 'opening';
+            eggOpenStartTime = millis();
+        }
+    } else if (eggState === 'opening') {
+        if (millis() - eggOpenStartTime > EGG_ANIM.openDuration) {
+            eggState = 'open';
+        }
+    }
+}
+
+/** 获取当前扭蛋展开角度(弧度)，0=闭合 */
+function getEggOpenAngle() {
+    if (eggState === 'closed') return 0;
+    if (eggState === 'open') return EGG_ANIM.maxAngle;
+    if (eggState === 'closing') {
+        let progress = (millis() - eggCloseStartTime) / EGG_ANIM.closeDuration;
+        progress = constrain(progress, 0, 1);
+        // easeInCubic: 从全开到闭合
+        return EGG_ANIM.maxAngle * pow(1 - progress, 3);
+    }
+    let progress = (millis() - eggOpenStartTime) / EGG_ANIM.openDuration;
+    progress = constrain(progress, 0, 1);
+    // easeOutCubic
+    return EGG_ANIM.maxAngle * (1 - pow(1 - progress, 3));
+}
+
+/** 绘制扭蛋（闭合的完整扭蛋，用于预览等场景） */
+function drawClosedEgg(x, y, eggW, eggH, alpha = 255) {
+    if (!eggImage) return;
+    let halfW = eggW / 2;
+    let srcHalfW = eggImage.width / 2;
+    push();
+    tint(255, alpha);
+    imageMode(CORNER);
+    image(eggImage, x - halfW, y - eggH / 2, halfW, eggH, 0, 0, srcHalfW, eggImage.height);
+    image(eggImage, x, y - eggH / 2, halfW, eggH, srcHalfW, 0, srcHalfW, eggImage.height);
+    pop();
+}
+
+/** 绘制带展开动画的扭蛋 */
+function drawOpeningEgg(x, y, eggW, eggH, openAngle) {
+    if (!eggImage) return;
+    let halfW = eggW / 2;
+    let srcHalfW = eggImage.width / 2;
+    let pivotY = y - eggH / 2;
+
+    // 左半壳：以右上角为轴点向外旋转
+    push();
+    translate(x, pivotY);
+    rotate(openAngle);
+    imageMode(CORNER);
+    image(eggImage, -halfW, 0, halfW, eggH, 0, 0, srcHalfW, eggImage.height);
+    pop();
+
+    // 右半壳：以左上角为轴点向外旋转
+    push();
+    translate(x, pivotY);
+    rotate(-openAngle);
+    imageMode(CORNER);
+    image(eggImage, 0, 0, halfW, eggH, srcHalfW, 0, srcHalfW, eggImage.height);
+    pop();
 }
 
 /** 绘制所有已落下的水果（含动画，从雪碧图裁剪） */
@@ -553,7 +781,7 @@ function drawFruits() {
 let previewOffset1 = Math.floor(Math.random() * 3000);
 let previewOffset2 = Math.floor(Math.random() * 3000);
 
-/** 绘制当前待放置水果（跟随鼠标）及辅助虚线 */
+/** 绘制当前待放置水果（跟随鼠标）及辅助虚线，含扭蛋展开动画 */
 function drawCurrentFruit() {
     if (gameOver) return;
 
@@ -561,17 +789,17 @@ function drawCurrentFruit() {
     let gameMouseX = mouseX - GAME_OFFSET_X;
     let x = constrain(gameMouseX, WALL_THICKNESS + fruitInfo.radius, GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius);
     let y = 80;
+    let fruitSize = fruitInfo.radius * 2.2;
 
     push();
 
+    // 绘制水果（在扭蛋下层）
     if (spritesheetImage && frameW > 0) {
         let srcX = getAnimationFrameIndex(previewOffset1) * frameW;
         let srcY = currentFruitLevel * frameH;
-        let dw = fruitInfo.radius * 2.2;
-        let dh = fruitInfo.radius * 2.2;
         imageMode(CENTER);
         tint(255, 255);
-        image(spritesheetImage, x, y, dw, dh, srcX, srcY, frameW, frameH);
+        image(spritesheetImage, x, y, fruitSize, fruitSize, srcX, srcY, frameW, frameH);
     } else {
         fill(fruitInfo.color, 180);
         stroke(0, 80);
@@ -582,6 +810,14 @@ function drawCurrentFruit() {
         textAlign(CENTER, CENTER);
         noStroke();
         text(currentFruitLevel + 1, x, y);
+    }
+
+    // 绘制扭蛋动画（覆盖在水果上层）
+    if (eggImage) {
+        let eggW = fruitSize * 1.4;
+        let eggH = fruitSize * 1.3;
+        let openAngle = getEggOpenAngle();
+        drawOpeningEgg(x, y, eggW, eggH, openAngle);
     }
 
     stroke('#999999', 100);
@@ -600,7 +836,7 @@ function drawUI() {
     textStyle(BOLD);
     textSize(20);
     textAlign(CENTER, TOP);
-    text(score.toLocaleString(), GAME_WIDTH / 2, 0);
+    text(score.toLocaleString(), GAME_WIDTH / 2, -12);
 
     // 调试信息
     textSize(12);
@@ -610,18 +846,28 @@ function drawUI() {
     textSize(20);
     fill(0);
 
-    // 下一个水果预览
+    // 下一个水果预览（扭蛋背景）
     textAlign(RIGHT, TOP);
     let nextFruitInfo = FRUITS[nextFruitLevel];
+    let previewCX = GAME_WIDTH - 30;
+    let previewCY = 0;
+    let previewBGSize = 50;
+    let previewSize = 40;
+    
+
+    // 扭蛋背景
+    if (eggImage) {
+        drawClosedEgg(previewCX, previewCY, previewBGSize, previewBGSize, 225);
+    }
 
     if (spritesheetImage && frameW > 0) {
         let srcX = getAnimationFrameIndex(previewOffset2) * frameW;
         let srcY = nextFruitLevel * frameH;
         imageMode(CENTER);
-        image(spritesheetImage, GAME_WIDTH - 30, 25, 20, 20, srcX, srcY, frameW, frameH);
+        image(spritesheetImage, previewCX, previewCY, previewSize, previewSize, srcX, srcY, frameW, frameH);
     } else {
         fill(nextFruitInfo.color);
-        ellipse(GAME_WIDTH - 30, 25, 20);
+        ellipse(previewCX, previewCY, previewSize);
     }
     fill(0);
     text(GAME_WIDTH - 50, 20);
@@ -656,7 +902,7 @@ function mousePressed() {
     let gameMouseX = mouseX - GAME_OFFSET_X;
     let x = constrain(gameMouseX, WALL_THICKNESS + fruitInfo.radius, GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius);
 
-    let body = Bodies.circle(GAME_OFFSET_X + x, GAME_OFFSET_Y + 50, fruitInfo.radius, {
+    let body = Bodies.circle(GAME_OFFSET_X + x, GAME_OFFSET_Y + 80, fruitInfo.radius, {
         restitution: PHYSICS.restitution,
         friction: PHYSICS.friction,
         density: PHYSICS.density
@@ -678,6 +924,10 @@ function mousePressed() {
     nextFruitLevel = getRandomInitialLevel();
 
     lastDropTime = now;
+
+    // 重置扭蛋：闭合动画 → 闭合停留 → 展开 → 出现新水果
+    eggState = 'closing';
+    eggCloseStartTime = millis();
 }
 
 // ============================================================
@@ -803,6 +1053,8 @@ function processPendingMerges() {
             alpha: 255, expanding: true
         });
 
+        triggerSideLightsFlash(pm.newLevel);
+
         // 合成音效（延迟后播放，带音调/音量渐变）
         SoundManager.playMerge(pm.newLevel);
 
@@ -855,10 +1107,10 @@ function checkGameOver() {
 
     if (dangerTime > 0) {
         if (!hasStableFruitAbove) {
-            // 水果已全部离开危险线：延迟1秒后重置计时
+            // 水果已全部离开危险线：延迟500ms后重置计时
             if (!dangerCooldownStart) {
                 dangerCooldownStart = millis();
-            } else if (millis() - dangerCooldownStart > 1000) {
+            } else if (millis() - dangerCooldownStart > 500) {
                 dangerTime = 0;
                 dangerCooldownStart = 0;
             }
@@ -967,6 +1219,8 @@ function restartGame() {
 
     currentFruitLevel = getRandomInitialLevel();
     nextFruitLevel = getRandomInitialLevel();
+
+    initSideLights();
 }
 
 /** 弹出游戏结束弹窗 */
