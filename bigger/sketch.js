@@ -43,11 +43,11 @@ const FRUITS = [
     { name: '象姐',    radius: 34,  color: '#F1C40F', score: 40,  folder: 'images/level3/',  idlePrefix: '3-idle-', idleFrames: 4, hitFile: '3-hit.png' },
     { name: '芙老大',  radius: 38,  color: '#8BC34A', score: 50,  folder: 'images/level4/',  idlePrefix: '4-idle-', idleFrames: 4, hitFile: '4-hit.png' },
     { name: '牧牧川',    radius: 44,  color: '#E67E22', score: 60,  folder: 'images/level5/',  idlePrefix: '5-idle-', idleFrames: 4, hitFile: '5-hit.png' },
-    { name: '抽子',    radius: 52,  color: '#FFB6C1', score: 70,  folder: 'images/level6/',  idlePrefix: '6-idle-', idleFrames: 4, hitFile: '6-hit.png' },
-    { name: '悠姆帕',    radius: 56,  color: '#FFD700', score: 80,  folder: 'images/level7/',  idlePrefix: '7-idle-', idleFrames: 4, hitFile: '7-hit.png' },
-    { name: '鸟哥',    radius: 62,  color: '#D2691E', score: 90,  folder: 'images/level8/',  idlePrefix: '8-idle-', idleFrames: 4, hitFile: '8-hit.png' },
-    { name: '李哥', radius: 66, color: '#2ECC71', score: 100, folder: 'images/level9/',  idlePrefix: '9-idle-', idleFrames: 4, hitFile: '9-hit.png' },
-    { name: 'GEE',  radius: 70, color: '#27AE60', score: 150, folder: 'images/level10/', idlePrefix: '10-idle-', idleFrames: 4, hitFile: '10-hit.png' }
+    { name: '抽子',    radius: 50,  color: '#FFB6C1', score: 70,  folder: 'images/level6/',  idlePrefix: '6-idle-', idleFrames: 4, hitFile: '6-hit.png' },
+    { name: '悠姆帕',    radius: 54,  color: '#FFD700', score: 80,  folder: 'images/level7/',  idlePrefix: '7-idle-', idleFrames: 4, hitFile: '7-hit.png' },
+    { name: '鸟哥',    radius: 58,  color: '#D2691E', score: 90,  folder: 'images/level8/',  idlePrefix: '8-idle-', idleFrames: 4, hitFile: '8-hit.png' },
+    { name: '李哥', radius: 62, color: '#2ECC71', score: 100, folder: 'images/level9/',  idlePrefix: '9-idle-', idleFrames: 4, hitFile: '9-hit.png' },
+    { name: 'GEE',  radius: 66, color: '#27AE60', score: 150, folder: 'images/level10/', idlePrefix: '10-idle-', idleFrames: 4, hitFile: '10-hit.png' }
 ];
 
 /** 动画参数 */
@@ -78,6 +78,7 @@ let world;
 let fruits = [];          // { body, level, animationOffset, state: 'idle' | 'hit', hitStartTime: 0, isNewDrop: boolean }
 let pendingMerges = [];   // { fruitA, fruitB, newLevel, startTime, processed }
 let score = 0;
+let scorePopups = [];
 let gameOver = false;
 let gameStarted = false;
 let currentFruitLevel = 0; // 当前待放置水果等级
@@ -129,27 +130,31 @@ const EGG_ANIM = {
 };
 
 // ============================================================
-//  侧边灯（两侧各7个圆形黄灯，过线/合成提示）
-//  参考街机厅灯光：呼吸、交替闪烁、旋转跑马灯
+//  老虎机系统
 // ============================================================
 
-const SIDE_LIGHTS_COUNT = 7;
-let sideLights = [];           // { y, glow: 0~1, phase: 0 }
-let sideLightMode = 'breath';  // 'breath' | 'danger' | 'merge'
-let sideLightMergeLevel = 0;
-let sideLightMergeEndTime = 0;
-let sideLightBreathTime = 0;
-const SIDE_LIGHTS_CFG = {
-    offGlow: 0.2,             // 暗黄色亮度 (0~1)
-    onGlow: 1.0,              // 亮黄色亮度 (0~1)
-    breathPeriod: 2200,       // 呼吸周期(ms)
-    breathGlowMin: 0.35,      // 呼吸最低亮度
-    breathGlowMax: 1.0,      // 呼吸最高亮度
-    dangerBlinkInterval: 320, // 危险红亮灭交替间隔(ms)
-    mergeDuration: 1800,      // 合成灯效持续(ms)
-    mergePulseWidth: 100,     // 合成时每灯亮多久(ms)
-    fadeSpeed: 0.15           // 亮度过渡速度
+const SLOT = {
+    reelCount: 3,
+    symbolCount: 7,
+    symbolLevels: [0, 5, 6, 7, 8, 9, 10],
+    cost: 1,
+    w: 110, h: 90,
+    reelW: 30, reelH: 60,
+    spinDuration: 2400
 };
+
+const SLOT_BTN = { w: 46, h: 46, gap: 8 }; // 按钮宽度、高度、间距
+
+const SLOT_PAYOUTS = [50, 3, 5, 7, 10, 15, 25];// 每个等级的奖励分数
+
+let slotReels = [];
+let slotSpinning = false;
+let slotSpinStartTime = 0;
+let slotWinAmount = 0;
+let slotWinShowTime = 0;
+let slotAlienFlashAlpha = 0;
+let slotAlienFlashTime = 0;
+let slotBtnHover = false;
 
 // ============================================================
 //  音效管理
@@ -417,7 +422,8 @@ function setup() {
     currentFruitLevel = getRandomInitialLevel();
     nextFruitLevel = getRandomInitialLevel();
 
-    initSideLights();
+    initSlot();
+    scorePopups = [];
 }
 
 /** 随机获取初始水果等级 */
@@ -462,7 +468,7 @@ function draw() {
 
     if (!gameOverAnimating) updateFruitStates();
     updateEggAnimation();
-    updateSideLights();
+    updateScorePopups();
 
     // 绘制面板背景（全画布尺寸，比水果框大）
     if (panelImage) {
@@ -489,8 +495,9 @@ function draw() {
 
     pop();
 
-    drawSideLights();
     drawLevelIcons();
+    updateSlotSpin();
+    drawSlotMachine();
 
     if (gameOverAnimating) {
         updateGameOverAnimation();
@@ -517,7 +524,7 @@ function drawLevelIcons() {
     let iconSize = iconRadius * 2.2;
     let totalWidth = FRUITS.length * iconSize;
     let margin = (PANEL_WIDTH - totalWidth) / 2;
-    let y = GAME_HEIGHT + 170;
+    let y = GAME_HEIGHT + 187;
 
     for (let i = 0; i < FRUITS.length; i++) {
         let x = margin + iconSize / 2 + i * iconSize;
@@ -544,114 +551,6 @@ function drawDangerLine() {
     line(WALL_THICKNESS, dangerLineY, GAME_WIDTH - WALL_THICKNESS, dangerLineY);
     drawingContext.setLineDash([]);
     noStroke();
-}
-
-/** 初始化侧边灯位置 */
-function initSideLights() {
-    sideLights = [];
-    let startY = dangerLineY + 52;
-    let endY = GAME_HEIGHT - WALL_THICKNESS - 145;
-    let spacing = (endY - startY) / (SIDE_LIGHTS_COUNT - 1);
-    for (let i = 0; i < SIDE_LIGHTS_COUNT; i++) {
-        sideLights.push({ y: startY + i * spacing, glow: SIDE_LIGHTS_CFG.offGlow, phase: i / SIDE_LIGHTS_COUNT });
-    }
-    sideLightMode = 'breath';
-    sideLightMergeLevel = 0;
-    sideLightMergeEndTime = 0;
-    sideLightBreathTime = millis();
-}
-
-/** 每帧更新侧边灯亮度 —— 呼吸 / 危险交替亮灭 / 合成旋转跑马灯 */
-function updateSideLights() {
-    let now = millis();
-    let isDanger = dangerTime > 0;
-
-    if (isDanger) {
-        sideLightMode = 'danger';
-    } else if (sideLightMode === 'danger') {
-        sideLightMode = 'breath';
-        sideLightBreathTime = now;
-    }
-
-    if (sideLightMode === 'merge' && now >= sideLightMergeEndTime) {
-        sideLightMode = 'breath';
-        sideLightBreathTime = now;
-    }
-
-    for (let i = 0; i < sideLights.length; i++) {
-        let target;
-
-        if (sideLightMode === 'danger') {
-            let tick = floor(now / SIDE_LIGHTS_CFG.dangerBlinkInterval);
-            let groupOn = (tick % 2 === 0) ? (i % 2 === 0) : (i % 2 === 1);
-            target = groupOn ? SIDE_LIGHTS_CFG.onGlow : SIDE_LIGHTS_CFG.offGlow;
-        } else if (sideLightMode === 'merge') {
-            let sweepMs = map(sideLightMergeLevel, 1, 10, 1200, 600);
-            let windowRatio = 0.18;
-            let sweepPos = ((now % sweepMs) / sweepMs);
-            let dist = (sweepPos - i / SIDE_LIGHTS_COUNT + 1) % 1;
-            dist = min(dist, 1 - dist);
-            let inWindow = dist < windowRatio;
-            target = inWindow ? SIDE_LIGHTS_CFG.onGlow : SIDE_LIGHTS_CFG.offGlow;
-        } else {
-            let elapsed = now - sideLightBreathTime;
-            let period = SIDE_LIGHTS_CFG.breathPeriod;
-            let baseAngle = (elapsed % period) / period * TWO_PI;
-            let offset = sideLights[i].phase * TWO_PI;
-            let rawSin = sin(baseAngle + offset);
-            let val = (rawSin + 1) / 2;
-            target = SIDE_LIGHTS_CFG.breathGlowMin + val * (SIDE_LIGHTS_CFG.breathGlowMax - SIDE_LIGHTS_CFG.breathGlowMin);
-        }
-
-        sideLights[i].glow += (target - sideLights[i].glow) * SIDE_LIGHTS_CFG.fadeSpeed;
-    }
-}
-
-/** 绘制两侧圆形黄灯（暗黄/亮黄双色，红色警告） */
-function drawSideLights() {
-    let isDanger = sideLightMode === 'danger';
-    let lightRadius = 20;
-    let leftX = GAME_OFFSET_X - 18;
-    let rightX = GAME_OFFSET_X + GAME_WIDTH + 18;
-    let offR = 234, offG = 187, offB = 100;
-    let onR = 255, onG = 230, onB = 60;
-    let dangerR = 255, dangerG = 40, dangerB = 40;
-
-    for (let i = 0; i < sideLights.length; i++) {
-        let light = sideLights[i];
-        let t = constrain(light.glow, 0, 1);
-
-        if (t < 0.01) continue;
-
-        let r, g, b;
-        if (isDanger) {
-            r = dangerR; g = dangerG; b = dangerB;
-        } else {
-            r = lerp(offR, onR, t);
-            g = lerp(offG, onG, t);
-            b = lerp(offB, onB, t);
-        }
-
-        let coreAlpha = t * 255;
-        let glowAlpha = t * 100;
-
-        noStroke();
-        fill(r, g, b, glowAlpha);
-        ellipse(leftX, GAME_OFFSET_Y + light.y, lightRadius , lightRadius);
-        ellipse(rightX, GAME_OFFSET_Y + light.y, lightRadius, lightRadius);
-
-        fill(r, g, b, coreAlpha);
-        ellipse(leftX, GAME_OFFSET_Y + light.y, lightRadius, lightRadius);
-        ellipse(rightX, GAME_OFFSET_Y + light.y, lightRadius, lightRadius);
-    }
-}
-
-/** 合成时触发旋转跑马灯，等级越高旋转越快 */
-function triggerSideLightsFlash(level) {
-    if (level < 1) return;
-    sideLightMode = 'merge';
-    sideLightMergeLevel = constrain(level, 1, 10);
-    sideLightMergeEndTime = millis() + SIDE_LIGHTS_CFG.mergeDuration;
 }
 
 /** 更新所有水果状态（hit 转 idle） */
@@ -847,6 +746,20 @@ function drawUI() {
     textAlign(CENTER, TOP);
     text(score.toLocaleString(), GAME_WIDTH / 2, -12);
 
+    let popupY = 10;
+    for (let popup of scorePopups) {
+        let age = millis() - popup.startTime;
+        let alpha = age < 1000 ? 255 : map(age, 1000, 1500, 255, 0);
+        let rise = map(age, 0, 1500, 0, -18);
+        fill(popup.color + hex(floor(alpha), 2));
+        noStroke();
+        textSize(15);
+        textAlign(CENTER, TOP);
+        let sign = popup.amount >= 0 ? '+' : '';
+        text(sign + popup.amount.toLocaleString(), GAME_WIDTH / 2, popupY + rise);
+        popupY += 18;
+    }
+
     // 调试信息
     textSize(12);
     fill(255, 0, 0);
@@ -903,6 +816,29 @@ function drawUI() {
 /** 点击事件：检查间隔，满足条件立即释放 */
 function mousePressed() {
     if (gameOver || !gameStarted || !imagesReady) return;
+
+    if (!slotSpinning) {
+        let sx = getSlotX();
+        let sy = getSlotY();
+        let btnX = sx + SLOT.w + SLOT_BTN.gap;
+        let btnY = sy + (SLOT.h - SLOT_BTN.h) / 2;
+        let btnW = SLOT_BTN.w;
+        let btnH = SLOT_BTN.h;
+        if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) {
+            if (score >= SLOT.cost) startSlotSpin();
+            return;
+        }
+    } else {
+        let sx = getSlotX();
+        let sy = getSlotY();
+        let btnX = sx + SLOT.w + SLOT_BTN.gap;
+        let btnY = sy + (SLOT.h - SLOT_BTN.h) / 2;
+        let btnW = SLOT_BTN.w;
+        let btnH = SLOT_BTN.h;
+        if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) {
+            return;
+        }
+    }
 
     let now = millis();
     if (now - lastDropTime < dropDelay) return;
@@ -1054,6 +990,7 @@ function processPendingMerges() {
         });
 
         score += newFruitInfo.score;
+        addScorePopup(newFruitInfo.score, '#f9ca71');
 
         // 合成特效
         mergeEffects.push({
@@ -1061,8 +998,6 @@ function processPendingMerges() {
             radius: newFruitInfo.radius,
             alpha: 255, expanding: true
         });
-
-        triggerSideLightsFlash(pm.newLevel);
 
         // 合成音效（延迟后播放，带音调/音量渐变）
         SoundManager.playMerge(pm.newLevel);
@@ -1087,6 +1022,337 @@ function drawMergeEffects() {
         stroke(255, effect.alpha);
         strokeWeight(3);
         ellipse(effect.x - GAME_OFFSET_X, effect.y - GAME_OFFSET_Y, effect.radius * 2);
+    }
+}
+
+// ============================================================
+//  老虎机系统
+// ============================================================
+
+function initSlot() {
+    slotReels = [];
+    for (let i = 0; i < SLOT.reelCount; i++) {
+        slotReels.push({
+            pos: floor(random(SLOT.symbolCount)),
+            speed: 0,
+            result: floor(random(SLOT.symbolCount)),
+            stopped: true,
+            stopTime: 0
+        });
+    }
+    slotSpinning = false;
+    slotWinAmount = 0;
+    slotWinShowTime = 0;
+    slotAlienFlashAlpha = 0;
+}
+
+function getSlotX() { return (PANEL_WIDTH - SLOT.w) / 2; }
+function getSlotY() { return GAME_OFFSET_Y + GAME_HEIGHT + 6; }
+
+// 绘制老虎机
+function drawSlotMachine() {
+    let sx = getSlotX();
+    let sy = getSlotY();
+
+    let btnX = sx + SLOT.w + SLOT_BTN.gap;
+    let btnY = sy + (SLOT.h - SLOT_BTN.h) / 2;
+    let btnW = SLOT_BTN.w;
+    let btnH = SLOT_BTN.h;
+
+    slotBtnHover = mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH;
+
+    push();
+
+    fill('#b75b64');
+    noStroke();
+    rect(sx, sy, SLOT.w, SLOT.h, 5);
+
+    let panelX = sx + 8;
+    let panelY = sy + 8;
+    let panelW = SLOT.w - 16;
+    let panelH = SLOT.h - 16;
+
+    fill('#888');
+    textSize(9);
+    textAlign(LEFT, CENTER);
+    text(`-${SLOT.cost}`, sx + 10, sy + SLOT.h - 9);
+
+    if (slotWinAmount > 0 && millis() - slotWinShowTime < 2000) {
+        let alpha = 255;
+        if (millis() - slotWinShowTime > 1500) {
+            alpha = map(millis() - slotWinShowTime, 1500, 2000, 255, 0);
+        }
+        fill(255, alpha);
+        textSize(13);
+        textAlign(CENTER, CENTER);
+        text(`+${slotWinAmount}`, sx + SLOT.w / 2, sy - 4);
+    }
+
+    let reelStartX = panelX;
+    let reelY = panelY;
+    let reelGap = 1;
+    for (let i = 0; i < SLOT.reelCount; i++) {
+        let rx = reelStartX + i * (SLOT.reelW + reelGap);
+        drawSlotReel(rx, reelY, SLOT.reelW, SLOT.reelH, i);
+    }
+
+    // 绘制判断线
+    let totalW = SLOT.reelCount * SLOT.reelW + (SLOT.reelCount - 1) * reelGap;
+    let sH = SLOT.reelH / 3;
+    let midY = panelY + panelH / 2 - sH / 2;
+    noFill();
+    stroke('#f9ca6d');
+    strokeWeight(2.5);
+    rect(reelStartX - 1, midY - 1, totalW + 2, sH + 2, 3);
+    noStroke();
+
+    drawSlotButton(btnX, btnY, btnW, btnH);
+
+    if (slotAlienFlashAlpha > 0) {
+        fill(150, 255, 150, slotAlienFlashAlpha * 0.3);
+        rect(panelX, panelY, panelW, panelH);
+        slotAlienFlashAlpha -= 3;
+        if (slotAlienFlashAlpha < 0) slotAlienFlashAlpha = 0;
+    }
+
+    if (score < SLOT.cost && !slotSpinning) {
+        fill('#ffe0e0', 180 + 60 * sin(frameCount * 0.05));
+        textSize(9);
+        textAlign(LEFT, CENTER);
+        text('积分不足', sx + panelW - 50, sy + SLOT.h - 9);
+    }
+
+    pop();
+}
+
+// 绘制老虎机按钮
+function drawSlotButton(bx, by, bw, bh) {
+    let active = score >= SLOT.cost;
+    let baseColor = active ? color('#f9ca6d') : color('#ccc');
+    let darkColor = active ? color('#c49e4a') : color('#999');
+    let shadowColor = active ? color('#8a6d30') : color('#666');
+    let textColor = active ? color(0) : color('#888');
+
+    push();
+
+    let lift = 0;
+    let shadowOffset = 4;
+
+    if (slotBtnHover && active) {
+        lift = -2;
+        shadowOffset = 6;
+    }
+    if (slotBtnHover && mouseIsPressed && active) {
+        lift = 2;
+        shadowOffset = 1;
+    }
+
+    fill(shadowColor);
+    noStroke();
+    rect(bx, by + shadowOffset, bw, bh, 6);
+
+    fill(darkColor);
+    noStroke();
+    rect(bx, by + lift, bw, bh, 6);
+
+    let innerMargin = 3;
+    fill(baseColor);
+    noStroke();
+    rect(bx + innerMargin, by + lift + innerMargin, bw - innerMargin * 2, bh - innerMargin * 2 - (active ? 0 : 1), 4);
+
+    fill(255, 255, 255, active ? 50 : 20);
+    noStroke();
+    rect(bx + 4, by + lift + 4, bw - 8, bh / 2 - 4, 3);
+
+    fill(textColor);
+    noStroke();
+    textSize(12);
+    textAlign(CENTER, CENTER);
+    text('拉', bx + bw / 2, by + lift + bh / 2);
+
+    pop();
+}
+
+function drawSlotReel(rx, ry, rw, rh, reelIdx) {
+    let reel = slotReels[reelIdx];
+    let symbolH = rh / 3;
+    let symSize = min(rw * 0.8, symbolH * 0.85);
+
+    push();
+    drawingContext.save();
+    drawingContext.beginPath();
+    drawingContext.rect(rx, ry, rw, rh);
+    drawingContext.clip();
+
+    fill(255);
+    noStroke();
+    rect(rx, ry, rw, rh);
+
+    stroke('#d0c0c0');
+    strokeWeight(0.5);
+    for (let s = 1; s < 3; s++) {
+        let ly = ry + s * symbolH;
+        line(rx + 4, ly, rx + rw - 4, ly);
+    }
+    noStroke();
+
+    let frac = reel.pos - floor(reel.pos);
+    let offsetY = frac * symbolH;
+
+    for (let row = -1; row <= 1; row++) {
+        let symIdx = (floor(reel.pos) + row + SLOT.symbolCount * 10) % SLOT.symbolCount;
+        let level = SLOT.symbolLevels[symIdx];
+        let cy = ry + rh / 2 + row * symbolH + offsetY;
+
+        let size = symSize;
+        if (row === 0) size = symSize * 1.08;
+
+        if (spritesheetImage && frameW > 0) {
+            let srcY = level * frameH;
+            let srcX = 0 * frameW;
+            imageMode(CENTER);
+            image(spritesheetImage, rx + rw / 2, cy, size, size, srcX, srcY, frameW, frameH);
+        } else {
+            fill(FRUITS[level].color);
+            ellipse(rx + rw / 2, cy, size * 0.7);
+        }
+    }
+
+    drawingContext.restore();
+    pop();
+}
+
+function updateSlotSpin() {
+    if (!slotSpinning) return;
+
+    let now = millis();
+    let elapsed = now - slotSpinStartTime;
+    let allStopped = true;
+
+    for (let i = 0; i < slotReels.length; i++) {
+        let reel = slotReels[i];
+        if (reel.stopped) continue;
+        allStopped = false;
+
+        if (elapsed >= reel.stopTime) {
+            // 减速停止
+            reel.speed *= 0.85;
+            reel.pos += reel.speed;
+
+            if (abs(reel.speed) < 0.02) {
+                reel.speed = 0;
+                reel.pos = reel.result;
+                reel.stopped = true;
+                reel.stopTime = now;
+            }
+        } else {
+            // 高速旋转
+            let phase = elapsed / 600;
+            reel.speed = 0.35 + 0.08 * sin(phase + i);
+            reel.pos += reel.speed;
+        }
+
+        if (reel.pos < 0) reel.pos += SLOT.symbolCount;
+        if (reel.pos >= SLOT.symbolCount) reel.pos -= SLOT.symbolCount;
+    }
+
+    if (allStopped) {
+        slotSpinning = false;
+        checkSlotResults();
+    }
+}
+
+function startSlotSpin() {
+    if (slotSpinning) return;
+    if (score < SLOT.cost) return;
+
+    score -= SLOT.cost;
+    addScorePopup(-SLOT.cost, '#b75b64');
+    slotSpinning = true;
+    slotSpinStartTime = millis();
+    slotWinAmount = 0;
+
+    for (let i = 0; i < slotReels.length; i++) {
+        slotReels[i].result = floor(random(SLOT.symbolCount));
+        slotReels[i].stopped = false;
+        slotReels[i].speed = 0.3 + random(0.05);
+        slotReels[i].pos = floor(random(SLOT.symbolCount)) + random(1);
+        slotReels[i].stopTime = SLOT.spinDuration - (SLOT.reelCount - 1 - i) * 350 - random(0, 180);
+    }
+}
+
+function checkSlotResults() {
+    let results = slotReels.map(r => r.result);
+    let match = results[0] === results[1] && results[1] === results[2];
+
+    if (match) {
+        let symIdx = results[0];
+        let multiplier = SLOT_PAYOUTS[symIdx] || 1;
+        slotWinAmount = SLOT.cost * multiplier;
+        score += slotWinAmount;
+        addScorePopup(slotWinAmount, '#f9ca71');
+        slotWinShowTime = millis();
+        SoundManager.play('merge', { rate: map(multiplier, 2, 50, 0.8, 2.5) });
+
+        // 3个外星人特殊效果
+        if (symIdx === 0) {
+            setTimeout(() => convertAllToAlien(), 300);
+        }
+    }
+}
+
+function convertAllToAlien() {
+    if (fruits.length === 0) return;
+
+    let alienRadius = FRUITS[0].radius;
+    slotAlienFlashAlpha = 255;
+    slotAlienFlashTime = millis();
+
+    for (let fruit of fruits) {
+        let oldRadius = FRUITS[fruit.level].radius;
+        let scale = alienRadius / oldRadius;
+
+        // 缩放物理体
+        Body.scale(fruit.body, scale, scale);
+
+        // 更改等级
+        fruit.level = 0;
+        fruit.animationOffset = floor(random(3000));
+        fruit.state = 'idle';
+    }
+
+    SoundManager.play('gameover');
+
+    // 多次闪光
+    let flashCount = 3;
+    for (let i = 1; i <= flashCount; i++) {
+        setTimeout(() => {
+            slotAlienFlashAlpha = 200 - i * 50;
+        }, i * 200);
+    }
+}
+
+function isMouseOverSlot() {
+    let sx = getSlotX();
+    let sy = getSlotY();
+    return mouseX >= sx && mouseX <= sx + SLOT.w && mouseY >= sy && mouseY <= sy + SLOT.h;
+}
+
+function addScorePopup(amount, colorHex) {
+    scorePopups.push({
+        amount: amount,
+        color: colorHex,
+        startTime: millis(),
+        baseY: 0
+    });
+}
+
+function updateScorePopups() {
+    let now = millis();
+    for (let i = scorePopups.length - 1; i >= 0; i--) {
+        if (now - scorePopups[i].startTime > 1500) {
+            scorePopups.splice(i, 1);
+        }
     }
 }
 
@@ -1229,7 +1495,8 @@ function restartGame() {
     currentFruitLevel = getRandomInitialLevel();
     nextFruitLevel = getRandomInitialLevel();
 
-    initSideLights();
+    initSlot();
+    scorePopups = [];
 }
 
 /** 弹出游戏结束弹窗 */
