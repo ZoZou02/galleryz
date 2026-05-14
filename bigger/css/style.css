@@ -196,6 +196,7 @@ canvas {
 
 #start-btn {
     padding: 18px 55px;
+    width: 240px;
     font-family: 'ZCOOL KuaiLe', 'Comic Sans MS', sans-serif;
     font-size: 26px;
     color: #fff;
@@ -390,4 +391,266 @@ canvas {
         2px 2px 0 var(--rose-dark),
         0 0 0 5px var(--cream),
         0 0 0 9px var(--yellow);
+}
+
+/* ============================================================
+   暂停页面
+   ============================================================ */
+#pause-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+#pause-screen::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    width: calc(100% + 20px);
+    height: calc(100% + 20px);
+    background: url('../images/0-bg.png') center/cover no-repeat;
+    filter: blur(8px);
+    z-index: -1;
+}
+#pause-screen::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: -1;
+}
+#pause-screen:not(.hidden) {
+    opacity: 1;
+    pointer-events: auto;
+}
+#pause-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+#pause-screen .modal-content h1 {
+    color: var(--blue-dark);
+    margin-bottom: 24px;
+}
+.pause-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.pause-buttons button {
+    font-family: 'ZCOOL KuaiLe', 'Comic Sans MS', sans-serif;
+    font-size: 20px;
+    padding: 12px 36px;
+    border-radius: 50px 18px 50px 18px;
+    cursor: pointer;
+    letter-spacing: 3px;
+    outline: none;
+    border: 4px solid;
+    transition: all 0.15s ease;
+    color: var(--cream);
+}
+.pause-buttons button:nth-child(1) {
+    background: var(--blue);
+    border-color: var(--blue-dark);
+    box-shadow: 4px 4px 0 var(--blue-dark);
+}
+.pause-buttons button:nth-child(2) {
+    background: var(--rose);
+    border-color: var(--rose-dark);
+    box-shadow: 4px 4px 0 var(--rose-dark);
+}
+.pause-buttons button:active {
+    transform: translateY(3px);
+    box-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+}
+
+/* ============================================================
+   排行榜页面
+   ============================================================ */
+#records-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+#records-screen::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    width: calc(100% + 20px);
+    height: calc(100% + 20px);
+    background: url('../images/0-bg.png') center/cover no-repeat;
+    filter: blur(8px);
+    z-index: -1;
+}
+#records-screen::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: -1;
+}
+#records-screen:not(.hidden) {
+    opacity: 1;
+    pointer-events: auto;
+}
+#records-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+.records-content {
+    min-width: 310px;
+    max-width: 400px;
+    font-size: 17px;
+}
+.records-content h1 {
+    color: var(--yellow-dark);
+    margin-bottom: 16px;
+    font-size: 32px;
+}
+.records-table-wrap {
+    max-height: 340px;
+    overflow-y: auto;
+    margin-bottom: 18px;
+}
+#records-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--rose-dark);
+    font-size: 17px;
+}
+#records-table th {
+    color: var(--blue-dark);
+    font-size: 14px;
+    padding: 7px 10px;
+    border-bottom: 2px solid var(--rose);
+    letter-spacing: 1px;
+}
+#records-table td {
+    padding: 8px 10px;
+    text-align: center;
+    border-bottom: 1px solid rgba(183,91,100,0.15);
+}
+#records-table tr.top-record td {
+    color: var(--rose);
+    font-weight: bold;
+    font-size: 18px;
+    background: rgba(249,208,96,0.12);
+}
+#records-table .empty-records {
+    color: #999;
+    font-size: 16px;
+    padding: 20px 0;
+}
+
+/* ============================================================
+   通用控件
+   ============================================================ */
+
+.btn-secondary {
+    font-family: 'ZCOOL KuaiLe', 'Comic Sans MS', sans-serif;
+    font-size: 17px;
+    color: var(--blue-dark);
+    background: rgba(128,165,193,0.15);
+    border: 2px solid var(--blue-dark);
+    border-radius: 10px;
+    padding: 8px 24px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    outline: none;
+    transition: all 0.15s ease;
+    margin-top: 4px;
+}
+.btn-secondary:hover {
+    background: rgba(128,165,193,0.25);
+}
+.btn-secondary:active {
+    transform: translateY(2px);
+}
+
+.game-stats {
+    margin: 6px 0;
+    font-size: 15px;
+    color: var(--blue-dark);
+}
+.stat-item {
+    margin: 0 6px;
+}
+
+.new-record-badge {
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #fff;
+    font-size: 18px;
+    padding: 4px 20px;
+    border-radius: 20px;
+    margin: 8px auto;
+    display: inline-block;
+    animation: pulse-badge 1s ease-in-out infinite alternate;
+    letter-spacing: 2px;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+}
+.new-record-badge.hidden {
+    display: none !important;
+}
+@keyframes pulse-badge {
+    from { transform: scale(1); }
+    to { transform: scale(1.08); }
+}
+
+.score-rank {
+    font-size: 16px;
+    color: var(--rose);
+    margin: 4px 0 8px;
+    letter-spacing: 2px;
+}
+
+#records-btn {
+    padding: 18px 55px;
+    font-family: 'ZCOOL KuaiLe', 'Comic Sans MS', sans-serif;
+    font-size: 26px;
+    color: var(--cream);
+    background: var(--yellow-dark);
+    border: 4px solid #b89220;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 5px 5px 0 #b89220;
+    letter-spacing: 4px;
+    outline: none;
+    transition: all 0.1s ease;
+    width: 240px;
+}
+#records-btn:active {
+    transform: translateY(4px);
+    box-shadow: 1px 1px 0 #b89220;
 }

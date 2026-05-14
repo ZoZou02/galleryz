@@ -52,9 +52,13 @@ const FRUITS = [
 
 /** 动画参数 */
 const ANIM = {
-    frameDuration: 50,     // 每帧显示多少毫秒
-    loopDelay: 2000,       // 一轮动画播放完后停多少毫秒
-    hitDuration: 300       // 碰撞动画持续多少毫秒
+    frameDuration: 50,
+    loopDelay: 2000,
+    hitDuration: 300,
+    mergeScaleShrinkDuration: 80,
+    mergeScaleGrowDuration: 120,
+    mergeScaleMin: 0.5,
+    mergeScaleMax: 1.2
 };
 
 /**
@@ -66,8 +70,76 @@ const ANIM = {
 const MERGE_AUDIO_CFG = {
     delay_time: 80,
     base_pitch: 0.7,
-    pitch_per_level: 0.20
+    pitch_per_level: 0.2
 };
+
+/** 技能配置 */
+const SKILLS = {
+    btnW: 90, btnH: 52,
+    btnGap: 18,
+    btnY: GAME_OFFSET_Y + GAME_HEIGHT + 42,
+    ufoMaxUses: 2,
+    ufoDuration: 3500,
+    ufoGravity: -0.55,
+    alienDropCharge: 10
+};
+
+function formatScore(n) {
+    return n.toLocaleString('en-US');
+}
+
+function formatTime(seconds) {
+    let m = Math.floor(seconds / 60);
+    let s = Math.floor(seconds % 60);
+    return m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+function getGameTimeSeconds() {
+    if (!gameStartTime) return 0;
+    let now = millis();
+    let paused = 0;
+    if (gamePaused && gamePauseStart > 0) {
+        paused = now - gamePauseStart;
+    }
+    return (now - gameStartTime - gamePauseAccumulated - paused) / 1000;
+}
+
+const RECORDS_KEY = 'gb_merge_records';
+const MAX_RECORDS = 10;
+
+function loadRecords() {
+    try {
+        let data = localStorage.getItem(RECORDS_KEY);
+        if (!data) return [];
+        let records = JSON.parse(data);
+        if (!Array.isArray(records)) return [];
+        return records.filter(r => typeof r.score === 'number' && typeof r.ts === 'number');
+    } catch (e) { return []; }
+}
+
+function saveRecord(scoreVal, durationSec) {
+    let records = loadRecords();
+    let record = { score: scoreVal, duration: Math.floor(durationSec), ts: Date.now() };
+    records.push(record);
+    records.sort((a, b) => b.score - a.score);
+    records = records.slice(0, MAX_RECORDS);
+    try { localStorage.setItem(RECORDS_KEY, JSON.stringify(records)); } catch (e) {}
+    return records;
+}
+
+function getRecordRank(scoreVal, records) {
+    let rank = 1;
+    for (let r of records) {
+        if (r.score > scoreVal) rank++;
+        else break;
+    }
+    return rank;
+}
+
+function isNewRecord(scoreVal, records) {
+    if (records.length < MAX_RECORDS) return true;
+    return scoreVal > records[records.length - 1].score;
+}
 
 // ============================================================
 //  游戏状态
@@ -75,10 +147,11 @@ const MERGE_AUDIO_CFG = {
 
 let engine;
 let world;
-let fruits = [];          // { body, level, animationOffset, state: 'idle' | 'hit', hitStartTime: 0, isNewDrop: boolean }
+let fruits = [];          // { body, level, animationOffset, state: 'idle' | 'hit', hitStartTime: 0, isNewDrop: boolean, mergeAnimStartTime: number }
 let pendingMerges = [];   // { fruitA, fruitB, newLevel, startTime, processed }
 let score = 0;
 let scorePopups = [];
+let lastPopupBaseY = 15; // 下一个分数弹窗的初始Y位置
 let gameOver = false;
 let gameStarted = false;
 let currentFruitLevel = 0; // 当前待放置水果等级
@@ -88,9 +161,25 @@ let nextFruitLevel = 0;    // 下一个要放置的水果等级
 let dangerLineY = 100;
 let dangerTime = 0;
 let dangerCooldownStart = 0;
-let gameOverAnimating = false; // 游戏结束动画中
-let gameOverExplodeIndex = 0; // 当前爆炸水果索引
-let gameOverExplodeTime = 0; // 上次爆炸时间
+let gameOverAnimating = false;
+let gameOverExplodeIndex = 0;
+let gameOverExplodeTime = 0;
+
+/** 技能状态 */
+let ufoUsesLeft = SKILLS.ufoMaxUses;
+let ufoActive = false;
+let ufoStartTime = 0;
+let alienChargeCount = 0;
+let alienUsesLeft = 0;
+let skillBtnHover = { ufo: false, alien: false };
+
+/** 计时与暂停 */
+let gameStartTime = 0;
+let gamePauseAccumulated = 0;
+let gamePauseStart = 0;
+let gamePaused = false;
+let pauseBtnHover = false;
+let pauseBtnRect = { x: 0, y: 0, w: 26, h: 24 };
 
 // ============================================================
 //  资源加载状态
@@ -100,6 +189,11 @@ let spritesheetImage = null; // 雪碧图（5列×11行，列0-3:idle帧，列4:
 let frameW = 0; // 雪碧图每帧宽度
 let frameH = 0; // 雪碧图每帧高度
 let mergeEffects = [];
+let boopSpritesheet = null; // 合成烟雾精灵图（5x5 25帧）
+let boopFrameW = 0; // 烟雾每帧宽度
+let boopFrameH = 0; // 烟雾每帧高度
+const BOOP_FRAMES = 5; // 测试时使用第一竖列共5帧
+const BOOP_FRAME_DURATION = 50; // 烟雾每帧时长(ms)
 let imagesReady = false;
 let debugLoadStatus = '';
 let frontImage = null; // 前景图片
@@ -129,32 +223,7 @@ const EGG_ANIM = {
     maxAngle: Math.PI / 4.0  // 最大展开角度(弧度)
 };
 
-// ============================================================
-//  老虎机系统
-// ============================================================
 
-const SLOT = {
-    reelCount: 3,
-    symbolCount: 7,
-    symbolLevels: [0, 5, 6, 7, 8, 9, 10],
-    cost: 1,
-    w: 110, h: 90,
-    reelW: 30, reelH: 60,
-    spinDuration: 2400
-};
-
-const SLOT_BTN = { w: 46, h: 46, gap: 8 }; // 按钮宽度、高度、间距
-
-const SLOT_PAYOUTS = [50, 3, 5, 7, 10, 15, 25];// 每个等级的奖励分数
-
-let slotReels = [];
-let slotSpinning = false;
-let slotSpinStartTime = 0;
-let slotWinAmount = 0;
-let slotWinShowTime = 0;
-let slotAlienFlashAlpha = 0;
-let slotAlienFlashTime = 0;
-let slotBtnHover = false;
 
 // ============================================================
 //  音效管理
@@ -167,16 +236,8 @@ let slotBtnHover = false;
  */
 const VOICE_CFG = {
     voiceVariants: [],
-    voiceChance: 0.35,
-    _init() {
-        this.voiceVariants[0] = 3;
-        for (let i = 1; i < FRUITS.length; i++) {
-            // 所有等级释放都可能有语音；仅后6种（5-10）合成有语音
-            this.voiceVariants[i] = 1;
-        }
-    }
+    voiceChance: 0.35
 };
-VOICE_CFG._init();
 
 const SoundManager = {
     ctx: null,
@@ -370,7 +431,7 @@ function setup() {
 
     // ---------- 加载资源（统一计数，全部就绪才进入游戏） ----------
     let loadedCount = 0;
-    let totalToLoad = 3; // spritesheet + front + panel
+    let totalToLoad = 4; // spritesheet + front + panel + boop
 
     function onImgLoad() {
         loadedCount++;
@@ -387,11 +448,19 @@ function setup() {
 
     // 前景/面板
     loadImage('images/0-front.png', (img) => { frontImage = img; onImgLoad(); }, onImgLoad);
-    loadImage('images/1-panel.png', (img) => { panelImage = img; onImgLoad(); }, onImgLoad);
+    loadImage('images/2-panel.png', (img) => { panelImage = img; onImgLoad(); }, onImgLoad);
 
     // 扭蛋
     totalToLoad += 1;
     loadImage('images/0-egg.png', (img) => { eggImage = img; onImgLoad(); }, onImgLoad);
+
+    // 合成烟雾
+    loadImage('images/0-boop.png', (img) => {
+        boopSpritesheet = img;
+        boopFrameW = img.width;
+        boopFrameH = img.height / 5;
+        onImgLoad();
+    }, onImgLoad);
 
     // 核心音效
     totalToLoad += 3;
@@ -399,11 +468,26 @@ function setup() {
     SoundManager.load('merge', 'sound/bubble.wav').then(onImgLoad).catch(onImgLoad);
     SoundManager.load('gameover', 'sound/gameover.wav').then(onImgLoad).catch(onImgLoad);
 
-    // 语音音效
-    for (let i = 0; i < FRUITS.length; i++) {
-        totalToLoad += VOICE_CFG.voiceVariants[i] || 0;
-        SoundManager._loadVoiceLevel(i, onImgLoad);
-    }
+    // 先加载音频配置文件 sound/index.json
+    totalToLoad += 1;
+    fetch('sound/index.json')
+        .then(res => res.json())
+        .then(config => {
+            VOICE_CFG.voiceVariants = config; // config 格式: { "0": 3, "1": 1, "2": 1, ... }
+            // 根据配置加载语音
+            for (let i = 0; i < FRUITS.length; i++) {
+                let count = VOICE_CFG.voiceVariants[i] || 0;
+                if (count > 0) {
+                    totalToLoad += count;
+                    SoundManager._loadVoiceLevel(i, onImgLoad);
+                }
+            }
+            onImgLoad(); // index.json 加载完成
+        })
+        .catch(err => {
+            console.warn('sound/index.json 加载失败，使用默认空配置:', err);
+            onImgLoad(); // 即使失败也继续加载
+        });
 
     // ---------- 物理引擎 ----------
     engine = Engine.create();
@@ -422,7 +506,7 @@ function setup() {
     currentFruitLevel = getRandomInitialLevel();
     nextFruitLevel = getRandomInitialLevel();
 
-    initSlot();
+    
     scorePopups = [];
 }
 
@@ -463,6 +547,34 @@ function draw() {
         return;
     }
 
+    if (gamePaused) {
+        if (panelImage) {
+            imageMode(CORNER);
+            image(panelImage, 0, 0, PANEL_WIDTH, PANEL_HEIGHT);
+        }
+        push();
+        translate(GAME_OFFSET_X, GAME_OFFSET_Y);
+        drawDangerLine();
+        drawFruits();
+        drawUI();
+        if (frontImage) {
+            imageMode(CORNER);
+            image(frontImage, 0, 0, GAME_WIDTH, GAME_HEIGHT);
+        }
+        pop();
+        drawLevelIcons();
+        drawSkillButtons();
+        return;
+    }
+
+    if (ufoActive && !gameOver && !gameOverAnimating) {
+        world.gravity.y = SKILLS.ufoGravity;
+        if (millis() - ufoStartTime > SKILLS.ufoDuration) {
+            ufoActive = false;
+            world.gravity.y = PHYSICS.gravity;
+        }
+    }
+
     Engine.update(engine, 1000 / 60);
     processPendingMerges();
 
@@ -495,9 +607,10 @@ function draw() {
 
     pop();
 
+    updateUFOFruits();
+    drawSkillButtons();
+
     drawLevelIcons();
-    updateSlotSpin();
-    drawSlotMachine();
 
     if (gameOverAnimating) {
         updateGameOverAnimation();
@@ -660,6 +773,9 @@ function drawFruits() {
         let dw = fruitInfo.radius * 2.2;
         let dh = fruitInfo.radius * 2.2;
 
+        let mergeScale = getMergeScale(fruit);
+        if (mergeScale !== 1) scale(mergeScale);
+
         if (spritesheetImage && frameW > 0) {
             let srcY = level * frameH;
             let srcX;
@@ -694,8 +810,8 @@ function drawCurrentFruit() {
     if (gameOver) return;
 
     let fruitInfo = FRUITS[currentFruitLevel];
-    let gameMouseX = mouseX - GAME_OFFSET_X;
-    let x = constrain(gameMouseX, WALL_THICKNESS + fruitInfo.radius, GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius);
+    let gameMx = mouseX - GAME_OFFSET_X;
+    let x = constrain(gameMx, WALL_THICKNESS + fruitInfo.radius, GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius);
     let y = 80;
     let fruitSize = fruitInfo.radius * 2.2;
 
@@ -736,17 +852,26 @@ function drawCurrentFruit() {
     pop();
 }
 
-/** 绘制 UI：分数、下一个水果预览、危险倒计时、调试信息 */
+/** 绘制 UI：分数、计时器、暂停按钮、下一个水果预览、危险倒计时 */
 function drawUI() {
+    pauseBtnRect.x = GAME_WIDTH - 32;
+    pauseBtnRect.y = -30;
+
     fill(255);
     stroke(0);
     strokeWeight(2);
     textStyle(BOLD);
     textSize(20);
     textAlign(CENTER, TOP);
-    text(score.toLocaleString(), GAME_WIDTH / 2, -12);
+    text(formatScore(score), GAME_WIDTH / 2, -12);
 
-    let popupY = 10;
+    textSize(13);
+    textAlign(LEFT, TOP);
+    let timerStr = formatTime(getGameTimeSeconds());
+    text('⏱ ' + timerStr, 8, -12);
+
+    drawPauseBtn();
+
     for (let popup of scorePopups) {
         let age = millis() - popup.startTime;
         let alpha = age < 1000 ? 255 : map(age, 1000, 1500, 255, 0);
@@ -756,8 +881,7 @@ function drawUI() {
         textSize(15);
         textAlign(CENTER, TOP);
         let sign = popup.amount >= 0 ? '+' : '';
-        text(sign + popup.amount.toLocaleString(), GAME_WIDTH / 2, popupY + rise);
-        popupY += 18;
+        text(sign + formatScore(popup.amount), GAME_WIDTH / 2, popup.baseY + rise);
     }
 
     // 调试信息
@@ -817,27 +941,26 @@ function drawUI() {
 function mousePressed() {
     if (gameOver || !gameStarted || !imagesReady) return;
 
-    if (!slotSpinning) {
-        let sx = getSlotX();
-        let sy = getSlotY();
-        let btnX = sx + SLOT.w + SLOT_BTN.gap;
-        let btnY = sy + (SLOT.h - SLOT_BTN.h) / 2;
-        let btnW = SLOT_BTN.w;
-        let btnH = SLOT_BTN.h;
-        if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) {
-            if (score >= SLOT.cost) startSlotSpin();
-            return;
-        }
-    } else {
-        let sx = getSlotX();
-        let sy = getSlotY();
-        let btnX = sx + SLOT.w + SLOT_BTN.gap;
-        let btnY = sy + (SLOT.h - SLOT_BTN.h) / 2;
-        let btnW = SLOT_BTN.w;
-        let btnH = SLOT_BTN.h;
-        if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) {
-            return;
-        }
+    let gmx = mouseX - GAME_OFFSET_X;
+    let gmy = mouseY - GAME_OFFSET_Y;
+
+    let bx = pauseBtnRect.x, by = pauseBtnRect.y, bw = pauseBtnRect.w, bh = pauseBtnRect.h;
+    if (gmx >= bx && gmx <= bx + bw && gmy >= by && gmy <= by + bh) {
+        togglePause();
+        if (gamePaused) document.getElementById('pause-screen').classList.remove('hidden');
+        return;
+    }
+
+    let ufoBtn = getUFOBtnRect();
+    let alienBtn = getAlienBtnRect();
+
+    if (mouseX >= ufoBtn.x && mouseX <= ufoBtn.x + ufoBtn.w && mouseY >= ufoBtn.y && mouseY <= ufoBtn.y + ufoBtn.h) {
+        activateUFO();
+        return;
+    }
+    if (mouseX >= alienBtn.x && mouseX <= alienBtn.x + alienBtn.w && mouseY >= alienBtn.y && mouseY <= alienBtn.y + alienBtn.h) {
+        activateAlien();
+        return;
     }
 
     let now = millis();
@@ -865,12 +988,20 @@ function mousePressed() {
 
     SoundManager.playDrop(currentFruitLevel);
 
+    let droppedLevel = currentFruitLevel;
     currentFruitLevel = nextFruitLevel;
     nextFruitLevel = getRandomInitialLevel();
 
     lastDropTime = now;
 
-    // 重置扭蛋：闭合动画 → 闭合停留 → 展开 → 出现新水果
+    if (droppedLevel === 0) {
+        alienChargeCount++;
+        if (alienChargeCount >= SKILLS.alienDropCharge) {
+            alienUsesLeft++;
+            alienChargeCount = 0;
+        }
+    }
+
     eggState = 'closing';
     eggCloseStartTime = millis();
 }
@@ -986,7 +1117,8 @@ function processPendingMerges() {
             animationOffset: Math.floor(Math.random() * 3000),
             state: 'idle',
             hitStartTime: 0,
-            isNewDrop: false
+            isNewDrop: false,
+            mergeAnimStartTime: now
         });
 
         score += newFruitInfo.score;
@@ -996,7 +1128,9 @@ function processPendingMerges() {
         mergeEffects.push({
             x: pm.newPos.x, y: pm.newPos.y,
             radius: newFruitInfo.radius,
-            alpha: 255, expanding: true
+            alpha: 255, expanding: true,
+            startTime: now, // 烟雾动画起始时间
+            frame: 0 // 烟雾当前帧
         });
 
         // 合成音效（延迟后播放，带音调/音量渐变）
@@ -1006,336 +1140,72 @@ function processPendingMerges() {
     }
 }
 
-/** 绘制合成特效：白色扩散光环 */
+/** 绘制合成特效：白色烟雾精灵图（第一竖列5帧） */
 function drawMergeEffects() {
     for (let i = mergeEffects.length - 1; i >= 0; i--) {
         let effect = mergeEffects[i];
-        if (effect.expanding) {
-            effect.radius += 3;
-            effect.alpha -= 10;
-            if (effect.alpha <= 0) {
-                mergeEffects.splice(i, 1);
-                continue;
-            }
+        let elapsed = millis() - effect.startTime;
+        let totalDuration = BOOP_FRAMES * BOOP_FRAME_DURATION;
+
+        if (elapsed >= totalDuration) {
+            mergeEffects.splice(i, 1);
+            continue;
         }
-        noFill();
-        stroke(255, effect.alpha);
-        strokeWeight(3);
-        ellipse(effect.x - GAME_OFFSET_X, effect.y - GAME_OFFSET_Y, effect.radius * 2);
-    }
-}
 
-// ============================================================
-//  老虎机系统
-// ============================================================
+        let frame = Math.floor(elapsed / BOOP_FRAME_DURATION);
+        frame = constrain(frame, 0, BOOP_FRAMES - 1);
 
-function initSlot() {
-    slotReels = [];
-    for (let i = 0; i < SLOT.reelCount; i++) {
-        slotReels.push({
-            pos: floor(random(SLOT.symbolCount)),
-            speed: 0,
-            result: floor(random(SLOT.symbolCount)),
-            stopped: true,
-            stopTime: 0
-        });
-    }
-    slotSpinning = false;
-    slotWinAmount = 0;
-    slotWinShowTime = 0;
-    slotAlienFlashAlpha = 0;
-}
-
-function getSlotX() { return (PANEL_WIDTH - SLOT.w) / 2; }
-function getSlotY() { return GAME_OFFSET_Y + GAME_HEIGHT + 6; }
-
-// 绘制老虎机
-function drawSlotMachine() {
-    let sx = getSlotX();
-    let sy = getSlotY();
-
-    let btnX = sx + SLOT.w + SLOT_BTN.gap;
-    let btnY = sy + (SLOT.h - SLOT_BTN.h) / 2;
-    let btnW = SLOT_BTN.w;
-    let btnH = SLOT_BTN.h;
-
-    slotBtnHover = mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH;
-
-    push();
-
-    fill('#b75b64');
-    noStroke();
-    rect(sx, sy, SLOT.w, SLOT.h, 5);
-
-    let panelX = sx + 8;
-    let panelY = sy + 8;
-    let panelW = SLOT.w - 16;
-    let panelH = SLOT.h - 16;
-
-    fill('#888');
-    textSize(9);
-    textAlign(LEFT, CENTER);
-    text(`-${SLOT.cost}`, sx + 10, sy + SLOT.h - 9);
-
-    if (slotWinAmount > 0 && millis() - slotWinShowTime < 2000) {
-        let alpha = 255;
-        if (millis() - slotWinShowTime > 1500) {
-            alpha = map(millis() - slotWinShowTime, 1500, 2000, 255, 0);
-        }
-        fill(255, alpha);
-        textSize(13);
-        textAlign(CENTER, CENTER);
-        text(`+${slotWinAmount}`, sx + SLOT.w / 2, sy - 4);
-    }
-
-    let reelStartX = panelX;
-    let reelY = panelY;
-    let reelGap = 1;
-    for (let i = 0; i < SLOT.reelCount; i++) {
-        let rx = reelStartX + i * (SLOT.reelW + reelGap);
-        drawSlotReel(rx, reelY, SLOT.reelW, SLOT.reelH, i);
-    }
-
-    // 绘制判断线
-    let totalW = SLOT.reelCount * SLOT.reelW + (SLOT.reelCount - 1) * reelGap;
-    let sH = SLOT.reelH / 3;
-    let midY = panelY + panelH / 2 - sH / 2;
-    noFill();
-    stroke('#f9ca6d');
-    strokeWeight(2.5);
-    rect(reelStartX - 1, midY - 1, totalW + 2, sH + 2, 3);
-    noStroke();
-
-    drawSlotButton(btnX, btnY, btnW, btnH);
-
-    if (slotAlienFlashAlpha > 0) {
-        fill(150, 255, 150, slotAlienFlashAlpha * 0.3);
-        rect(panelX, panelY, panelW, panelH);
-        slotAlienFlashAlpha -= 3;
-        if (slotAlienFlashAlpha < 0) slotAlienFlashAlpha = 0;
-    }
-
-    if (score < SLOT.cost && !slotSpinning) {
-        fill('#ffe0e0', 180 + 60 * sin(frameCount * 0.05));
-        textSize(9);
-        textAlign(LEFT, CENTER);
-        text('积分不足', sx + panelW - 50, sy + SLOT.h - 9);
-    }
-
-    pop();
-}
-
-// 绘制老虎机按钮
-function drawSlotButton(bx, by, bw, bh) {
-    let active = score >= SLOT.cost;
-    let baseColor = active ? color('#f9ca6d') : color('#ccc');
-    let darkColor = active ? color('#c49e4a') : color('#999');
-    let shadowColor = active ? color('#8a6d30') : color('#666');
-    let textColor = active ? color(0) : color('#888');
-
-    push();
-
-    let lift = 0;
-    let shadowOffset = 4;
-
-    if (slotBtnHover && active) {
-        lift = -2;
-        shadowOffset = 6;
-    }
-    if (slotBtnHover && mouseIsPressed && active) {
-        lift = 2;
-        shadowOffset = 1;
-    }
-
-    fill(shadowColor);
-    noStroke();
-    rect(bx, by + shadowOffset, bw, bh, 6);
-
-    fill(darkColor);
-    noStroke();
-    rect(bx, by + lift, bw, bh, 6);
-
-    let innerMargin = 3;
-    fill(baseColor);
-    noStroke();
-    rect(bx + innerMargin, by + lift + innerMargin, bw - innerMargin * 2, bh - innerMargin * 2 - (active ? 0 : 1), 4);
-
-    fill(255, 255, 255, active ? 50 : 20);
-    noStroke();
-    rect(bx + 4, by + lift + 4, bw - 8, bh / 2 - 4, 3);
-
-    fill(textColor);
-    noStroke();
-    textSize(12);
-    textAlign(CENTER, CENTER);
-    text('拉', bx + bw / 2, by + lift + bh / 2);
-
-    pop();
-}
-
-function drawSlotReel(rx, ry, rw, rh, reelIdx) {
-    let reel = slotReels[reelIdx];
-    let symbolH = rh / 3;
-    let symSize = min(rw * 0.8, symbolH * 0.85);
-
-    push();
-    drawingContext.save();
-    drawingContext.beginPath();
-    drawingContext.rect(rx, ry, rw, rh);
-    drawingContext.clip();
-
-    fill(255);
-    noStroke();
-    rect(rx, ry, rw, rh);
-
-    stroke('#d0c0c0');
-    strokeWeight(0.5);
-    for (let s = 1; s < 3; s++) {
-        let ly = ry + s * symbolH;
-        line(rx + 4, ly, rx + rw - 4, ly);
-    }
-    noStroke();
-
-    let frac = reel.pos - floor(reel.pos);
-    let offsetY = frac * symbolH;
-
-    for (let row = -1; row <= 1; row++) {
-        let symIdx = (floor(reel.pos) + row + SLOT.symbolCount * 10) % SLOT.symbolCount;
-        let level = SLOT.symbolLevels[symIdx];
-        let cy = ry + rh / 2 + row * symbolH + offsetY;
-
-        let size = symSize;
-        if (row === 0) size = symSize * 1.08;
-
-        if (spritesheetImage && frameW > 0) {
-            let srcY = level * frameH;
-            let srcX = 0 * frameW;
+        if (boopSpritesheet && boopFrameW > 0) {
+            let srcX = 0; // 竖列5帧，从最左侧
+            let srcY = frame * boopFrameH;
+            let cx = effect.x - GAME_OFFSET_X;
+            let cy = effect.y - GAME_OFFSET_Y;
+            // 烟雾大小匹配水果大小：水果显示尺寸是 radius*2.2，烟雾设为 radius*4
+            let drawSize = effect.radius * 4;
             imageMode(CENTER);
-            image(spritesheetImage, rx + rw / 2, cy, size, size, srcX, srcY, frameW, frameH);
+            image(boopSpritesheet, cx, cy, drawSize, drawSize, srcX, srcY, boopFrameW, boopFrameH);
         } else {
-            fill(FRUITS[level].color);
-            ellipse(rx + rw / 2, cy, size * 0.7);
-        }
-    }
-
-    drawingContext.restore();
-    pop();
-}
-
-function updateSlotSpin() {
-    if (!slotSpinning) return;
-
-    let now = millis();
-    let elapsed = now - slotSpinStartTime;
-    let allStopped = true;
-
-    for (let i = 0; i < slotReels.length; i++) {
-        let reel = slotReels[i];
-        if (reel.stopped) continue;
-        allStopped = false;
-
-        if (elapsed >= reel.stopTime) {
-            // 减速停止
-            reel.speed *= 0.85;
-            reel.pos += reel.speed;
-
-            if (abs(reel.speed) < 0.02) {
-                reel.speed = 0;
-                reel.pos = reel.result;
-                reel.stopped = true;
-                reel.stopTime = now;
+            // 回退到原白色扩散光环
+            if (effect.expanding) {
+                effect.radius += 3;
+                effect.alpha -= 10;
             }
-        } else {
-            // 高速旋转
-            let phase = elapsed / 600;
-            reel.speed = 0.35 + 0.08 * sin(phase + i);
-            reel.pos += reel.speed;
-        }
-
-        if (reel.pos < 0) reel.pos += SLOT.symbolCount;
-        if (reel.pos >= SLOT.symbolCount) reel.pos -= SLOT.symbolCount;
-    }
-
-    if (allStopped) {
-        slotSpinning = false;
-        checkSlotResults();
-    }
-}
-
-function startSlotSpin() {
-    if (slotSpinning) return;
-    if (score < SLOT.cost) return;
-
-    score -= SLOT.cost;
-    addScorePopup(-SLOT.cost, '#b75b64');
-    slotSpinning = true;
-    slotSpinStartTime = millis();
-    slotWinAmount = 0;
-
-    for (let i = 0; i < slotReels.length; i++) {
-        slotReels[i].result = floor(random(SLOT.symbolCount));
-        slotReels[i].stopped = false;
-        slotReels[i].speed = 0.3 + random(0.05);
-        slotReels[i].pos = floor(random(SLOT.symbolCount)) + random(1);
-        slotReels[i].stopTime = SLOT.spinDuration - (SLOT.reelCount - 1 - i) * 350 - random(0, 180);
-    }
-}
-
-function checkSlotResults() {
-    let results = slotReels.map(r => r.result);
-    let match = results[0] === results[1] && results[1] === results[2];
-
-    if (match) {
-        let symIdx = results[0];
-        let multiplier = SLOT_PAYOUTS[symIdx] || 1;
-        slotWinAmount = SLOT.cost * multiplier;
-        score += slotWinAmount;
-        addScorePopup(slotWinAmount, '#f9ca71');
-        slotWinShowTime = millis();
-        SoundManager.play('merge', { rate: map(multiplier, 2, 50, 0.8, 2.5) });
-
-        // 3个外星人特殊效果
-        if (symIdx === 0) {
-            setTimeout(() => convertAllToAlien(), 300);
+            noFill();
+            stroke(255, effect.alpha);
+            strokeWeight(3);
+            ellipse(effect.x - GAME_OFFSET_X, effect.y - GAME_OFFSET_Y, effect.radius * 2);
         }
     }
 }
 
-function convertAllToAlien() {
-    if (fruits.length === 0) return;
+/**
+ * 合成缩放动画：先缩小再突然放大回弹
+ * - 前半段：1 → 0.3 缩小
+ * - 后半段：1.35 → 1.0 放大回弹
+ * @returns {number} 缩放系数
+ */
+function getMergeScale(fruit) {
+    let startTime = fruit.mergeAnimStartTime;
+    if (!startTime) return 1;
 
-    let alienRadius = FRUITS[0].radius;
-    slotAlienFlashAlpha = 255;
-    slotAlienFlashTime = millis();
+    let elapsed = millis() - startTime;
+    let shrinkTotal = ANIM.mergeScaleShrinkDuration;
+    let growTotal = ANIM.mergeScaleGrowDuration;
+    let total = shrinkTotal + growTotal;
+    let minScale = ANIM.mergeScaleMin;
+    let maxScale = ANIM.mergeScaleMax;
 
-    for (let fruit of fruits) {
-        let oldRadius = FRUITS[fruit.level].radius;
-        let scale = alienRadius / oldRadius;
+    if (elapsed >= total) return 1;
 
-        // 缩放物理体
-        Body.scale(fruit.body, scale, scale);
-
-        // 更改等级
-        fruit.level = 0;
-        fruit.animationOffset = floor(random(3000));
-        fruit.state = 'idle';
+    if (elapsed < shrinkTotal) {
+        let t = elapsed / shrinkTotal;
+        t = constrain(t, 0, 1);
+        return 1 - t * (1 - minScale);
+    } else {
+        let t = (elapsed - shrinkTotal) / growTotal;
+        t = constrain(t, 0, 1);
+        return maxScale - (maxScale - 1) * t;
     }
-
-    SoundManager.play('gameover');
-
-    // 多次闪光
-    let flashCount = 3;
-    for (let i = 1; i <= flashCount; i++) {
-        setTimeout(() => {
-            slotAlienFlashAlpha = 200 - i * 50;
-        }, i * 200);
-    }
-}
-
-function isMouseOverSlot() {
-    let sx = getSlotX();
-    let sy = getSlotY();
-    return mouseX >= sx && mouseX <= sx + SLOT.w && mouseY >= sy && mouseY <= sy + SLOT.h;
 }
 
 function addScorePopup(amount, colorHex) {
@@ -1343,8 +1213,9 @@ function addScorePopup(amount, colorHex) {
         amount: amount,
         color: colorHex,
         startTime: millis(),
-        baseY: 0
+        baseY: lastPopupBaseY
     });
+    lastPopupBaseY += 18; // 每个弹窗错开18px
 }
 
 function updateScorePopups() {
@@ -1354,7 +1225,260 @@ function updateScorePopups() {
             scorePopups.splice(i, 1);
         }
     }
+    // 重置 lastPopupBaseY 到当前最上方的位置，避免无限增长
+    if (scorePopups.length === 0) {
+        lastPopupBaseY = 15;
+    }
 }
+
+// ============================================================
+//  技能按钮
+// ============================================================
+
+function getSkillButtonsX() {
+    let totalW = SKILLS.btnW * 2 + SKILLS.btnGap;
+    return (PANEL_WIDTH - totalW) / 2;
+}
+
+function getUFOBtnRect() {
+    let bx = getSkillButtonsX();
+    return { x: bx, y: SKILLS.btnY, w: SKILLS.btnW, h: SKILLS.btnH };
+}
+
+function getAlienBtnRect() {
+    let bx = getSkillButtonsX() + SKILLS.btnW + SKILLS.btnGap;
+    return { x: bx, y: SKILLS.btnY, w: SKILLS.btnW, h: SKILLS.btnH };
+}
+
+function updateUFOFruits() {
+    if (!ufoActive || gameOver || gameOverAnimating) return;
+    let limitY = GAME_OFFSET_Y + dangerLineY;
+    for (let fruit of fruits) {
+        let fruitTop = fruit.body.position.y - FRUITS[fruit.level].radius;
+        if (fruitTop < limitY) {
+            Body.setPosition(fruit.body, { x: fruit.body.position.x, y: limitY + FRUITS[fruit.level].radius });
+            Body.setVelocity(fruit.body, { x: fruit.body.velocity.x, y: 0 });
+        }
+    }
+}
+
+function drawSkillButtons() {
+    if (gameOver || !gameStarted || !imagesReady) return;
+
+    let ufo = getUFOBtnRect();
+    let alien = getAlienBtnRect();
+
+    skillBtnHover.ufo = mouseX >= ufo.x && mouseX <= ufo.x + ufo.w && mouseY >= ufo.y && mouseY <= ufo.y + ufo.h;
+    skillBtnHover.alien = mouseX >= alien.x && mouseX <= alien.x + alien.w && mouseY >= alien.y && mouseY <= alien.y + alien.h;
+
+    drawSkillBtn(ufo.x, ufo.y, ufo.w, ufo.h, '🛸', 'UFO', ufoUsesLeft, skillBtnHover.ufo, '#00bcd4', false, false, ufoActive);
+    drawSkillBtn(alien.x, alien.y, alien.w, alien.h, '👽', '入侵', alienUsesLeft, skillBtnHover.alien, '#8bc34a', true, SKILLS.alienDropCharge, alienChargeCount);
+}
+
+function drawSkillBtn(bx, by, bw, bh, icon, label, usesLeft, hovered, accentColor, isCharging, chargeMax, chargeCur) {
+    let disabledByUFO = arguments[10]; // ufoDisabled 参数
+    let active = usesLeft > 0 && !disabledByUFO;
+
+    let bgCol, borderCol, textCol, iconAlpha;
+    if (!active && !isCharging) {
+        bgCol = color('#666');
+        borderCol = color('#888');
+        textCol = color('#aaa');
+        iconAlpha = 100;
+    } else if (isCharging && usesLeft === 0) {
+        bgCol = color('#555');
+        borderCol = color('#777');
+        textCol = color('#999');
+        iconAlpha = 120;
+    } else {
+        bgCol = active ? color(accentColor) : color('#555');
+        borderCol = color(lerpColor(color(accentColor), color(0), 0.3));
+        textCol = color('#fff');
+        iconAlpha = 255;
+    }
+
+    push();
+
+    let lift = (hovered && active) ? -3 : 0;
+    let shadowOff = (hovered && mouseIsPressed && active) ? 1 : 4;
+
+    fill(0, 80);
+    noStroke();
+    rect(bx, by + shadowOff, bw, bh, 8);
+
+    fill(bgCol);
+    noStroke();
+    rect(bx, by + lift, bw, bh, 8);
+
+    fill(255, 255, 255, hovered && active ? 60 : 20);
+    noStroke();
+    rect(bx + 3, by + lift + 3, bw - 6, bh / 2 - 6, 5);
+
+    fill(255, iconAlpha);
+    textSize(16);
+    textAlign(CENTER, CENTER);
+    text(icon, bx + bw / 2, by + lift + bh / 2 - 7);
+
+    fill(textCol);
+    noStroke();
+    textSize(10);
+    textAlign(CENTER, CENTER);
+    let subY = by + lift + bh - 10;
+    if (isCharging) {
+        let progress = chargeCur / chargeMax;
+        text(chargeCur + '/' + chargeMax, bx + bw / 2, subY);
+
+        let barH = 3;
+        let barY = by + lift - barH - 2;
+        fill(0, 60);
+        rect(bx + 4, barY, bw - 8, barH, 2);
+        fill(accentColor);
+        rect(bx + 4, barY, (bw - 8) * progress, barH, 2);
+    } else {
+        text(label + '×' + usesLeft, bx + bw / 2, subY);
+    }
+
+    if (isCharging && usesLeft > 0) {
+        noFill();
+        stroke('#ffd700');
+        strokeWeight(1.5);
+        rect(bx - 1, by + lift - 1, bw + 2, bh + 2, 9);
+        noStroke();
+    }
+
+    pop();
+}
+
+function activateUFO() {
+    if (ufoUsesLeft <= 0 || ufoActive || gameOver) return;
+    ufoUsesLeft--;
+    ufoActive = true;
+    ufoStartTime = millis();
+    world.gravity.y = SKILLS.ufoGravity;
+}
+
+function activateAlien() {
+    if (alienUsesLeft <= 0 || gameOver) return;
+    alienUsesLeft--;
+
+    let alienRadius = FRUITS[0].radius;
+    let now = millis();
+
+    for (let fruit of fruits) {
+        let oldRadius = FRUITS[fruit.level].radius;
+        let scale = alienRadius / oldRadius;
+        Body.scale(fruit.body, scale, scale);
+        fruit.level = 0;
+        fruit.animationOffset = floor(random(3000));
+        fruit.state = 'idle';
+        fruit.mergeAnimStartTime = now;
+    }
+
+    addScorePopup(0, '#8bc34a');
+}
+
+function drawPauseBtn() {
+    let bx = pauseBtnRect.x, by = pauseBtnRect.y, bw = pauseBtnRect.w, bh = pauseBtnRect.h;
+    pauseBtnHover = mouseX >= GAME_OFFSET_X + bx && mouseX <= GAME_OFFSET_X + bx + bw && mouseY >= GAME_OFFSET_Y + by && mouseY <= GAME_OFFSET_Y + by + bh;
+
+    let bgAlpha = pauseBtnHover ? 180 : 100;
+    fill(255, bgAlpha);
+    noStroke();
+    rect(bx, by, bw, bh, 6);
+
+    fill(60);
+    textSize(14);
+    textAlign(CENTER, CENTER);
+    text('⏸', bx + bw / 2, by + bh / 2);
+}
+
+// ============================================================
+//  暂停与记录（网页回调）
+// ============================================================
+
+function togglePause() {
+    if (gameOver || !gameStarted) return;
+    gamePaused = !gamePaused;
+    if (gamePaused) {
+        gamePauseStart = millis();
+    } else {
+        gamePauseAccumulated += millis() - gamePauseStart;
+        gamePauseStart = 0;
+    }
+}
+
+function resumeGame() {
+    if (!gamePaused) return;
+    gamePaused = false;
+    gamePauseAccumulated += millis() - gamePauseStart;
+    gamePauseStart = 0;
+    document.getElementById('pause-screen').classList.add('hidden');
+}
+
+function restartGameFromPause() {
+    document.getElementById('pause-screen').classList.add('hidden');
+    gamePaused = false;
+    gamePauseAccumulated = 0;
+    gamePauseStart = 0;
+    restartGame();
+    gameStartTime = millis();
+}
+
+function quitToHome() {
+    document.getElementById('pause-screen').classList.add('hidden');
+    document.getElementById('game-over-modal').classList.remove('visible');
+    document.getElementById('start-screen').classList.remove('hidden');
+    restartGame();
+    gameStarted = false;
+    gamePaused = false;
+    gameStartTime = 0;
+    gamePauseAccumulated = 0;
+    gamePauseStart = 0;
+}
+
+function openRecords() {
+    document.getElementById('start-screen').classList.add('hidden');
+    renderRecordsTable();
+    document.getElementById('records-screen').classList.remove('hidden');
+}
+
+function closeRecords() {
+    document.getElementById('records-screen').classList.add('hidden');
+    document.getElementById('start-screen').classList.remove('hidden');
+}
+
+function renderRecordsTable() {
+    let records = loadRecords();
+    let tbody = document.querySelector('#records-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-records">暂无记录</td></tr>';
+        return;
+    }
+
+    records.forEach((r, i) => {
+        let date = new Date(r.ts);
+        let dateStr = date.getMonth() + 1 + '/' + date.getDate() + ' ' +
+            String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
+        let rankIcon = i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : '';
+        let tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + rankIcon + (i + 1) + '</td>' +
+            '<td>' + formatScore(r.score) + '</td>' +
+            '<td>' + formatTime(r.duration) + '</td>' +
+            '<td>' + dateStr + '</td>';
+        if (i === 0) tr.classList.add('top-record');
+        tbody.appendChild(tr);
+    });
+}
+
+window.togglePause = togglePause;
+window.resumeGame = resumeGame;
+window.restartGameFromPause = restartGameFromPause;
+window.quitToHome = quitToHome;
+window.openRecords = openRecords;
+window.closeRecords = closeRecords;
 
 // ============================================================
 //  游戏结束判定
@@ -1437,8 +1561,9 @@ function startGameOverAnimation() {
 /** 逐帧执行爆炸动画 */
 function updateGameOverAnimation() {
     if (gameOverExplodeIndex >= fruits.length) {
-        // 所有水果爆炸完成，清空数组，显示弹窗
+        // 所有水果爆炸完成，清空数组和特效，显示弹窗
         fruits = [];
+        mergeEffects = []; // 清空所有烟雾特效
         gameOverAnimating = false;
         showGameOverModal(score);
         return;
@@ -1487,25 +1612,68 @@ function restartGame() {
     dangerTime = 0;
     dangerCooldownStart = 0;
     lastDropTime = 0;
+    lastPopupBaseY = 15;
     SoundManager._mergeVoiceTimerId = null;
     SoundManager._mergeMaxLevel = -1;
     SoundManager._mergeMaxBuf = null;
     SoundManager._mergeMaxRate = 1;
 
+    ufoUsesLeft = SKILLS.ufoMaxUses;
+    ufoActive = false;
+    ufoStartTime = 0;
+    world.gravity.y = PHYSICS.gravity;
+    alienChargeCount = 0;
+    alienUsesLeft = 0;
+
+    gameStartTime = millis();
+    gamePauseAccumulated = 0;
+    gamePauseStart = 0;
+    gamePaused = false;
+
     currentFruitLevel = getRandomInitialLevel();
     nextFruitLevel = getRandomInitialLevel();
 
-    initSlot();
     scorePopups = [];
 }
 
 /** 弹出游戏结束弹窗 */
 function showGameOverModal(finalScore) {
+    let durationSec = getGameTimeSeconds();
+    let recordsBefore = loadRecords();
+    let newRec = isNewRecord(finalScore, recordsBefore);
+
+    saveRecord(finalScore, durationSec);
+    let recordsAfter = loadRecords();
+    let rankFinal = getRecordRank(finalScore, recordsAfter);
+
     let modal = document.getElementById('game-over-modal');
     let scoreDisplay = document.getElementById('final-score');
     if (modal && scoreDisplay) {
-        scoreDisplay.textContent = finalScore;
+        scoreDisplay.textContent = formatScore(finalScore);
         modal.classList.add('visible');
+    }
+
+    let durationEl = document.getElementById('game-duration');
+    if (durationEl) durationEl.textContent = formatTime(durationSec);
+
+    let badge = document.getElementById('new-record-badge');
+    if (badge) {
+        if (newRec) {
+            badge.classList.remove('hidden');
+            badge.textContent = (recordsBefore.length === 0 || finalScore >= (recordsBefore[0]?.score || 0)) ? '🏆 最高分纪录！' : '🎉 新纪录！';
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+
+    let rankEl = document.getElementById('score-rank');
+    if (rankEl) {
+        if (rankFinal <= MAX_RECORDS) {
+            rankEl.textContent = '第 ' + rankFinal + ' 名';
+            rankEl.style.display = 'block';
+        } else {
+            rankEl.style.display = 'none';
+        }
     }
 }
 
@@ -1524,6 +1692,10 @@ function startGame() {
         startScreen.classList.add('hidden');
     }
     gameStarted = true;
+    gameStartTime = millis();
+    gamePauseAccumulated = 0;
+    gamePauseStart = 0;
+    gamePaused = false;
 }
 
 window.startGame = startGame;

@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="css/style.css" version="0.8.1">
+    <link rel="stylesheet" href="css/style.css" version="0.9.0">
     <script src="https://cdn.jsdelivr.net/npm/p5@2.2.2/lib/p5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
 </head>
@@ -33,6 +33,35 @@
         <div class="start-content">
             <div class="title-text">合成大GB</div>
             <button id="start-btn" onclick="startGame()">开始游戏</button>
+            <button id="records-btn" onclick="openRecords()">🏆 排行榜</button>
+        </div>
+    </div>
+
+    <div id="pause-screen" class="hidden">
+        <div class="modal-bg-deco"></div>
+        <div class="modal-content">
+            <h1>游戏暂停</h1>
+            <div class="pause-buttons">
+                <button onclick="resumeGame()">▶ 继续游戏</button>
+                <button onclick="restartGameFromPause()">🔄 重新开始</button>
+                <button class="btn-secondary" onclick="quitToHome()">🏠 返回主页</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="records-screen" class="hidden">
+        <div class="modal-bg-deco"></div>
+        <div class="modal-content records-content">
+            <h1>🏆 排行榜</h1>
+            <div class="records-table-wrap">
+                <table id="records-table">
+                    <thead>
+                        <tr><th>排名</th><th>分数</th><th>时长</th><th>日期</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button class="btn-secondary" onclick="closeRecords()">返回</button>
         </div>
     </div>
 
@@ -43,10 +72,16 @@
             <h1>游戏结束</h1>
             <div class="score-label">最终分数</div>
             <div id="final-score" class="score-display">0</div>
+            <div id="game-stats" class="game-stats">
+                <span class="stat-item">⏱ <span id="game-duration">0:00</span></span>
+            </div>
+            <div id="new-record-badge" class="new-record-badge hidden">🎉 新纪录！</div>
+            <div id="score-rank" class="score-rank">第 - 名</div>
             <div class="score-stars"></div>
             <button id="restart-btn" onclick="restartFromModal()">再来一局</button>
+            <button class="btn-secondary" onclick="quitToHome()">返回主页</button>
         </div>
     </div>
-    <script src="sketch.js" version="0.8.1"></script>
+    <script src="sketch.js" version="0.9.0"></script>
 </body>
 </html>
