@@ -896,7 +896,7 @@ function drawUI() {
     textAlign(RIGHT, TOP);
     let nextFruitInfo = FRUITS[nextFruitLevel];
     let previewCX = GAME_WIDTH - 30;
-    let previewCY = 0;
+    let previewCY = 28;
     let previewBGSize = 50;
     let previewSize = 40;
     
