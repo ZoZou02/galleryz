@@ -75,13 +75,14 @@ const MERGE_AUDIO_CFG = {
 
 /** 技能配置 */
 const SKILLS = {
-    btnW: 90, btnH: 52,
-    btnGap: 18,
+    btnW: 90, btnH: 52,  
+    btnGap: 18, 
     btnY: GAME_OFFSET_Y + GAME_HEIGHT + 42,
     ufoMaxUses: 2,
-    ufoDuration: 3500,
-    ufoGravity: -0.55,
-    alienDropCharge: 10
+    ufoDuration: 3500,   // UFO技能持续时间（毫秒）
+    ufoUpForce: 0.020,   // UFO技能上升力（单位：单位重量）
+    ufoUpBaseline: 0.2, // UFO技能上升力基础（等级0时）
+    alienDropCharge: 10 // 外星人掉落次数（等级0时增加）
 };
 
 function formatScore(n) {
@@ -357,7 +358,7 @@ const SoundManager = {
     // ---------- 合成音效 ----------
 
     /**
-     * 合成水果：bubble 音调查看水果等级，等级越高音调越高
+     * 合成水果：bubble 
      */
     playMerge(newLevel) {
         let rate = MERGE_AUDIO_CFG.base_pitch + newLevel * MERGE_AUDIO_CFG.pitch_per_level;
@@ -369,15 +370,14 @@ const SoundManager = {
             if (buf) {
                 this._mergeMaxLevel = newLevel;
                 this._mergeMaxBuf = buf;
-                // 水果等级越高，音调越低 /* 需删除：下面 rate 整行 */
-                this._mergeMaxRate = map(newLevel, 5, 10, 1.15, 0.85); /* 需删除 */
             }
         }
 
+        // 合成语音：延迟播放，避免与 falling 重叠
         if (this._mergeVoiceTimerId) clearTimeout(this._mergeVoiceTimerId);
         this._mergeVoiceTimerId = setTimeout(() => {
             if (this._mergeMaxBuf) {
-                this._playBuf(this._mergeMaxBuf, { rate: this._mergeMaxRate, duration: 2 }); /* 需删除：把 rate 改成 1 */
+                this._playBuf(this._mergeMaxBuf, { rate: 1, duration: 3 }); // 语音播放时间
             }
             this._mergeVoiceTimerId = null;
             this._mergeMaxLevel = -1;
@@ -448,7 +448,7 @@ function setup() {
 
     // 前景/面板
     loadImage('images/0-front.png', (img) => { frontImage = img; onImgLoad(); }, onImgLoad);
-    loadImage('images/2-panel.png', (img) => { panelImage = img; onImgLoad(); }, onImgLoad);
+    loadImage('images/3-panel.png', (img) => { panelImage = img; onImgLoad(); }, onImgLoad);
 
     // 扭蛋
     totalToLoad += 1;
@@ -568,10 +568,8 @@ function draw() {
     }
 
     if (ufoActive && !gameOver && !gameOverAnimating) {
-        world.gravity.y = SKILLS.ufoGravity;
         if (millis() - ufoStartTime > SKILLS.ufoDuration) {
             ufoActive = false;
-            world.gravity.y = PHYSICS.gravity;
         }
     }
 
@@ -1250,10 +1248,16 @@ function getAlienBtnRect() {
     return { x: bx, y: SKILLS.btnY, w: SKILLS.btnW, h: SKILLS.btnH };
 }
 
+/** 更新UFO水果上升力 */
 function updateUFOFruits() {
     if (!ufoActive || gameOver || gameOverAnimating) return;
+    let maxLevel = FRUITS.length - 1;
     let limitY = GAME_OFFSET_Y + dangerLineY;
     for (let fruit of fruits) {
+        let factor = SKILLS.ufoUpBaseline + (1 - SKILLS.ufoUpBaseline) * (1 - fruit.level / maxLevel);
+        let upForce = SKILLS.ufoUpForce * factor;
+        Body.applyForce(fruit.body, fruit.body.position, { x: 0, y: -upForce });
+
         let fruitTop = fruit.body.position.y - FRUITS[fruit.level].radius;
         if (fruitTop < limitY) {
             Body.setPosition(fruit.body, { x: fruit.body.position.x, y: limitY + FRUITS[fruit.level].radius });
@@ -1354,7 +1358,6 @@ function activateUFO() {
     ufoUsesLeft--;
     ufoActive = true;
     ufoStartTime = millis();
-    world.gravity.y = SKILLS.ufoGravity;
 }
 
 function activateAlien() {
@@ -1428,6 +1431,7 @@ function quitToHome() {
     document.getElementById('pause-screen').classList.add('hidden');
     document.getElementById('game-over-modal').classList.remove('visible');
     document.getElementById('start-screen').classList.remove('hidden');
+    document.body.classList.remove('game-active');
     restartGame();
     gameStarted = false;
     gamePaused = false;
@@ -1691,6 +1695,7 @@ function startGame() {
     if (startScreen) {
         startScreen.classList.add('hidden');
     }
+    document.body.classList.add('game-active');
     gameStarted = true;
     gameStartTime = millis();
     gamePauseAccumulated = 0;
