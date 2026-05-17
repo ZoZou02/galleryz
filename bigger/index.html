@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="css/style.css" version="0.9.1">
+    <link rel="stylesheet" href="css/style.css" version="0.9.2">
     <script src="https://cdn.jsdelivr.net/npm/p5@2.2.2/lib/p5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
 </head>
@@ -33,7 +33,7 @@
         <div class="start-content">
             <div class="title-text">合成大GB</div>
             <button id="start-btn" onclick="startGame()">开始游戏</button>
-            <button id="records-btn" onclick="openRecords()">🏆 排行榜</button>
+            <button id="records-btn" onclick="openRecords()">排行榜</button>
         </div>
     </div>
 
@@ -79,13 +79,12 @@
             <div id="game-stats" class="game-stats">
                 <span class="stat-item">⏱ <span id="game-duration">0:00</span></span>
             </div>
-            <div id="new-record-badge" class="new-record-badge hidden">🎉 新纪录！</div>
             <div id="score-rank" class="score-rank">第 - 名</div>
             <div class="score-stars"></div>
             <button id="restart-btn" onclick="restartFromModal()">再来一局</button>
             <button class="btn-secondary" onclick="quitToHome()">返回主页</button>
         </div>
     </div>
-    <script src="sketch.js" version="0.9.1"></script>
+    <script src="sketch.js" version="0.9.2"></script>
 </body>
 </html>

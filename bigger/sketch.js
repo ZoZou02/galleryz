@@ -78,11 +78,13 @@ const SKILLS = {
     btnW: 90, btnH: 52,  
     btnGap: 18, 
     btnY: GAME_OFFSET_Y + GAME_HEIGHT + 42,
-    ufoMaxUses: 2,
-    ufoDuration: 3500,   // UFO技能持续时间（毫秒）
-    ufoUpForce: 0.020,   // UFO技能上升力（单位：单位重量）
-    ufoUpBaseline: 0.2, // UFO技能上升力基础（等级0时）
-    alienDropCharge: 10 // 外星人掉落次数（等级0时增加）
+    ufoMaxUses: 2,  // 最大使用次数
+    ufoDuration: 3500,  // 持续时间（毫秒）
+    ufoUpAccel: 0.0080,  // 上升加速度
+    ufoMaxUpSpeed: 2.5,  // 最大上升速度
+    ufoDamping: 0.97,  // 阻尼系数
+    ufoUpBaseline: 0.2,  // 上升基线
+    alienDropCharge: 10,  // 外星人掉落次数
 };
 
 function formatScore(n) {
@@ -424,7 +426,7 @@ function preload() {
 
 /** 初始化画布、音效、图片、物理引擎 */
 function setup() {
-    createCanvas(PANEL_WIDTH, PANEL_HEIGHT);
+    createCanvas(PANEL_WIDTH, PANEL_HEIGHT, WEBGL);
     windowResized();
 
     SoundManager.init();
@@ -525,6 +527,9 @@ function windowResized() {
 
 /** 主循环：更新物理 → 更新水果状态 → 绘制画面 → 检测结束 */
 function draw() {
+    // WEBGL模式把坐标原点移到左上角
+    translate(-PANEL_WIDTH / 2, -PANEL_HEIGHT / 2);
+
     if (!loadingHidden && imagesReady) {
         let loadingScreen = document.getElementById('loading-screen');
         if (loadingScreen) {
@@ -1255,8 +1260,17 @@ function updateUFOFruits() {
     let limitY = GAME_OFFSET_Y + dangerLineY;
     for (let fruit of fruits) {
         let factor = SKILLS.ufoUpBaseline + (1 - SKILLS.ufoUpBaseline) * (1 - fruit.level / maxLevel);
-        let upForce = SKILLS.ufoUpForce * factor;
-        Body.applyForce(fruit.body, fruit.body.position, { x: 0, y: -upForce });
+        let upAccel = SKILLS.ufoUpAccel * factor;
+        Body.applyForce(fruit.body, fruit.body.position, { x: 0, y: -upAccel * fruit.body.mass });
+
+        if (fruit.body.velocity.y < -SKILLS.ufoMaxUpSpeed) {
+            Body.setVelocity(fruit.body, { x: fruit.body.velocity.x, y: -SKILLS.ufoMaxUpSpeed });
+        }
+
+        Body.setVelocity(fruit.body, {
+            x: fruit.body.velocity.x,
+            y: fruit.body.velocity.y * SKILLS.ufoDamping
+        });
 
         let fruitTop = fruit.body.position.y - FRUITS[fruit.level].radius;
         if (fruitTop < limitY) {
