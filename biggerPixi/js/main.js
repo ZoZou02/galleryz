@@ -333,7 +333,7 @@ function updateFruitSprites() {
         const texture = fruitTextures[fruit.level][frameIdx];
         sprite.texture = texture;
 
-        const baseScale = (FRUITS[fruit.level].radius * 2) / texture.width;
+        const baseScale = (FRUITS[fruit.level].radius * 2.2) / texture.width;
         sprite.x = fruit.body.position.x - GAME_OFFSET_X;
         sprite.y = fruit.body.position.y - GAME_OFFSET_Y;
         sprite.rotation = fruit.body.angle;
@@ -440,7 +440,7 @@ function updateCurrentFruit() {
     const frameIdx = getAnimationFrameIndex(now, previewOffset1);
     const texture = fruitTextures[level][frameIdx];
     currentFruitSprite.texture = texture;
-    const scale = (fruitInfo.radius * 2) / texture.width;
+    const scale = (fruitInfo.radius * 2.2) / texture.width;
     currentFruitSprite.scale.set(scale);
     currentFruitSprite.x = x;
     currentFruitSprite.y = y;
