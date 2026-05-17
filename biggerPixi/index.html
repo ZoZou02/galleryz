@@ -15,7 +15,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/style.css" version="1.0.0">
+    <script>
+        window.APP_VERSION = '0.10.0';
+        (function() {
+            var el = document.createElement('link');
+            el.rel = 'stylesheet';
+            el.href = 'css/style.css?v=' + APP_VERSION;
+            document.head.appendChild(el);
+        })();
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
 
@@ -95,6 +103,11 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js" version="1.0.0"></script>
+    <script>
+        const s = document.createElement('script');
+        s.type = 'module';
+        s.src = 'js/main.js?v=' + APP_VERSION;
+        document.head.appendChild(s);
+    </script>
 </body>
 </html>
