@@ -1,0 +1,100 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>合成大GB</title>
+
+    <link rel="icon" type="image/svg+xml" href="assets/favicon/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="assets/favicon/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-touch-icon.png">
+    <link rel="manifest" href="assets/favicon/site.webmanifest">
+    <meta name="theme-color" content="#b75b64">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css" version="1.0.0">
+
+    <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "pixi.js": "https://cdn.jsdelivr.net/npm/pixi.js@8.6.6/dist/pixi.min.mjs"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">加载中...</p>
+        </div>
+    </div>
+
+    <div id="pixi-container"></div>
+
+    <div id="start-screen">
+        <div class="start-bg-deco"></div>
+        <div class="start-content">
+            <div class="title-text">合成大GB</div>
+            <button id="start-btn">开始游戏</button>
+            <button id="records-btn">排行榜</button>
+        </div>
+    </div>
+
+    <div id="pause-screen" class="hidden">
+        <div class="modal-bg-deco"></div>
+        <div class="modal-content">
+            <div class="modal-stamp">PAUSE</div>
+            <h1>游戏暂停</h1>
+            <div class="score-stars"></div>
+            <div class="pause-buttons">
+                <button id="resume-btn">▶ 继续游戏</button>
+                <button id="pause-restart-btn">🔄 重新开始</button>
+                <button class="btn-secondary" id="quit-btn-1">🏠 返回主页</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="records-screen" class="hidden">
+        <div class="modal-bg-deco"></div>
+        <div class="modal-content records-content">
+            <div class="modal-stamp">RECORDS</div>
+            <h1>排行榜</h1>
+            <div class="score-stars"></div>
+            <div class="records-table-wrap">
+                <table id="records-table">
+                    <thead>
+                        <tr><th>排名</th><th>分数</th><th>时长</th><th>日期</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button class="btn-secondary" id="close-records-btn">返回</button>
+        </div>
+    </div>
+
+    <div id="game-over-modal">
+        <div class="modal-bg-deco"></div>
+        <div class="modal-content">
+            <div class="modal-stamp">GAME OVER</div>
+            <h1>游戏结束</h1>
+            <div class="score-label">最终分数</div>
+            <div id="final-score" class="score-display">0</div>
+            <div id="game-stats" class="game-stats">
+                <span class="stat-item">⏱ <span id="game-duration">0:00</span></span>
+            </div>
+            <div id="score-rank" class="score-rank">第 - 名</div>
+            <div class="score-stars"></div>
+            <button id="restart-btn">再来一局</button>
+            <button class="btn-secondary" id="quit-btn-2">返回主页</button>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js" version="1.0.0"></script>
+</body>
+</html>

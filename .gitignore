@@ -42,17 +42,16 @@ out/
 # ==============================================
 # Trae AI 工具目录
 .trae/
-# !.trae/rules/
-# !.trae/agents/
-# !.trae/settings.json
+.agents/
 
 # 其他AI工具
 .augment/
 .windsurf/
 .cursor/
 .devin/
+.agent/
 
-# ==============================================
+## ==============================================
 # 4. Git 相关忽略
 # ==============================================
 .git/
@@ -70,3 +69,6 @@ out/
 *.swo
 cache/
 temp/
+node_modules/
+package-lock.json
+package.json
