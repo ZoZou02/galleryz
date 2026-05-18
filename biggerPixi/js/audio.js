@@ -1,3 +1,8 @@
+/**
+ * 音频管理
+ * Web Audio API 封装，音效播放和人声管理
+ */
+
 import { MERGE_AUDIO_CFG, VOICE_CFG } from './config.js';
 
 class SoundManager {

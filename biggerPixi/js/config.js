@@ -1,3 +1,8 @@
+/**
+ * 游戏配置
+ * 包含所有常量、参数、水果信息
+ */
+
 export const GAME_WIDTH = 350;
 export const GAME_HEIGHT = 550;
 export const WALL_THICKNESS = 20;

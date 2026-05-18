@@ -1,3 +1,8 @@
+/**
+ * 排行榜存储
+ * 本地存储管理历史游戏记录
+ */
+
 import { RECORDS_KEY, MAX_RECORDS, formatScore, formatTime } from './config.js';
 
 export function loadRecords() {

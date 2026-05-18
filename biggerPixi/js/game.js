@@ -1,3 +1,8 @@
+/**
+ * 游戏逻辑核心
+ * 负责 Matter.js 物理引擎、水果合成、分数、技能等游戏状态管理
+ */
+
 import {
     GAME_WIDTH, GAME_HEIGHT, WALL_THICKNESS, GAME_OFFSET_X, GAME_OFFSET_Y,
     FRUITS, DIFFICULTY, PHYSICS, ANIM, MERGE_AUDIO_CFG, SKILLS,
@@ -5,6 +10,8 @@ import {
 } from './config.js';
 
 const { Engine, World, Bodies, Body, Events, Composite } = window.Matter;
+
+/** -------------------- Game 主类 -------------------- */
 
 export class Game {
     constructor(soundManager) {
@@ -149,12 +156,18 @@ export class Game {
     }
 
     update(timestamp) {
-        if (!this.started || this.paused || this.gameOverAnimating) {
+        if (!this.started || this.paused) {
             this.elapsed = timestamp;
             return;
         }
 
         this.elapsed = timestamp;
+
+        if (this.gameOverAnimating) {
+            this._updateGameOverAnimation(timestamp);
+            return;
+        }
+
         Engine.update(this.engine, 1000 / 60);
 
         if (this.ufoActive && !this.gameOver) {
@@ -167,11 +180,6 @@ export class Game {
         this._updateFruitStates(timestamp);
         this._updateUFOFruits();
         this._updateScorePopups(timestamp);
-
-        if (this.gameOverAnimating) {
-            this._updateGameOverAnimation(timestamp);
-            return;
-        }
 
         if (!this.gameOver && this._checkGameOver(timestamp)) {
             this._startGameOverAnimation();

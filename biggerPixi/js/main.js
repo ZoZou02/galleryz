@@ -1,3 +1,8 @@
+/**
+ * 渲染主入口
+ * 负责 PixiJS 渲染、用户输入、UI 元素管理
+ */
+
 import { Application, Container, Sprite, Graphics, Text, TextStyle, Texture, Rectangle, Assets } from 'pixi.js';
 import {
     PANEL_WIDTH, PANEL_HEIGHT, GAME_WIDTH, GAME_HEIGHT,
@@ -8,6 +13,8 @@ import {
 import { Game } from './game.js';
 import { soundManager } from './audio.js';
 import { loadRecords, saveRecord, getRecordRank, isNewRecord, renderRecordsTable } from './records.js';
+
+/** -------------------- 全局变量 -------------------- */
 
 let app, game;
 let panelSprite, frontSprite;
@@ -35,6 +42,8 @@ let skillBtnHover = { ufo: false, alien: false };
 
 const previewOffset1 = Math.floor(Math.random() * 3000);
 const previewOffset2 = Math.floor(Math.random() * 3000);
+
+/** -------------------- 资源加载 -------------------- */
 
 async function loadAssets() {
     spritesheetTexture = await Assets.load('images/spritesheet.png');
@@ -74,6 +83,8 @@ async function loadSprite(url) {
     const tex = await Assets.load(url);
     return new Sprite(tex);
 }
+
+/** -------------------- 场景 & UI 构建 -------------------- */
 
 function buildScene() {
     app.stage.addChild(panelSprite);
@@ -263,6 +274,8 @@ function buildLevelIcons() {
     }
 }
 
+/** -------------------- 输入事件 -------------------- */
+
 function setupInput() {
     app.stage.eventMode = 'static';
     app.stage.hitArea = app.screen;
@@ -273,6 +286,9 @@ function setupInput() {
     });
 
     app.stage.on('pointerdown', (e) => {
+        pointerPos.x = e.global.x;
+        pointerPos.y = e.global.y;
+
         if (!game || game.gameOver || !game.started) return;
 
         updateSkillBtnHover(e.global);
@@ -314,6 +330,8 @@ function isInsidePauseBtn(localX, localY) {
     return localX >= pauseBtnRect.x && localX <= pauseBtnRect.x + pauseBtnRect.w &&
            localY >= pauseBtnRect.y && localY <= pauseBtnRect.y + pauseBtnRect.h;
 }
+
+/** -------------------- 渲染更新 -------------------- */
 
 function updateFruitSprites() {
     const now = performance.now();
@@ -620,6 +638,8 @@ function updateScorePopups() {
     }
 }
 
+/** -------------------- 主循环 & 初始化 -------------------- */
+
 function render() {
     if (!game) return;
     const now = performance.now();
@@ -756,13 +776,23 @@ function startGame() {
 }
 
 function openRecords() {
-    document.getElementById('start-screen').classList.add('hidden');
+    const startScreen = document.getElementById('start-screen');
+    startScreen.style.transition = 'none';
+    startScreen.classList.add('hidden');
+    startScreen.offsetHeight;
+    startScreen.style.transition = '';
+
     renderRecordsTable();
     document.getElementById('records-screen').classList.remove('hidden');
 }
 
 function closeRecords() {
-    document.getElementById('records-screen').classList.add('hidden');
+    const recordsScreen = document.getElementById('records-screen');
+    recordsScreen.style.transition = 'none';
+    recordsScreen.classList.add('hidden');
+    recordsScreen.offsetHeight;
+    recordsScreen.style.transition = '';
+
     document.getElementById('start-screen').classList.remove('hidden');
 }
 
