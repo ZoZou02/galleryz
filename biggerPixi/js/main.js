@@ -20,6 +20,7 @@ let boopSubTextures = [];
 let gameContainer, fruitContainer, effectContainer;
 let currentFruitSprite, currentFruitContainer;
 let dangerLineGfx, dangerCountText;
+let dropGuideLineGfx;
 let scoreText, timerText, pauseBtnContainer;
 let ufoBtn, alienBtn;
 let skillBtnContainer;
@@ -97,6 +98,9 @@ function buildScene() {
     currentFruitSprite = new Sprite(fruitTextures[0][0]);
     currentFruitSprite.anchor.set(0.5);
     currentFruitContainer.addChild(currentFruitSprite);
+
+    dropGuideLineGfx = new Graphics();
+    gameContainer.addChild(dropGuideLineGfx);
 
     frontSprite.x = 0;
     frontSprite.y = 0;
@@ -446,6 +450,29 @@ function updateCurrentFruit() {
     currentFruitSprite.y = y;
 }
 
+function updateDropGuideLine() {
+    dropGuideLineGfx.clear();
+    if (!game || game.gameOver || !game.started || game.paused) return;
+
+    const fruitInfo = FRUITS[game.currentFruitLevel];
+    let globalX = pointerPos.x;
+    if (globalX === undefined) globalX = PANEL_WIDTH / 2;
+    const local = gameContainer.toLocal({ x: globalX, y: 0 });
+    const x = Math.max(WALL_THICKNESS + fruitInfo.radius, Math.min(GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius, local.x));
+    const minRadius = FRUITS[0].radius;
+    const startY = 80 + minRadius; 
+    const endY = GAME_HEIGHT;
+    const dashLen = 6;
+    const gapLen = 4;
+
+    for (let dy = startY; dy < endY; dy += dashLen + gapLen) {
+        const segEndY = Math.min(dy + dashLen, endY);
+        dropGuideLineGfx.moveTo(x, dy);
+        dropGuideLineGfx.lineTo(x, segEndY);
+    }
+    dropGuideLineGfx.stroke({ color: 0xffffff, alpha: 0.4, width: 2 });
+}
+
 function updateNextFruitPreview() {
     if (!game) return;
     const level = game.nextFruitLevel;
@@ -621,6 +648,7 @@ function render() {
     updateMergeEffects();
     updateDangerLine();
     updateCurrentFruit();
+    updateDropGuideLine();
     updateNextFruitPreview();
     updateUI();
     updateSkillButtonVisuals();
