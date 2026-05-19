@@ -43,6 +43,7 @@ export class Game {
         this.ufoUsesLeft = SKILLS.ufoMaxUses;
         this.ufoActive = false;
         this.ufoStartTime = 0;
+        this.ufoEndCooldown = 0;
         this.alienChargeCount = 0;
         this.alienUsesLeft = 0;
 
@@ -173,6 +174,7 @@ export class Game {
         if (this.ufoActive && !this.gameOver) {
             if (timestamp - this.ufoStartTime > SKILLS.ufoDuration) {
                 this.ufoActive = false;
+                this.ufoEndCooldown = timestamp + 1000;
             }
         }
 
@@ -319,6 +321,8 @@ export class Game {
     }
 
     _checkGameOver(now) {
+        if (now < this.ufoEndCooldown) return false;
+
         let hasStableFruitAbove = false;
 
         for (const fruit of this.fruits) {
@@ -366,6 +370,7 @@ export class Game {
     }
 
     get IsInDanger() {
+        if (performance.now() < this.ufoEndCooldown) return false;
         return this.dangerTime > 0;
     }
 
@@ -495,6 +500,7 @@ export class Game {
         this.ufoUsesLeft = SKILLS.ufoMaxUses;
         this.ufoActive = false;
         this.ufoStartTime = 0;
+        this.ufoEndCooldown = 0;
         this.alienChargeCount = 0;
         this.alienUsesLeft = 0;
 

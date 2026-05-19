@@ -40,6 +40,8 @@ let pointerPos = { x: PANEL_WIDTH / 2, y: 0 };
 let pauseBtnRect = { x: 0, y: 0, w: 26, h: 24 };
 let skillBtnHover = { ufo: false, alien: false };
 
+let topBarX, topBarY, bgWidth;
+
 const previewOffset1 = Math.floor(Math.random() * 3000);
 const previewOffset2 = Math.floor(Math.random() * 3000);
 
@@ -150,6 +152,19 @@ function buildUI() {
     scoreText.y = -14;
     gameContainer.addChild(scoreText);
 
+    // 暂停按钮位置
+    const boxWidth = 46;
+    const boxHeight = 24;
+    const barY = -2;  // 上下位置
+    const margin = 4;  // 左右边距
+
+    // 左侧时间区域
+    const timeX = margin;  // 时间左边距调整
+    const timeBg = new Graphics();
+    timeBg.roundRect(timeX, barY - boxHeight / 2, boxWidth, boxHeight, 4);
+    timeBg.fill({ color: 0xe77904 });
+    gameContainer.addChild(timeBg);
+
     const timerStyle = new TextStyle({
         fontFamily: 'ZCOOL KuaiLe, Comic Sans MS, sans-serif',
         fontSize: 13,
@@ -158,26 +173,31 @@ function buildUI() {
         stroke: { color: '#000000', width: 1 }
     });
     timerText = new Text({ text: '\u23F1 0:00', style: timerStyle });
-    timerText.x = 8;
-    timerText.y = -14;
+    timerText.x = timeX + 6;
+    timerText.y = barY - 7;
     gameContainer.addChild(timerText);
 
-    pauseBtnRect.x = GAME_WIDTH - 32;
-    pauseBtnRect.y = -30;
+    // 右侧暂停按钮区域 - 与左侧对称
+    const pauseX = GAME_WIDTH - margin - boxWidth;  // 暂停按钮位置（对称左边）
+    const pauseBg = new Graphics();
+    pauseBg.roundRect(pauseX, barY - boxHeight / 2, boxWidth, boxHeight, 4);
+    pauseBg.fill({ color: 0xe77904 });
+    gameContainer.addChild(pauseBg);
+
+    // 暂停按钮
+    pauseBtnRect.x = pauseX;
+    pauseBtnRect.y = barY - 12;
+    pauseBtnRect.w = boxWidth;
+    pauseBtnRect.h = boxHeight;
 
     pauseBtnContainer = new Container();
     pauseBtnContainer.x = pauseBtnRect.x;
     pauseBtnContainer.y = pauseBtnRect.y;
 
-    const pauseBg = new Graphics();
-    pauseBg.roundRect(0, 0, pauseBtnRect.w, pauseBtnRect.h, 6);
-    pauseBg.fill({ color: 0xffffff, alpha: 0.4 });
-    pauseBtnContainer.addChild(pauseBg);
-
     const pauseIconStyle = new TextStyle({
         fontFamily: 'ZCOOL KuaiLe, sans-serif',
         fontSize: 14,
-        fill: '#3c3c3c'
+        fill: '#ffffff'
     });
     const pauseIcon = new Text({ text: '\u23F8', style: pauseIconStyle });
     pauseIcon.anchor.set(0.5);
@@ -351,7 +371,8 @@ function updateFruitSprites() {
         }
 
         const state = fruit.state || 'idle';
-        const frameIdx = state === 'hit' ? 4 : getAnimationFrameIndex(now, fruit.animationOffset);
+        const ufoFace = game.ufoActive;
+        const frameIdx = (state === 'hit' || ufoFace) ? 4 : getAnimationFrameIndex(now, fruit.animationOffset);
         const texture = fruitTextures[fruit.level][frameIdx];
         sprite.texture = texture;
 
@@ -498,33 +519,11 @@ function updateNextFruitPreview() {
     const frameIdx = getAnimationFrameIndex(now, previewOffset2);
 
     if (!previewSprite) {
-        const eggW = 50, eggH = 50;
-        const halfW = eggTexture.width / 2;
-        const fullH = eggTexture.height;
-
-        const eggLeftTex = new Texture({ source: eggTexture.source, frame: new Rectangle(0, 0, halfW, fullH) });
-        const eggRightTex = new Texture({ source: eggTexture.source, frame: new Rectangle(halfW, 0, halfW, fullH) });
-
-        const eggLeftP = new Sprite(eggLeftTex);
-        eggLeftP.width = eggW / 2;
-        eggLeftP.height = eggH;
-        eggLeftP.x = GAME_WIDTH - 30 - eggW / 2;
-        eggLeftP.y = 28 - eggH / 2;
-        eggLeftP.alpha = 0.88;
-        gameContainer.addChild(eggLeftP);
-
-        const eggRightP = new Sprite(eggRightTex);
-        eggRightP.width = eggW / 2;
-        eggRightP.height = eggH;
-        eggRightP.x = GAME_WIDTH - 30;
-        eggRightP.y = 28 - eggH / 2;
-        eggRightP.alpha = 0.88;
-        gameContainer.addChild(eggRightP);
-
+        // 调整 next 位置在这里改 x 和 y
         previewSprite = new Sprite(fruitTextures[0][0]);
         previewSprite.anchor.set(0.5);
-        previewSprite.x = GAME_WIDTH - 30;
-        previewSprite.y = 28;
+        previewSprite.x = GAME_WIDTH + 2;
+        previewSprite.y = 55;
         previewSprite.width = 40;
         previewSprite.height = 40;
         gameContainer.addChild(previewSprite);
@@ -723,7 +722,7 @@ async function init() {
     await app.init({
         width: PANEL_WIDTH,
         height: PANEL_HEIGHT,
-        background: '#1a1a2e',
+        backgroundAlpha: 0,
         antialias: false,
         resolution: Math.min(window.devicePixelRatio || 1, 2),
         autoDensity: true
