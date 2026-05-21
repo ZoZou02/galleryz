@@ -22,7 +22,6 @@ export class Game {
         this.mergeEffects = [];
         this.score = 0;
         this.scorePopups = [];
-        this.lastPopupBaseY = 15;
 
         this.gameOver = false;
         this.started = false;
@@ -304,19 +303,15 @@ export class Game {
         this.scorePopups.push({
             amount, color: colorHex,
             startTime: performance.now(),
-            baseY: this.lastPopupBaseY
+            baseY: 25
         });
-        this.lastPopupBaseY += 18;
     }
 
     _updateScorePopups(now) {
         for (let i = this.scorePopups.length - 1; i >= 0; i--) {
-            if (now - this.scorePopups[i].startTime > 1500) {
+            if (now - this.scorePopups[i].startTime > 1000) {
                 this.scorePopups.splice(i, 1);
             }
-        }
-        if (this.scorePopups.length === 0) {
-            this.lastPopupBaseY = 15;
         }
     }
 

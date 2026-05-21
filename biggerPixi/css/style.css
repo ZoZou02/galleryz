@@ -55,6 +55,10 @@ body.game-active {
     align-items: center;
 }
 
+#pixi-container.hidden {
+    display: none;
+}
+
 #pixi-container canvas {
     display: block;
     image-rendering: auto;
@@ -250,6 +254,72 @@ body.game-active {
     box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
 }
 
+.icon-triangle {
+    display: inline-block;
+    width: 0; height: 0;
+    border-left: 10px solid var(--cream);
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+.icon-restart {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 2px solid var(--cream);
+    border-top-color: transparent;
+    border-radius: 50%;
+    margin-right: 4px;
+    position: relative;
+    vertical-align: middle;
+}
+.icon-restart::after {
+    content: '';
+    position: absolute;
+    top: -4px; right: 0px;
+    width: 0; height: 0;
+    border-left: 4px solid var(--cream);
+    border-bottom: 4px solid transparent;
+    transform: rotate(45deg);
+}
+
+.icon-back {
+    display: inline-block;
+    width: 0; height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-right: 10px solid var(--blue-dark);
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+.icon-clock-sm {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--blue-dark);
+    border-radius: 50%;
+    margin-right: 3px;
+    vertical-align: middle;
+    position: relative;
+}
+.icon-clock-sm::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 3px; height: 1.5px;
+    background: var(--blue-dark);
+    transform: translate(-50%, -100%) rotate(0deg);
+}
+.icon-clock-sm::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 1.5px; height: 4px;
+    background: var(--blue-dark);
+    transform: translate(-50%, -100%) rotate(0deg);
+}
+
 .modal-content h1 {
     color: var(--rose-dark);
     font-size: 32px; margin-bottom: 8px;
@@ -267,6 +337,7 @@ body.game-active {
     font-size: 68px;
     color: var(--rose);
     font-weight: bold;
+    font-family: 'SimHei', 'Heiti SC', sans-serif;
     margin: 10px 0;
     text-shadow: 3px 3px 0 var(--rose-dark), 0 0 15px rgba(249,208,96,0.6);
     letter-spacing: 2px; line-height: 1;
@@ -457,6 +528,7 @@ body.game-active {
     border-collapse: collapse;
     color: var(--rose-dark);
     font-size: 17px;
+    font-family: 'SimHei', 'Heiti SC', 'ZCOOL KuaiLe', sans-serif;
 }
 #records-table th {
     color: var(--blue-dark);
@@ -500,6 +572,7 @@ body.game-active {
 .game-stats {
     margin: 6px 0;
     font-size: 15px;
+    font-family: 'SimHei', 'Heiti SC', sans-serif;
     color: var(--blue-dark);
 }
 .stat-item { margin: 0 6px; }
@@ -509,4 +582,5 @@ body.game-active {
     color: var(--rose);
     margin: 4px 0 8px;
     letter-spacing: 2px;
+    font-family: 'SimHei', 'Heiti SC', sans-serif;
 }

@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/style.css" version="0.10.2">
+    <link rel="stylesheet" href="css/style.css" version="0.10.3">
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
 
     <script type="importmap">
@@ -34,7 +34,7 @@
         </div>
     </div>
 
-    <div id="pixi-container"></div>
+    <div id="pixi-container" class="hidden"></div>
 
     <div id="start-screen">
         <div class="start-bg-deco"></div>
@@ -52,9 +52,9 @@
             <h1>游戏暂停</h1>
             <div class="score-stars"></div>
             <div class="pause-buttons">
-                <button id="resume-btn">▶ 继续游戏</button>
-                <button id="pause-restart-btn">🔄 重新开始</button>
-                <button class="btn-secondary" id="quit-btn-1">🏠 返回主页</button>
+                <button id="resume-btn"><span class="icon-triangle"></span> 继续游戏</button>
+                <button id="pause-restart-btn"><span class="icon-restart"></span> 重新开始</button>
+                <button class="btn-secondary" id="quit-btn-1"><span class="icon-back"></span> 返回主页</button>
             </div>
         </div>
     </div>
@@ -85,7 +85,7 @@
             <div class="score-label">最终分数</div>
             <div id="final-score" class="score-display">0</div>
             <div id="game-stats" class="game-stats">
-                <span class="stat-item">⏱ <span id="game-duration">0:00</span></span>
+                <span class="stat-item"><span class="icon-clock-sm"></span> <span id="game-duration">0:00</span></span>
             </div>
             <div id="score-rank" class="score-rank">第 - 名</div>
             <div class="score-stars"></div>
@@ -94,6 +94,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js" version="0.10.2"></script>
+    <script type="module" src="js/main.js" version="0.10.3"></script>
 </body>
 </html>

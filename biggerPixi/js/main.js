@@ -18,7 +18,7 @@ import { loadRecords, saveRecord, getRecordRank, isNewRecord, renderRecordsTable
 
 let app, game;
 let panelSprite, frontSprite;
-let spritesheetTexture, eggTexture, boopTexture;
+let spritesheetTexture, boopTexture;
 let fruitTextures = [];
 let frameW = 0, frameH = 0;
 let boopFrameH = 0;
@@ -39,8 +39,6 @@ let fruitSprites = new Map();
 let pointerPos = { x: PANEL_WIDTH / 2, y: 0 };
 let pauseBtnRect = { x: 0, y: 0, w: 26, h: 24 };
 let skillBtnHover = { ufo: false, alien: false };
-
-let topBarX, topBarY, bgWidth;
 
 const previewOffset1 = Math.floor(Math.random() * 3000);
 const previewOffset2 = Math.floor(Math.random() * 3000);
@@ -68,8 +66,6 @@ async function loadAssets() {
     ]);
     panelSprite.width = PANEL_WIDTH;
     panelSprite.height = PANEL_HEIGHT;
-
-    eggTexture = await Assets.load('images/0-egg.png');
 
     boopTexture = await Assets.load('images/0-boop.png');
     boopFrameH = boopTexture.height / 5;
@@ -122,7 +118,7 @@ function buildScene() {
     gameContainer.addChild(frontSprite);
 
     const dangerStyle = new TextStyle({
-        fontFamily: 'ZCOOL KuaiLe, Comic Sans MS, sans-serif',
+        fontFamily: 'SimHei, Heiti SC, sans-serif',
         fontSize: 32,
         fontWeight: 'bold',
         fill: '#ff0000'
@@ -138,53 +134,65 @@ function buildScene() {
 }
 
 function buildUI() {
-    const style = new TextStyle({
-        fontFamily: 'ZCOOL KuaiLe, Comic Sans MS, sans-serif',
+    const scoreStyle = new TextStyle({
+        fontFamily: 'SimHei, Heiti SC, sans-serif',
         fontSize: 20,
         fontWeight: 'bold',
         fill: '#ffffff',
         stroke: { color: '#000000', width: 2 }
     });
 
-    scoreText = new Text({ text: '0', style });
+    scoreText = new Text({ text: '0', style: scoreStyle });
     scoreText.anchor.set(0.5, 0);
     scoreText.x = GAME_WIDTH / 2;
     scoreText.y = -14;
     gameContainer.addChild(scoreText);
 
-    // 暂停按钮位置
     const boxWidth = 46;
     const boxHeight = 24;
-    const barY = -2;  // 上下位置
-    const margin = 4;  // 左右边距
+    const barY = -2;
+    const margin = 4;
 
     // 左侧时间区域
-    const timeX = margin;  // 时间左边距调整
+    const timeX = margin;
     const timeBg = new Graphics();
     timeBg.roundRect(timeX, barY - boxHeight / 2, boxWidth, boxHeight, 4);
     timeBg.fill({ color: 0xe77904 });
     gameContainer.addChild(timeBg);
 
+    // 时钟图案
+    const clockGfx = new Graphics();
+    const cx = timeX + 11, cy = barY;
+    clockGfx.circle(cx, cy, 6);
+    clockGfx.stroke({ color: 0xffffff, width: 1.5 });
+    clockGfx.moveTo(cx, cy);
+    clockGfx.lineTo(cx, cy - 3);
+    clockGfx.stroke({ color: 0xffffff, width: 1.5 });
+    clockGfx.moveTo(cx, cy);
+    clockGfx.lineTo(cx + 3, cy);
+    clockGfx.stroke({ color: 0xffffff, width: 1 });
+    gameContainer.addChild(clockGfx);
+
     const timerStyle = new TextStyle({
-        fontFamily: 'ZCOOL KuaiLe, Comic Sans MS, sans-serif',
-        fontSize: 13,
+        fontFamily: 'SimHei, Heiti SC, sans-serif',
+        fontSize: 20,
         fontWeight: 'bold',
         fill: '#ffffff',
-        stroke: { color: '#000000', width: 1 }
+        stroke: { color: '#000000', width: 2 }
     });
-    timerText = new Text({ text: '\u23F1 0:00', style: timerStyle });
-    timerText.x = timeX + 6;
+    timerText = new Text({ text: '0:00', style: timerStyle });
+    timerText.x = timeX + 20;
     timerText.y = barY - 7;
     gameContainer.addChild(timerText);
 
-    // 右侧暂停按钮区域 - 与左侧对称
-    const pauseX = GAME_WIDTH - margin - boxWidth;  // 暂停按钮位置（对称左边）
+    // 右侧暂停按钮区域
+    const pauseX = GAME_WIDTH - margin - boxWidth;
     const pauseBg = new Graphics();
     pauseBg.roundRect(pauseX, barY - boxHeight / 2, boxWidth, boxHeight, 4);
     pauseBg.fill({ color: 0xe77904 });
     gameContainer.addChild(pauseBg);
 
-    // 暂停按钮
+    // 暂停按钮 - 两条白色竖线
     pauseBtnRect.x = pauseX;
     pauseBtnRect.y = barY - 12;
     pauseBtnRect.w = boxWidth;
@@ -194,16 +202,13 @@ function buildUI() {
     pauseBtnContainer.x = pauseBtnRect.x;
     pauseBtnContainer.y = pauseBtnRect.y;
 
-    const pauseIconStyle = new TextStyle({
-        fontFamily: 'ZCOOL KuaiLe, sans-serif',
-        fontSize: 14,
-        fill: '#ffffff'
-    });
-    const pauseIcon = new Text({ text: '\u23F8', style: pauseIconStyle });
-    pauseIcon.anchor.set(0.5);
-    pauseIcon.x = pauseBtnRect.w / 2;
-    pauseIcon.y = pauseBtnRect.h / 2;
-    pauseBtnContainer.addChild(pauseIcon);
+    const pauseGfx = new Graphics();
+    const barW = 3, barH = 12, gap = 5;
+    const barsCenterX = boxWidth / 2;
+    pauseGfx.rect(barsCenterX - gap - barW, (boxHeight - barH) / 2, barW, barH);
+    pauseGfx.rect(barsCenterX + gap, (boxHeight - barH) / 2, barW, barH);
+    pauseGfx.fill({ color: 0xffffff });
+    pauseBtnContainer.addChild(pauseGfx);
 
     gameContainer.addChild(pauseBtnContainer);
 }
@@ -215,14 +220,30 @@ function buildSkillButtons() {
     const totalW = SKILLS.btnW * 2 + SKILLS.btnGap;
     const startX = (PANEL_WIDTH - totalW) / 2;
 
-    ufoBtn = createSkillButton(startX, SKILLS.btnY, SKILLS.btnW, SKILLS.btnH, '\uD83D\uDEF8', 'UFO', '#00bcd4');
-    alienBtn = createSkillButton(startX + SKILLS.btnW + SKILLS.btnGap, SKILLS.btnY, SKILLS.btnW, SKILLS.btnH, '\uD83D\uDC7D', '\u5165\u4FB5', '#8bc34a');
+    ufoBtn = createSkillButton(startX, SKILLS.btnY, SKILLS.btnW, SKILLS.btnH, drawUFOIcon, 'UFO', '#00bcd4');
+    alienBtn = createSkillButton(startX + SKILLS.btnW + SKILLS.btnGap, SKILLS.btnY, SKILLS.btnW, SKILLS.btnH, drawAlienIcon, '\u5165\u4FB5', '#8bc34a');
 
     skillBtnContainer.addChild(ufoBtn.container);
     skillBtnContainer.addChild(alienBtn.container);
 }
 
-function createSkillButton(x, y, w, h, icon, label, accentColor) {
+function drawUFOIcon(g) {
+    g.ellipse(g._w / 2, g._h / 2 + 2, 10, 4);
+    g.fill({ color: 0xffffff });
+    g.ellipse(g._w / 2, g._h / 2 - 4, 6, 4);
+    g.fill({ color: 0xffffff, alpha: 0.6 });
+}
+
+function drawAlienIcon(g) {
+    g.ellipse(g._w / 2, g._h / 2 + 2, 7, 8);
+    g.fill({ color: 0xffffff });
+    g.circle(g._w / 2 - 3, g._h / 2, 2);
+    g.fill({ color: 0x8bc34a });
+    g.circle(g._w / 2 + 3, g._h / 2, 2);
+    g.fill({ color: 0x8bc34a });
+}
+
+function createSkillButton(x, y, w, h, drawIcon, label, accentColor) {
     const container = new Container();
     container.x = x;
     container.y = y;
@@ -241,19 +262,14 @@ function createSkillButton(x, y, w, h, icon, label, accentColor) {
     highlight.fill({ color: 0xffffff, alpha: 0.08 });
     container.addChild(highlight);
 
-    const iconStyle = new TextStyle({
-        fontFamily: 'ZCOOL KuaiLe, sans-serif',
-        fontSize: 16,
-        fill: '#ffffff'
-    });
-    const iconText = new Text({ text: icon, style: iconStyle });
-    iconText.anchor.set(0.5);
-    iconText.x = w / 2;
-    iconText.y = h / 2 - 7;
-    container.addChild(iconText);
+    const iconGfx = new Graphics();
+    iconGfx._w = w;
+    iconGfx._h = h;
+    drawIcon(iconGfx);
+    container.addChild(iconGfx);
 
     const labelStyle = new TextStyle({
-        fontFamily: 'ZCOOL KuaiLe, sans-serif',
+        fontFamily: 'ZCOOL KuaiLe, SimHei, sans-serif',
         fontSize: 10,
         fill: '#ffffff'
     });
@@ -270,7 +286,7 @@ function createSkillButton(x, y, w, h, icon, label, accentColor) {
     const goldBorder = new Graphics();
     container.addChild(goldBorder);
 
-    return { container, shadow, bg, highlight, iconText, labelText, bar, goldBorder, x, y, w, h, accentColor, label };
+    return { container, shadow, bg, highlight, iconGfx, labelText, bar, goldBorder, x, y, w, h, accentColor, label };
 }
 
 function buildLevelIcons() {
@@ -535,13 +551,13 @@ function updateUI() {
     if (!game) return;
 
     scoreText.text = formatScore(game.score);
-    timerText.text = '\u23F1 ' + formatTime(game.getGameTimeSeconds());
+    timerText.text = formatTime(game.getGameTimeSeconds());
 
     updateSkillBtnHover(pointerPos);
 
     const local = gameContainer.toLocal(pointerPos);
     const hoverPause = isInsidePauseBtn(local.x, local.y);
-    pauseBtnContainer.children[0].alpha = hoverPause ? 0.7 : 0.4;
+    pauseBtnContainer.children[0].alpha = hoverPause ? 1 : 0.7;
 }
 
 function updateSkillButtonVisuals() {
@@ -578,8 +594,7 @@ function drawSkillBtnVisual(btn, usesLeft, hovered, isCharging, chargeMax, charg
     btn.bg.fill({ color: bgColor });
 
     btn.highlight.alpha = hovered && active ? 0.24 : 0.08;
-    btn.iconText.alpha = iconAlpha;
-    btn.iconText.style.fill = textColor;
+    btn.iconGfx.alpha = iconAlpha;
 
     if (isCharging) {
         btn.labelText.text = chargeCur + '/' + chargeMax;
@@ -616,18 +631,18 @@ function updateScorePopups() {
     const now = performance.now();
     for (const popup of game.scorePopups) {
         const age = now - popup.startTime;
-        if (age >= 1500) continue;
-        const alpha = age < 1000 ? 1 : Math.max(0, 1 - (age - 1000) / 500);
+        if (age >= 1000) continue;
+        const alpha = age < 600 ? 1 : Math.max(0, 1 - (age - 600) / 400);
         if (alpha <= 0) continue;
 
-        const rise = (age / 1500) * -18;
+        const rise = (age / 800) * -30;
         const style = new TextStyle({
-            fontFamily: 'ZCOOL KuaiLe, sans-serif',
-            fontSize: 15,
+            fontFamily: 'SimHei, Heiti SC, sans-serif',
+            fontSize: 20,
             fill: popup.color,
-            stroke: { color: '#000000', width: 1 }
+            stroke: { color: '#000000', width: 2 }
         });
-        const text = new Text({ text: '+' + formatScore(popup.amount), style });
+        const text = new Text({ text: formatScore(popup.amount), style });
         text.anchor.set(0.5, 0);
         text.x = GAME_WIDTH / 2;
         text.y = popup.baseY + rise;
@@ -769,6 +784,7 @@ async function init() {
 
 function startGame() {
     document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('pixi-container').classList.remove('hidden');
     document.body.classList.add('game-active');
     soundManager.init();
     game.start();
@@ -810,6 +826,7 @@ function quitToHome() {
     document.getElementById('pause-screen').classList.add('hidden');
     document.getElementById('game-over-modal').classList.remove('visible');
     document.getElementById('start-screen').classList.remove('hidden');
+    document.getElementById('pixi-container').classList.add('hidden');
     document.body.classList.remove('game-active');
     game.restart();
     game.started = false;

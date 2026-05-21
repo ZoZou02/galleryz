@@ -72,3 +72,4 @@ temp/
 node_modules/
 package-lock.json
 package.json
+skills-lock.json
