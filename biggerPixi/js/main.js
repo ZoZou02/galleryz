@@ -24,21 +24,40 @@ let frameW = 0, frameH = 0;
 let boopFrameH = 0;
 let boopSubTextures = [];
 
+let ufoSummonEl;
+let ufoSummonVx = 0, ufoSummonVy = 0;
+let ufoSpawnTime = 0;
+let ufoFlyingAway = false;
+let ufoPaused = false;
+let ufoPauseTime = 0;
+let ufoFlyingTime = 0;
+const UFO_FLY_DURATION = 60000;
+const UFO_PAUSE_TIMEOUT = 3000;
+
 let gameContainer, fruitContainer, effectContainer;
 let currentFruitSprite, currentFruitContainer;
 let dangerLineGfx, dangerCountText;
 let dropGuideLineGfx;
 let scoreText, timerText, pauseBtnContainer;
-let ufoBtn, alienBtn;
+let ufoBtn;
 let skillBtnContainer;
 let levelIconsContainer;
 let previewSprite;
+let previewPrevLevel = -1;
+let previewAnimStartTime = 0;
+let currentPrevLevel = -1;
+let currentAnimStartTime = 0;
+const PREVIEW_ANIM_SHRINK = 80;
+const PREVIEW_ANIM_GROW = 120;
+const PREVIEW_ANIM_MIN = 0.3;
+const PREVIEW_ANIM_MAX = 1.15;
+const PREVIEW_DISPLAY_SIZE = 40;
 let loadingHidden = false;
 let fruitSprites = new Map();
 
 let pointerPos = { x: PANEL_WIDTH / 2, y: 0 };
 let pauseBtnRect = { x: 0, y: 0, w: 26, h: 24 };
-let skillBtnHover = { ufo: false, alien: false };
+let skillBtnHover = { ufo: false };
 
 const previewOffset1 = Math.floor(Math.random() * 3000);
 const previewOffset2 = Math.floor(Math.random() * 3000);
@@ -131,83 +150,76 @@ function buildScene() {
     buildUI();
     buildSkillButtons();
     buildLevelIcons();
+    buildUfoSummon();
 }
 
 function buildUI() {
-    const scoreStyle = new TextStyle({
-        fontFamily: 'SimHei, Heiti SC, sans-serif',
-        fontSize: 20,
-        fontWeight: 'bold',
-        fill: '#ffffff',
-        stroke: { color: '#000000', width: 2 }
-    });
-
-    scoreText = new Text({ text: '0', style: scoreStyle });
-    scoreText.anchor.set(0.5, 0);
-    scoreText.x = GAME_WIDTH / 2;
-    scoreText.y = -14;
-    gameContainer.addChild(scoreText);
-
-    const boxWidth = 46;
-    const boxHeight = 24;
-    const barY = -2;
+    const barY = -14;
+    const boxH = 24;
+    const boxW = 46;
     const margin = 4;
 
-    // 左侧时间区域
-    const timeX = margin;
-    const timeBg = new Graphics();
-    timeBg.roundRect(timeX, barY - boxHeight / 2, boxWidth, boxHeight, 4);
-    timeBg.fill({ color: 0xe77904 });
-    gameContainer.addChild(timeBg);
-
-    // 时钟图案
-    const clockGfx = new Graphics();
-    const cx = timeX + 11, cy = barY;
-    clockGfx.circle(cx, cy, 6);
-    clockGfx.stroke({ color: 0xffffff, width: 1.5 });
-    clockGfx.moveTo(cx, cy);
-    clockGfx.lineTo(cx, cy - 3);
-    clockGfx.stroke({ color: 0xffffff, width: 1.5 });
-    clockGfx.moveTo(cx, cy);
-    clockGfx.lineTo(cx + 3, cy);
-    clockGfx.stroke({ color: 0xffffff, width: 1 });
-    gameContainer.addChild(clockGfx);
-
-    const timerStyle = new TextStyle({
+    const textStyle = new TextStyle({
         fontFamily: 'SimHei, Heiti SC, sans-serif',
-        fontSize: 20,
+        fontSize: 16,
         fontWeight: 'bold',
         fill: '#ffffff',
         stroke: { color: '#000000', width: 2 }
     });
-    timerText = new Text({ text: '0:00', style: timerStyle });
-    timerText.x = timeX + 20;
-    timerText.y = barY - 7;
+
+    // --- 左侧：时间 ---
+    const timeBg = new Graphics();
+    timeBg.roundRect(margin, barY, boxW, boxH, 4);
+    timeBg.fill({ color: 0xffb15e });
+    gameContainer.addChild(timeBg);
+
+    const clockGfx = new Graphics();
+    const cx = margin + 11, cy = barY + boxH / 2;
+    clockGfx.circle(cx, cy, 6);
+    clockGfx.stroke({ color: 0xa54800, width: 2 });
+    clockGfx.moveTo(cx, cy);
+    clockGfx.lineTo(cx, cy - 3);
+    clockGfx.stroke({ color: 0xa54800, width: 2 });
+    clockGfx.moveTo(cx, cy);
+    clockGfx.lineTo(cx + 3, cy);
+    clockGfx.stroke({ color: 0xa54800, width: 2 });
+    gameContainer.addChild(clockGfx);
+
+    timerText = new Text({ text: '0:00', style: textStyle });
+    timerText.x = margin + 20;
+    timerText.y = barY + 2;
     gameContainer.addChild(timerText);
 
-    // 右侧暂停按钮区域
-    const pauseX = GAME_WIDTH - margin - boxWidth;
+    // --- 中间：分数 ---
+    scoreText = new Text({ text: '0', style: textStyle });
+    scoreText.anchor.set(0.5, 0);
+    scoreText.x = GAME_WIDTH / 2;
+    scoreText.y = barY + 2;
+    gameContainer.addChild(scoreText);
+
+    // --- 右侧：暂停按钮 ---
+    const pauseX = GAME_WIDTH - margin - boxW;
     const pauseBg = new Graphics();
-    pauseBg.roundRect(pauseX, barY - boxHeight / 2, boxWidth, boxHeight, 4);
-    pauseBg.fill({ color: 0xe77904 });
+    pauseBg.roundRect(pauseX, barY, boxW, boxH, 4);
+    pauseBg.fill({ color: 0xffb15e });
+    pauseBg.stroke({ color: 0xa54800, width: 2 });
     gameContainer.addChild(pauseBg);
 
-    // 暂停按钮 - 两条白色竖线
     pauseBtnRect.x = pauseX;
-    pauseBtnRect.y = barY - 12;
-    pauseBtnRect.w = boxWidth;
-    pauseBtnRect.h = boxHeight;
+    pauseBtnRect.y = barY;
+    pauseBtnRect.w = boxW;
+    pauseBtnRect.h = boxH;
 
     pauseBtnContainer = new Container();
-    pauseBtnContainer.x = pauseBtnRect.x;
-    pauseBtnContainer.y = pauseBtnRect.y;
+    pauseBtnContainer.x = pauseX;
+    pauseBtnContainer.y = barY;
 
     const pauseGfx = new Graphics();
     const barW = 3, barH = 12, gap = 5;
-    const barsCenterX = boxWidth / 2;
-    pauseGfx.rect(barsCenterX - gap - barW, (boxHeight - barH) / 2, barW, barH);
-    pauseGfx.rect(barsCenterX + gap, (boxHeight - barH) / 2, barW, barH);
-    pauseGfx.fill({ color: 0xffffff });
+    const barsCenterX = boxW / 2;
+    pauseGfx.rect(barsCenterX - gap - barW, (boxH - barH) / 2, barW, barH);
+    pauseGfx.rect(barsCenterX + gap, (boxH - barH) / 2, barW, barH);
+    pauseGfx.fill({ color: 0xa54800 });
     pauseBtnContainer.addChild(pauseGfx);
 
     gameContainer.addChild(pauseBtnContainer);
@@ -217,14 +229,11 @@ function buildSkillButtons() {
     skillBtnContainer = new Container();
     app.stage.addChild(skillBtnContainer);
 
-    const totalW = SKILLS.btnW * 2 + SKILLS.btnGap;
-    const startX = (PANEL_WIDTH - totalW) / 2;
+    const startX = (PANEL_WIDTH - SKILLS.btnW) / 2;
 
     ufoBtn = createSkillButton(startX, SKILLS.btnY, SKILLS.btnW, SKILLS.btnH, drawUFOIcon, 'UFO', '#00bcd4');
-    alienBtn = createSkillButton(startX + SKILLS.btnW + SKILLS.btnGap, SKILLS.btnY, SKILLS.btnW, SKILLS.btnH, drawAlienIcon, '\u5165\u4FB5', '#8bc34a');
 
     skillBtnContainer.addChild(ufoBtn.container);
-    skillBtnContainer.addChild(alienBtn.container);
 }
 
 function drawUFOIcon(g) {
@@ -232,15 +241,6 @@ function drawUFOIcon(g) {
     g.fill({ color: 0xffffff });
     g.ellipse(g._w / 2, g._h / 2 - 4, 6, 4);
     g.fill({ color: 0xffffff, alpha: 0.6 });
-}
-
-function drawAlienIcon(g) {
-    g.ellipse(g._w / 2, g._h / 2 + 2, 7, 8);
-    g.fill({ color: 0xffffff });
-    g.circle(g._w / 2 - 3, g._h / 2, 2);
-    g.fill({ color: 0x8bc34a });
-    g.circle(g._w / 2 + 3, g._h / 2, 2);
-    g.fill({ color: 0x8bc34a });
 }
 
 function createSkillButton(x, y, w, h, drawIcon, label, accentColor) {
@@ -289,6 +289,37 @@ function createSkillButton(x, y, w, h, drawIcon, label, accentColor) {
     return { container, shadow, bg, highlight, iconGfx, labelText, bar, goldBorder, x, y, w, h, accentColor, label };
 }
 
+function buildUfoSummon() {
+    ufoSummonEl = document.createElement('img');
+    ufoSummonEl.src = 'images/0-ufo.png';
+    ufoSummonEl.style.cssText = 'position:fixed;width:64px;height:64px;display:none;z-index:999;cursor:pointer;';
+    ufoSummonEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!game || !game.ufoSummoned || ufoFlyingAway) return;
+
+        if (!ufoPaused) {
+            ufoPaused = true;
+            ufoPauseTime = performance.now();
+            ufoSummonVx = 0;
+            ufoSummonVy = 0;
+        } else {
+            game.activateAlien();
+            ufoFlyingAway = true;
+            ufoSummonEl.style.transition = 'top 0.3s ease-in, opacity 0.3s ease-in';
+            ufoSummonEl.style.top = '-100px';
+            ufoSummonEl.style.opacity = '0';
+            setTimeout(() => {
+                ufoSummonEl.style.transition = '';
+                ufoSummonEl.style.opacity = '1';
+                ufoSummonEl.style.display = 'none';
+                ufoFlyingAway = false;
+                ufoPaused = false;
+            }, 300);
+        }
+    });
+    document.body.appendChild(ufoSummonEl);
+}
+
 function buildLevelIcons() {
     levelIconsContainer = new Container();
     app.stage.addChild(levelIconsContainer);
@@ -333,10 +364,6 @@ function setupInput() {
             game.activateUFO();
             return;
         }
-        if (skillBtnHover.alien) {
-            game.activateAlien();
-            return;
-        }
 
         const local = gameContainer.toLocal(e.global);
         if (isInsidePauseBtn(local.x, local.y)) {
@@ -355,11 +382,9 @@ function setupInput() {
 }
 
 function updateSkillBtnHover(globalPos) {
-    if (!ufoBtn || !alienBtn) return;
+    if (!ufoBtn) return;
     const ufoLocal = ufoBtn.container.toLocal(globalPos);
-    const alienLocal = alienBtn.container.toLocal(globalPos);
     skillBtnHover.ufo = ufoLocal.x >= 0 && ufoLocal.x <= ufoBtn.w && ufoLocal.y >= 0 && ufoLocal.y <= ufoBtn.h;
-    skillBtnHover.alien = alienLocal.x >= 0 && alienLocal.x <= alienBtn.w && alienLocal.y >= 0 && alienLocal.y <= alienBtn.h;
 }
 
 function isInsidePauseBtn(localX, localY) {
@@ -499,10 +524,67 @@ function updateCurrentFruit() {
     const frameIdx = getAnimationFrameIndex(now, previewOffset1);
     const texture = fruitTextures[level][frameIdx];
     currentFruitSprite.texture = texture;
-    const scale = (fruitInfo.radius * 2.2) / texture.width;
-    currentFruitSprite.scale.set(scale);
+
+    if (level !== currentPrevLevel) {
+        currentPrevLevel = level;
+        currentAnimStartTime = now;
+    }
+
+    const elapsed = now - currentAnimStartTime;
+    const total = PREVIEW_ANIM_SHRINK + PREVIEW_ANIM_GROW;
+    let animScale = 1;
+
+    if (elapsed < total) {
+        if (elapsed < PREVIEW_ANIM_SHRINK) {
+            animScale = 1 - Math.min(elapsed / PREVIEW_ANIM_SHRINK, 1) * (1 - PREVIEW_ANIM_MIN);
+        } else {
+            animScale = PREVIEW_ANIM_MAX - (PREVIEW_ANIM_MAX - 1) * Math.min((elapsed - PREVIEW_ANIM_SHRINK) / PREVIEW_ANIM_GROW, 1);
+        }
+    }
+
+    const baseScale = (fruitInfo.radius * 2.2) / texture.width;
+    currentFruitSprite.scale.set(baseScale * animScale);
     currentFruitSprite.x = x;
     currentFruitSprite.y = y;
+}
+
+function updateNextFruitPreview() {
+    if (!game) return;
+    const level = game.nextFruitLevel;
+    const now = performance.now();
+    const frameIdx = getAnimationFrameIndex(now, previewOffset2);
+
+    if (!previewSprite) {
+        previewSprite = new Sprite(fruitTextures[0][0]);
+        previewSprite.anchor.set(0.5);
+        previewSprite.x = GAME_WIDTH + 2;
+        previewSprite.y = 55;
+        gameContainer.addChild(previewSprite);
+        previewPrevLevel = level;
+    }
+
+    if (level !== previewPrevLevel) {
+        previewPrevLevel = level;
+        previewAnimStartTime = now;
+    }
+
+    const texture = fruitTextures[level][frameIdx];
+    previewSprite.texture = texture;
+
+    const baseScale = PREVIEW_DISPLAY_SIZE / texture.width;
+    const elapsed = now - previewAnimStartTime;
+    const total = PREVIEW_ANIM_SHRINK + PREVIEW_ANIM_GROW;
+    let animScale = 1;
+
+    if (elapsed < total) {
+        if (elapsed < PREVIEW_ANIM_SHRINK) {
+            animScale = 1 - Math.min(elapsed / PREVIEW_ANIM_SHRINK, 1) * (1 - PREVIEW_ANIM_MIN);
+        } else {
+            animScale = PREVIEW_ANIM_MAX - (PREVIEW_ANIM_MAX - 1) * Math.min((elapsed - PREVIEW_ANIM_SHRINK) / PREVIEW_ANIM_GROW, 1);
+        }
+    }
+
+    previewSprite.scale.set(baseScale * animScale);
 }
 
 function updateDropGuideLine() {
@@ -528,25 +610,6 @@ function updateDropGuideLine() {
     dropGuideLineGfx.stroke({ color: 0xffffff, alpha: 0.4, width: 2 });
 }
 
-function updateNextFruitPreview() {
-    if (!game) return;
-    const level = game.nextFruitLevel;
-    const now = performance.now();
-    const frameIdx = getAnimationFrameIndex(now, previewOffset2);
-
-    if (!previewSprite) {
-        // 调整 next 位置在这里改 x 和 y
-        previewSprite = new Sprite(fruitTextures[0][0]);
-        previewSprite.anchor.set(0.5);
-        previewSprite.x = GAME_WIDTH + 2;
-        previewSprite.y = 55;
-        previewSprite.width = 40;
-        previewSprite.height = 40;
-        gameContainer.addChild(previewSprite);
-    }
-    previewSprite.texture = fruitTextures[level][frameIdx];
-}
-
 function updateUI() {
     if (!game) return;
 
@@ -557,7 +620,7 @@ function updateUI() {
 
     const local = gameContainer.toLocal(pointerPos);
     const hoverPause = isInsidePauseBtn(local.x, local.y);
-    pauseBtnContainer.children[0].alpha = hoverPause ? 1 : 0.7;
+    pauseBtnContainer.alpha = hoverPause ? 1 : 0.6;
 }
 
 function updateSkillButtonVisuals() {
@@ -568,7 +631,6 @@ function updateSkillButtonVisuals() {
     skillBtnContainer.visible = true;
 
     drawSkillBtnVisual(ufoBtn, game.ufoUsesLeft, skillBtnHover.ufo, false, 0, 0, game.ufoActive);
-    drawSkillBtnVisual(alienBtn, game.alienUsesLeft, skillBtnHover.alien, true, SKILLS.alienDropCharge, game.alienChargeCount);
 }
 
 function drawSkillBtnVisual(btn, usesLeft, hovered, isCharging, chargeMax, chargeCur, ufoDisabled) {
@@ -638,7 +700,7 @@ function updateScorePopups() {
         const rise = (age / 800) * -30;
         const style = new TextStyle({
             fontFamily: 'SimHei, Heiti SC, sans-serif',
-            fontSize: 20,
+            fontSize: 16,
             fill: popup.color,
             stroke: { color: '#000000', width: 2 }
         });
@@ -653,6 +715,79 @@ function updateScorePopups() {
 }
 
 /** -------------------- 主循环 & 初始化 -------------------- */
+
+function updateUfoSummon() {
+    if (!ufoSummonEl || !game) return;
+
+    if (ufoFlyingAway) return;
+
+    if (game.ufoSummoned) {
+        if (ufoSummonEl.style.display === 'none') {
+            ufoSummonEl.style.display = 'block';
+            const spawnEdge = Math.floor(Math.random() * 4);
+            switch (spawnEdge) {
+                case 0: ufoSummonEl.style.left = '-64px'; ufoSummonEl.style.top = (Math.random() * window.innerHeight) + 'px'; break;
+                case 1: ufoSummonEl.style.left = window.innerWidth + 'px'; ufoSummonEl.style.top = (Math.random() * window.innerHeight) + 'px'; break;
+                case 2: ufoSummonEl.style.left = (Math.random() * window.innerWidth) + 'px'; ufoSummonEl.style.top = '-64px'; break;
+                case 3: ufoSummonEl.style.left = (Math.random() * window.innerWidth) + 'px'; ufoSummonEl.style.top = window.innerHeight + 'px'; break;
+            }
+            ufoSummonVx = (Math.random() - 0.5) * 50;
+            ufoSummonVy = (Math.random() - 0.5) * 10;
+            ufoSpawnTime = performance.now();
+            ufoFlyingTime = 0;
+            ufoFlyingAway = false;
+            ufoPaused = false;
+        }
+
+        if (ufoPaused) {
+            if (performance.now() - ufoPauseTime > UFO_PAUSE_TIMEOUT) {
+                ufoSpawnTime = performance.now() - ufoFlyingTime;
+                ufoPaused = false;
+            } else {
+                return;
+            }
+        }
+
+        ufoFlyingTime = performance.now() - ufoSpawnTime;
+
+        if (ufoFlyingTime > UFO_FLY_DURATION) {
+            ufoFlyingAway = true;
+            ufoSummonEl.style.transition = 'top 0.3s ease-in, opacity 0.3s ease-in';
+            ufoSummonEl.style.top = '-100px';
+            ufoSummonEl.style.opacity = '0';
+            setTimeout(() => {
+                ufoSummonEl.style.transition = '';
+                ufoSummonEl.style.opacity = '1';
+                ufoSummonEl.style.display = 'none';
+                ufoFlyingAway = false;
+                ufoPaused = false;
+                game.ufoSummoned = false;
+            }, 300);
+            return;
+        }
+
+        let left = parseFloat(ufoSummonEl.style.left) + ufoSummonVx;
+        let top = parseFloat(ufoSummonEl.style.top) + ufoSummonVy;
+
+        const elW = 64;
+        const elH = 64;
+        if (left < 0 || left + elW > window.innerWidth) {
+            ufoSummonVx *= -1;
+            left = Math.max(0, Math.min(window.innerWidth - elW, left));
+        }
+        if (top < 0 || top + elH > window.innerHeight) {
+            ufoSummonVy *= -1;
+            top = Math.max(0, Math.min(window.innerHeight - elH, top));
+        }
+
+        ufoSummonEl.style.left = left + 'px';
+        ufoSummonEl.style.top = top + 'px';
+    } else {
+        ufoSummonEl.style.display = 'none';
+        ufoFlyingAway = false;
+        ufoPaused = false;
+    }
+}
 
 function render() {
     if (!game) return;
@@ -672,6 +807,7 @@ function render() {
     if (!spritesheetTexture) return;
 
     if (!game.started) {
+        if (ufoSummonEl) ufoSummonEl.style.display = 'none';
         app.render();
         return;
     }
@@ -687,6 +823,8 @@ function render() {
     updateUI();
     updateSkillButtonVisuals();
     updateScorePopups();
+
+    updateUfoSummon();
 
     app.render();
 }
@@ -820,6 +958,7 @@ function resumeGame() {
 function restartGameFromPause() {
     document.getElementById('pause-screen').classList.add('hidden');
     game.restart();
+    resetUfoSummonState();
 }
 
 function quitToHome() {
@@ -831,11 +970,22 @@ function quitToHome() {
     game.restart();
     game.started = false;
     game.paused = false;
+    resetUfoSummonState();
 }
 
 function restartFromModal() {
     document.getElementById('game-over-modal').classList.remove('visible');
     game.restart();
+    resetUfoSummonState();
+}
+
+function resetUfoSummonState() {
+    if (ufoSummonEl) ufoSummonEl.style.display = 'none';
+    ufoSummonVx = 0;
+    ufoSummonVy = 0;
+    ufoFlyingAway = false;
+    ufoPaused = false;
+    ufoFlyingTime = 0;
 }
 
 function setupHTMLButtons() {

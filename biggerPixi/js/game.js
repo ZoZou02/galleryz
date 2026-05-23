@@ -44,7 +44,7 @@ export class Game {
         this.ufoStartTime = 0;
         this.ufoEndCooldown = 0;
         this.alienChargeCount = 0;
-        this.alienUsesLeft = 0;
+        this.ufoSummoned = false;
 
         this.startTime = 0;
         this.pauseAccumulated = 0;
@@ -78,8 +78,14 @@ export class Game {
         this.nextFruitLevel = this._getRandomInitialLevel();
     }
 
+    // 随机获取初始头像等级
     _getRandomInitialLevel() {
-        return Math.floor(Math.random() * (DIFFICULTY.initialFruitMaxLevel + 1));
+        const max = DIFFICULTY.initialFruitMaxLevel;
+        let level;
+        do {
+            level = Math.floor(Math.random() * (max + 1));
+        } while (level === this.currentFruitLevel && level === this.nextFruitLevel);
+        return level;
     }
 
     get elapsedTime() { return this.elapsed; }
@@ -149,7 +155,7 @@ export class Game {
         if (droppedLevel === 0) {
             this.alienChargeCount++;
             if (this.alienChargeCount >= SKILLS.alienDropCharge) {
-                this.alienUsesLeft++;
+                this.ufoSummoned = true;
                 this.alienChargeCount = 0;
             }
         }
@@ -453,8 +459,8 @@ export class Game {
     }
 
     activateAlien() {
-        if (this.alienUsesLeft <= 0 || this.gameOver) return;
-        this.alienUsesLeft--;
+        if (!this.ufoSummoned || this.gameOver) return;
+        this.ufoSummoned = false;
 
         const alienRadius = FRUITS[0].radius;
         const now = performance.now();
@@ -497,7 +503,7 @@ export class Game {
         this.ufoStartTime = 0;
         this.ufoEndCooldown = 0;
         this.alienChargeCount = 0;
-        this.alienUsesLeft = 0;
+        this.ufoSummoned = false;
 
         this.startTime = performance.now();
         this.pauseAccumulated = 0;

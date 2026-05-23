@@ -63,7 +63,7 @@ export const SKILLS = {
     ufoMaxUpSpeed: 2.5,
     ufoDamping: 0.97,
     ufoUpBaseline: 0.2,
-    alienDropCharge: 10
+    alienDropCharge: 5  // 外星人掉落个数
 };
 
 export const EGG_ANIM = {
