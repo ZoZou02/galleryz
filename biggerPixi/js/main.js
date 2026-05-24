@@ -18,7 +18,7 @@ import { loadRecords, saveRecord, getRecordRank, isNewRecord, renderRecordsTable
 
 let app, game;
 let panelSprite, frontSprite;
-let spritesheetTexture, boopTexture;
+let spritesheetTexture, boopTexture, ufoTexture;
 let fruitTextures = [];
 let frameW = 0, frameH = 0;
 let boopFrameH = 0;
@@ -40,6 +40,8 @@ let dangerLineGfx, dangerCountText;
 let dropGuideLineGfx;
 let scoreText, timerText, pauseBtnContainer;
 let ufoBtn;
+let ufoShadowGfx;
+let ufoArcGfx;
 let skillBtnContainer;
 let levelIconsContainer;
 let previewSprite;
@@ -85,6 +87,8 @@ async function loadAssets() {
     ]);
     panelSprite.width = PANEL_WIDTH;
     panelSprite.height = PANEL_HEIGHT;
+
+    ufoTexture = await Assets.load('images/0-ufo.png');
 
     boopTexture = await Assets.load('images/0-boop.png');
     boopFrameH = boopTexture.height / 5;
@@ -154,56 +158,50 @@ function buildScene() {
 }
 
 function buildUI() {
-    const barY = -14;
+    const barY = -12;
     const boxH = 24;
     const boxW = 46;
     const margin = 4;
 
     const textStyle = new TextStyle({
         fontFamily: 'SimHei, Heiti SC, sans-serif',
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: 'bold',
         fill: '#ffffff',
-        stroke: { color: '#000000', width: 2 }
+        stroke: { color: '#000000', width: 2 },
+        align: 'center'
     });
 
-    // --- 左侧：时间 ---
-    const timeBg = new Graphics();
-    timeBg.roundRect(margin, barY, boxW, boxH, 4);
-    timeBg.fill({ color: 0xffb15e });
-    gameContainer.addChild(timeBg);
+    const textCenterY = barY + boxH / 2;
 
+    // --- 左侧：时间 ---
     const clockGfx = new Graphics();
-    const cx = margin + 11, cy = barY + boxH / 2;
+    const cx = margin, cy = barY + boxH / 2;
     clockGfx.circle(cx, cy, 6);
-    clockGfx.stroke({ color: 0xa54800, width: 2 });
+    clockGfx.fill({ color: 0xffffff });
+    clockGfx.stroke({ color: 0x000000, width: 2, alpha: 0.6 });
     clockGfx.moveTo(cx, cy);
     clockGfx.lineTo(cx, cy - 3);
-    clockGfx.stroke({ color: 0xa54800, width: 2 });
     clockGfx.moveTo(cx, cy);
     clockGfx.lineTo(cx + 3, cy);
-    clockGfx.stroke({ color: 0xa54800, width: 2 });
+    clockGfx.stroke({ color: 0x000000, width: 2, alpha: 0.6 });
     gameContainer.addChild(clockGfx);
 
     timerText = new Text({ text: '0:00', style: textStyle });
-    timerText.x = margin + 20;
-    timerText.y = barY + 2;
+    timerText.anchor.set(0, 0.5);
+    timerText.x = margin + 10;
+    timerText.y = textCenterY - 2;
     gameContainer.addChild(timerText);
 
     // --- 中间：分数 ---
     scoreText = new Text({ text: '0', style: textStyle });
-    scoreText.anchor.set(0.5, 0);
+    scoreText.anchor.set(0.5, 0.5);
     scoreText.x = GAME_WIDTH / 2;
-    scoreText.y = barY + 2;
+    scoreText.y = textCenterY - 2;
     gameContainer.addChild(scoreText);
 
     // --- 右侧：暂停按钮 ---
     const pauseX = GAME_WIDTH - margin - boxW;
-    const pauseBg = new Graphics();
-    pauseBg.roundRect(pauseX, barY, boxW, boxH, 4);
-    pauseBg.fill({ color: 0xffb15e });
-    pauseBg.stroke({ color: 0xa54800, width: 2 });
-    gameContainer.addChild(pauseBg);
 
     pauseBtnRect.x = pauseX;
     pauseBtnRect.y = barY;
@@ -215,11 +213,23 @@ function buildUI() {
     pauseBtnContainer.y = barY;
 
     const pauseGfx = new Graphics();
-    const barW = 3, barH = 12, gap = 5;
+    const barW = 4, barH = 14, gap = 5, radius = 0;
     const barsCenterX = boxW / 2;
-    pauseGfx.rect(barsCenterX - gap - barW, (boxH - barH) / 2, barW, barH);
-    pauseGfx.rect(barsCenterX + gap, (boxH - barH) / 2, barW, barH);
-    pauseGfx.fill({ color: 0xa54800 });
+    const leftBarX = barsCenterX - gap / 2 - barW;
+    const rightBarX = barsCenterX + gap / 2;
+    const barYPos = (boxH - barH) / 2;
+
+    // 描边层（底层）
+    const borderGfx = new Graphics();
+    borderGfx.roundRect(leftBarX, barYPos, barW, barH, radius);
+    borderGfx.roundRect(rightBarX, barYPos, barW, barH, radius);
+    borderGfx.stroke({ color: 0x000000, width: 2, alpha: 0.6 });
+    pauseBtnContainer.addChild(borderGfx);
+
+    // 填充层（顶层）
+    pauseGfx.roundRect(leftBarX, barYPos, barW, barH, radius);
+    pauseGfx.roundRect(rightBarX, barYPos, barW, barH, radius);
+    pauseGfx.fill({ color: 0xffffff });
     pauseBtnContainer.addChild(pauseGfx);
 
     gameContainer.addChild(pauseBtnContainer);
@@ -229,18 +239,56 @@ function buildSkillButtons() {
     skillBtnContainer = new Container();
     app.stage.addChild(skillBtnContainer);
 
-    const startX = (PANEL_WIDTH - SKILLS.btnW) / 2;
+    const circleD = 62;
+    const startX = (PANEL_WIDTH - circleD) / 2;
 
-    ufoBtn = createSkillButton(startX, SKILLS.btnY, SKILLS.btnW, SKILLS.btnH, drawUFOIcon, 'UFO', '#00bcd4');
+    ufoBtn = createCircleSkillButton(startX, SKILLS.btnY, circleD, '#b55861');
+
+    ufoShadowGfx = new Graphics();
+    skillBtnContainer.addChild(ufoShadowGfx);
+
+    ufoArcGfx = new Graphics();
+    ufoArcGfx.x = startX;
+    ufoArcGfx.y = SKILLS.btnY;
+    skillBtnContainer.addChild(ufoArcGfx);
 
     skillBtnContainer.addChild(ufoBtn.container);
 }
 
-function drawUFOIcon(g) {
-    g.ellipse(g._w / 2, g._h / 2 + 2, 10, 4);
-    g.fill({ color: 0xffffff });
-    g.ellipse(g._w / 2, g._h / 2 - 4, 6, 4);
-    g.fill({ color: 0xffffff, alpha: 0.6 });
+function createCircleSkillButton(x, y, d, accentColor) {
+    const r = d / 2;
+    const container = new Container();
+    container.x = x;
+    container.y = y;
+
+    const bg = new Graphics();
+    container.addChild(bg);
+
+    const highlight = new Graphics();
+    highlight.circle(r, r, r - 4);
+    highlight.fill({ color: 0xffffff, alpha: 0.08 });
+    container.addChild(highlight);
+
+    const iconSize = d * 0.48;
+    const ufoIcon = new Sprite(ufoTexture);
+    ufoIcon.anchor.set(0.5);
+    ufoIcon.x = r;
+    ufoIcon.y = r;
+    ufoIcon.width = iconSize;
+    ufoIcon.height = iconSize;
+    ufoIcon.tint = 0x691168;
+    container.addChild(ufoIcon);
+
+    const slash = new Graphics();
+    container.addChild(slash);
+
+    const maxUses = SKILLS.ufoMaxUses;
+
+    return {
+        container, bg, highlight, ufoIcon, slash,
+        maxUses, r,
+        x, y, w: d, h: d, accentColor, isCircle: true
+    };
 }
 
 function createSkillButton(x, y, w, h, drawIcon, label, accentColor) {
@@ -292,7 +340,7 @@ function createSkillButton(x, y, w, h, drawIcon, label, accentColor) {
 function buildUfoSummon() {
     ufoSummonEl = document.createElement('img');
     ufoSummonEl.src = 'images/0-ufo.png';
-    ufoSummonEl.style.cssText = 'position:fixed;width:64px;height:64px;display:none;z-index:999;cursor:pointer;';
+    ufoSummonEl.style.cssText = 'position:fixed;width:64px;height:64px;display:none;z-index:999;';
     ufoSummonEl.addEventListener('click', (e) => {
         e.stopPropagation();
         if (!game || !game.ufoSummoned || ufoFlyingAway) return;
@@ -320,14 +368,15 @@ function buildUfoSummon() {
     document.body.appendChild(ufoSummonEl);
 }
 
+// 头像列表
 function buildLevelIcons() {
     levelIconsContainer = new Container();
     app.stage.addChild(levelIconsContainer);
 
-    const iconSize = 28;
+    const iconSize = 32;
     const totalWidth = FRUITS.length * iconSize;
     const margin = (PANEL_WIDTH - totalWidth) / 2;
-    const y = GAME_HEIGHT + 187;
+    const y = GAME_HEIGHT + 175;
 
     for (let i = 0; i < FRUITS.length; i++) {
         const x = margin + iconSize / 2 + i * iconSize;
@@ -361,6 +410,22 @@ function setupInput() {
         updateSkillBtnHover(e.global);
 
         if (skillBtnHover.ufo) {
+            const canUse = game.ufoUsesLeft > 0 && !game.ufoActive;
+            if (!canUse) return;
+
+            const container = ufoBtn.container;
+            gsap.to(container, {
+                y: ufoBtn.y + 6,
+                duration: 0.08,
+                ease: 'power2.in',
+                onComplete: () => {
+                    gsap.to(container, {
+                        y: ufoBtn.y,
+                        duration: 0.15,
+                        ease: 'power2.out'
+                    });
+                }
+            });
             game.activateUFO();
             return;
         }
@@ -618,9 +683,7 @@ function updateUI() {
 
     updateSkillBtnHover(pointerPos);
 
-    const local = gameContainer.toLocal(pointerPos);
-    const hoverPause = isInsidePauseBtn(local.x, local.y);
-    pauseBtnContainer.alpha = hoverPause ? 1 : 0.6;
+    pauseBtnContainer.alpha = 1;
 }
 
 function updateSkillButtonVisuals() {
@@ -636,49 +699,94 @@ function updateSkillButtonVisuals() {
 function drawSkillBtnVisual(btn, usesLeft, hovered, isCharging, chargeMax, chargeCur, ufoDisabled) {
     if (!btn) return;
     const active = usesLeft > 0 && !ufoDisabled;
-    let bgColor, textColor, iconAlpha;
+    let bgColor;
 
     if (!active && !isCharging) {
-        bgColor = 0x666666; textColor = '#aaaaaa'; iconAlpha = 0.4;
+        bgColor = 0x666666;
     } else if (isCharging && usesLeft === 0) {
-        bgColor = 0x555555; textColor = '#999999'; iconAlpha = 0.47;
+        bgColor = 0x555555;
     } else {
         bgColor = active ? parseInt(btn.accentColor.replace('#', ''), 16) : 0x555555;
-        textColor = '#ffffff'; iconAlpha = 1;
     }
 
-    const lift = (hovered && active) ? -3 : 0;
-    btn.container.y = btn.y + lift;
-    btn.shadow.alpha = (hovered && active) ? 0.15 : 0.3;
+    if (btn.isCircle) {
+        const r = btn.w / 2;
+        const accentNum = parseInt(btn.accentColor.replace('#', ''), 16);
+        const hoverActive = hovered && active;
 
-    btn.bg.clear();
-    btn.bg.roundRect(0, 0, btn.w, btn.h, 8);
-    btn.bg.fill({ color: bgColor });
+        const shadowCx = btn.x + r;
+        const shadowCy = btn.y + r + 4;
+        const shadowR = r + 2;
+        ufoShadowGfx.clear();
+        ufoShadowGfx.circle(shadowCx, shadowCy, shadowR);
+        ufoShadowGfx.fill({ color: 0xe07407, alpha: 0.5 });
 
-    btn.highlight.alpha = hovered && active ? 0.24 : 0.08;
-    btn.iconGfx.alpha = iconAlpha;
+        btn.bg.clear();
+        btn.bg.circle(r, r, r);
+        btn.bg.fill({ color: bgColor });
+        btn.bg.circle(r, r, r);
+        btn.bg.stroke({ color: 0x691168, width: 4 });
 
-    if (isCharging) {
-        btn.labelText.text = chargeCur + '/' + chargeMax;
-        btn.labelText.style.fill = textColor;
-        btn.bar.clear();
-        btn.bar.roundRect(4, 0, btn.w - 8, 3, 2);
-        btn.bar.fill({ color: 0x000000, alpha: 0.24 });
-        if (chargeMax > 0) {
-            const progress = chargeCur / chargeMax;
-            btn.bar.roundRect(4, 0, (btn.w - 8) * progress, 3, 2);
-            btn.bar.fill({ color: parseInt(btn.accentColor.replace('#', ''), 16) });
+        btn.highlight.alpha = hoverActive ? 0.80 : 0.06;
+
+        btn.ufoIcon.alpha = !active && !isCharging ? 0.12 : 0.35;
+
+        btn.slash.clear();
+        if (!active && !isCharging) {
+            const inset = r * 0.3;
+            btn.slash.moveTo(inset, inset);
+            btn.slash.lineTo(btn.w - inset, btn.h - inset);
+            btn.slash.stroke({ color: 0x691168, width: 4, alpha: 0.5 });
         }
-        btn.goldBorder.clear();
-        if (usesLeft > 0) {
-            btn.goldBorder.roundRect(-1, -1, btn.w + 2, btn.h + 2, 9);
-            btn.goldBorder.stroke({ color: 0xffd700, width: 1.5 });
+
+        const arcR = r + 9;
+        const perAngle = (Math.PI / 2) / btn.maxUses;
+        const arcGap = 0;
+
+        ufoArcGfx.clear();
+        for (let i = 0; i < btn.maxUses; i++) {
+            const segStart = Math.PI / 4 + i * perAngle;
+            const segEnd = segStart + perAngle;
+            const filled = i >= btn.maxUses - usesLeft;
+
+            ufoArcGfx.arc(r, r, arcR, segStart + arcGap, segEnd - arcGap);
+            ufoArcGfx.stroke({ color: 0x691168, width: 8, cap: 'round' });
+            ufoArcGfx.arc(r, r, arcR, segStart + arcGap, segEnd - arcGap);
+            ufoArcGfx.stroke({ color: filled ? 0xb55861 : 0xffb15e, width: 4, cap: 'round' });
         }
     } else {
-        btn.labelText.text = btn.label + '\u00D7' + usesLeft;
-        btn.labelText.style.fill = textColor;
-        btn.bar.clear();
-        btn.goldBorder.clear();
+        const iconAlpha = !active && !isCharging ? 0.4 : (isCharging && usesLeft === 0 ? 0.47 : 1);
+        const textColor = !active && !isCharging ? '#aaaaaa' : (isCharging && usesLeft === 0 ? '#999999' : '#ffffff');
+
+        btn.shadow.alpha = (hovered && active) ? 0.15 : 0.3;
+        btn.bg.clear();
+        btn.bg.roundRect(0, 0, btn.w, btn.h, 8);
+        btn.bg.fill({ color: bgColor });
+        btn.highlight.alpha = hovered && active ? 0.24 : 0.08;
+        btn.iconGfx.alpha = iconAlpha;
+
+        if (isCharging) {
+            btn.labelText.text = chargeCur + '/' + chargeMax;
+            btn.labelText.style.fill = textColor;
+            btn.bar.clear();
+            btn.bar.roundRect(4, 0, btn.w - 8, 3, 2);
+            btn.bar.fill({ color: 0x000000, alpha: 0.24 });
+            if (chargeMax > 0) {
+                const progress = chargeCur / chargeMax;
+                btn.bar.roundRect(4, 0, (btn.w - 8) * progress, 3, 2);
+                btn.bar.fill({ color: parseInt(btn.accentColor.replace('#', ''), 16) });
+            }
+            btn.goldBorder.clear();
+            if (usesLeft > 0) {
+                btn.goldBorder.roundRect(-1, -1, btn.w + 2, btn.h + 2, 9);
+                btn.goldBorder.stroke({ color: 0xffd700, width: 1.5 });
+            }
+        } else {
+            btn.labelText.text = btn.label + '\u00D7' + usesLeft;
+            btn.labelText.style.fill = textColor;
+            btn.bar.clear();
+            btn.goldBorder.clear();
+        }
     }
 }
 

@@ -37,6 +37,7 @@ export const FRUITS = [
     { name: 'GEE',    radius: 66, color: '#27AE60', score: 150, row: 10 }
 ];
 
+// 动画配置
 export const ANIM = {
     frameDuration: 50,
     loopDelay: 2000,
@@ -47,16 +48,18 @@ export const ANIM = {
     mergeScaleMax: 1.2
 };
 
+// 合并音效配置
 export const MERGE_AUDIO_CFG = {
     delay_time: 80,
     base_pitch: 0.7,
     pitch_per_level: 0.2
 };
 
+// 技能配置
 export const SKILLS = {
     btnW: 90, btnH: 52,
     btnGap: 18,
-    btnY: GAME_OFFSET_Y + GAME_HEIGHT + 42,
+    btnY: GAME_OFFSET_Y + GAME_HEIGHT + 20,
     ufoMaxUses: 2,
     ufoDuration: 3500,
     ufoUpAccel: 0.0080,
