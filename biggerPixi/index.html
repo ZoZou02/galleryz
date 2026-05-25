@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/style.css" version="0.10.5">
+    <link rel="stylesheet" href="css/style.css" version="0.11.0">
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
 
@@ -29,9 +29,23 @@
 </head>
 <body>
     <div id="loading-screen">
-        <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <p class="loading-text">加载中...</p>
+        <div class="loading-container">
+            <div class="loading-ring">
+                <span class="loading-dot-wrap"><span class="loading-dot"></span></span>
+                <span class="loading-dot-wrap"><span class="loading-dot"></span></span>
+                <span class="loading-dot-wrap"><span class="loading-dot"></span></span>
+                <span class="loading-dot-wrap"><span class="loading-dot"></span></span>
+                <span class="loading-dot-wrap"><span class="loading-dot"></span></span>
+            </div>
+            <div class="loading-progress-wrap">
+                <div class="loading-progress-track">
+                    <div class="loading-progress-fill"></div>
+                </div>
+            </div>
+            <div class="loading-info">
+                <span class="loading-item-name">准备中...</span>
+                <span class="loading-counter">0/0</span>
+            </div>
         </div>
     </div>
 
@@ -40,9 +54,10 @@
     <div id="start-screen">
         <div class="start-bg-deco"></div>
         <div class="start-content">
-            <div class="title-text">合成大GB</div>
-            <button id="start-btn">开始游戏</button>
-            <button id="records-btn">排行榜</button>
+            <img class="title-image" src="images/0-title.png" alt="合成大GB">
+            <button id="start-btn" class="start-btn-main">开始游戏</button>
+            <button id="records-btn" class="start-btn-main">本地排行</button>
+            <button id="about-btn" class="start-btn-main">关于游戏</button>
         </div>
     </div>
 
@@ -53,9 +68,9 @@
             <h1>游戏暂停</h1>
             <div class="score-stars"></div>
             <div class="pause-buttons">
-                <button id="resume-btn"><span class="icon-triangle"></span> 继续游戏</button>
-                <button id="pause-restart-btn"><span class="icon-restart"></span> 重新开始</button>
-                <button class="btn-secondary" id="quit-btn-1"><span class="icon-back"></span> 返回主页</button>
+                <button id="resume-btn" class="modal-btn modal-btn-primary"><span class="icon-triangle"></span> 继续游戏</button>
+                <button id="pause-restart-btn" class="modal-btn modal-btn-secondary"><span class="icon-restart"></span> 重新开始</button>
+                <button class="modal-btn modal-btn-purple" id="quit-btn-1"><span class="icon-back"></span> 返回主页</button>
             </div>
         </div>
     </div>
@@ -74,7 +89,23 @@
                     <tbody></tbody>
                 </table>
             </div>
-            <button class="btn-secondary" id="close-records-btn">返回</button>
+            <button class="modal-btn modal-btn-purple" id="close-records-btn">返回</button>
+        </div>
+    </div>
+
+    <div id="about-screen" class="hidden">
+        <div class="modal-bg-deco"></div>
+        <div class="modal-content records-content">
+            <div class="modal-stamp">ABOUT</div>
+            <h1>关于游戏</h1>
+            <div class="score-stars"></div>
+            <div class="about-info">
+                <p class="about-line">合成大GB</p>
+                <p class="about-line">同类水果合成，不断升级</p>
+                <p class="about-line">触碰到顶部危险线即告失败</p>
+                <p class="about-line">合理利用 UFO 技能扭转战局</p>
+            </div>
+            <button class="modal-btn modal-btn-purple btn-about-close" id="close-about-btn">返回</button>
         </div>
     </div>
 
@@ -90,11 +121,11 @@
             </div>
             <div id="score-rank" class="score-rank">第 - 名</div>
             <div class="score-stars"></div>
-            <button id="restart-btn">再来一局</button>
-            <button class="btn-secondary" id="quit-btn-2">返回主页</button>
+            <button id="restart-btn" class="modal-btn modal-btn-primary">再来一局</button>
+            <button class="modal-btn modal-btn-purple" id="quit-btn-2">返回主页</button>
         </div>
     </div>
 
-    <script type="module" src="js/main.js" version="0.10.5"></script>
+    <script type="module" src="js/main.js" version="0.11.0"></script>
 </body>
 </html>

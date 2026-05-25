@@ -96,13 +96,14 @@ class SoundManager {
         await Promise.all(promises);
     }
 
-    async loadVoiceConfig(config) {
+    async loadVoiceConfig(config, onProgress) {
         VOICE_CFG.voiceVariants = config;
         if (!this.ctx) return;
         const promises = [];
         for (let i = 0; i < Object.keys(config).length; i++) {
             const count = config[i] || 0;
-            if (count > 0) {
+            if (count > 0) { 
+                if (onProgress) onProgress(i);
                 promises.push(this._loadVoiceLevel(i));
             }
         }

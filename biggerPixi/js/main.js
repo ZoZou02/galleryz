@@ -13,6 +13,7 @@ import {
 import { Game } from './game.js';
 import { soundManager } from './audio.js';
 import { loadRecords, saveRecord, getRecordRank, isNewRecord, renderRecordsTable } from './records.js';
+import { loadingManager } from './loading.js';
 
 /** -------------------- 全局变量 -------------------- */
 
@@ -54,7 +55,6 @@ const PREVIEW_ANIM_GROW = 120;
 const PREVIEW_ANIM_MIN = 0.3;
 const PREVIEW_ANIM_MAX = 1.15;
 const PREVIEW_DISPLAY_SIZE = 40;
-let loadingHidden = false;
 let fruitSprites = new Map();
 
 let pointerPos = { x: PANEL_WIDTH / 2, y: 0 };
@@ -64,41 +64,7 @@ let skillBtnHover = { ufo: false };
 const previewOffset1 = Math.floor(Math.random() * 3000);
 const previewOffset2 = Math.floor(Math.random() * 3000);
 
-/** -------------------- 资源加载 -------------------- */
-
-async function loadAssets() {
-    spritesheetTexture = await Assets.load('images/spritesheet.png');
-    frameW = spritesheetTexture.width / 5;
-    frameH = spritesheetTexture.height / 11;
-
-    for (let level = 0; level < FRUITS.length; level++) {
-        fruitTextures[level] = [];
-        for (let col = 0; col < 5; col++) {
-            fruitTextures[level][col] = new Texture({
-                source: spritesheetTexture.source,
-                frame: new Rectangle(col * frameW, level * frameH, frameW, frameH)
-            });
-        }
-    }
-
-    [panelSprite, frontSprite] = await Promise.all([
-        loadSprite('images/3-panel.png'),
-        loadSprite('images/0-front.png')
-    ]);
-    panelSprite.width = PANEL_WIDTH;
-    panelSprite.height = PANEL_HEIGHT;
-
-    ufoTexture = await Assets.load('images/0-ufo.png');
-
-    boopTexture = await Assets.load('images/0-boop.png');
-    boopFrameH = boopTexture.height / 5;
-    for (let f = 0; f < 5; f++) {
-        boopSubTextures[f] = new Texture({
-            source: boopTexture.source,
-            frame: new Rectangle(0, f * boopFrameH, boopTexture.width, boopFrameH)
-        });
-    }
-}
+/** -------------------- 资源加载与初始化 -------------------- */
 
 async function loadSprite(url) {
     const tex = await Assets.load(url);
@@ -141,9 +107,8 @@ function buildScene() {
     gameContainer.addChild(frontSprite);
 
     const dangerStyle = new TextStyle({
-        fontFamily: 'SimHei, Heiti SC, sans-serif',
+        fontFamily: 'FusionPixel, sans-serif',
         fontSize: 32,
-        fontWeight: 'bold',
         fill: '#ff0000'
     });
     dangerCountText = new Text({ text: '', style: dangerStyle });
@@ -164,11 +129,10 @@ function buildUI() {
     const margin = 4;
 
     const textStyle = new TextStyle({
-        fontFamily: 'SimHei, Heiti SC, sans-serif',
-        fontSize: 18,
-        fontWeight: 'bold',
+        fontFamily: 'FusionPixel, sans-serif',
+        fontSize: 16,
         fill: '#ffffff',
-        stroke: { color: '#000000', width: 2 },
+        stroke: { color: '#000000', width: 1 },
         align: 'center'
     });
 
@@ -179,12 +143,12 @@ function buildUI() {
     const cx = margin, cy = barY + boxH / 2;
     clockGfx.circle(cx, cy, 6);
     clockGfx.fill({ color: 0xffffff });
-    clockGfx.stroke({ color: 0x000000, width: 2, alpha: 0.6 });
+    clockGfx.stroke({ color: 0x6f6f6f, width: 2, alpha: 0.6 });
     clockGfx.moveTo(cx, cy);
     clockGfx.lineTo(cx, cy - 3);
     clockGfx.moveTo(cx, cy);
     clockGfx.lineTo(cx + 3, cy);
-    clockGfx.stroke({ color: 0x000000, width: 2, alpha: 0.6 });
+    clockGfx.stroke({ color: 0x6f6f6f, width: 2, alpha: 0.6 });
     gameContainer.addChild(clockGfx);
 
     timerText = new Text({ text: '0:00', style: textStyle });
@@ -223,7 +187,7 @@ function buildUI() {
     const borderGfx = new Graphics();
     borderGfx.roundRect(leftBarX, barYPos, barW, barH, radius);
     borderGfx.roundRect(rightBarX, barYPos, barW, barH, radius);
-    borderGfx.stroke({ color: 0x000000, width: 2, alpha: 0.6 });
+    borderGfx.stroke({ color: 0x6f6f6f, width: 1, alpha: 0.6 });
     pauseBtnContainer.addChild(borderGfx);
 
     // 填充层（顶层）
@@ -317,8 +281,8 @@ function createSkillButton(x, y, w, h, drawIcon, label, accentColor) {
     container.addChild(iconGfx);
 
     const labelStyle = new TextStyle({
-        fontFamily: 'ZCOOL KuaiLe, SimHei, sans-serif',
-        fontSize: 10,
+        fontFamily: 'FusionPixel, sans-serif',
+        fontSize: 12,
         fill: '#ffffff'
     });
     const labelText = new Text({ text: label, style: labelStyle });
@@ -337,6 +301,7 @@ function createSkillButton(x, y, w, h, drawIcon, label, accentColor) {
     return { container, shadow, bg, highlight, iconGfx, labelText, bar, goldBorder, x, y, w, h, accentColor, label };
 }
 
+// 外星人召唤按钮
 function buildUfoSummon() {
     ufoSummonEl = document.createElement('img');
     ufoSummonEl.src = 'images/0-ufo.png';
@@ -696,6 +661,7 @@ function updateSkillButtonVisuals() {
     drawSkillBtnVisual(ufoBtn, game.ufoUsesLeft, skillBtnHover.ufo, false, 0, 0, game.ufoActive);
 }
 
+// 绘制技能按钮
 function drawSkillBtnVisual(btn, usesLeft, hovered, isCharging, chargeMax, chargeCur, ufoDisabled) {
     if (!btn) return;
     const active = usesLeft > 0 && !ufoDisabled;
@@ -750,9 +716,9 @@ function drawSkillBtnVisual(btn, usesLeft, hovered, isCharging, chargeMax, charg
             const filled = i >= btn.maxUses - usesLeft;
 
             ufoArcGfx.arc(r, r, arcR, segStart + arcGap, segEnd - arcGap);
-            ufoArcGfx.stroke({ color: 0x691168, width: 8, cap: 'round' });
+            ufoArcGfx.stroke({ color: 0x691168, width: 10, cap: 'round' });
             ufoArcGfx.arc(r, r, arcR, segStart + arcGap, segEnd - arcGap);
-            ufoArcGfx.stroke({ color: filled ? 0xb55861 : 0xffb15e, width: 4, cap: 'round' });
+            ufoArcGfx.stroke({ color: filled ? 0xb55861 : 0xffb15e, width: 2, cap: 'round' });
         }
     } else {
         const iconAlpha = !active && !isCharging ? 0.4 : (isCharging && usesLeft === 0 ? 0.47 : 1);
@@ -807,7 +773,7 @@ function updateScorePopups() {
 
         const rise = (age / 800) * -30;
         const style = new TextStyle({
-            fontFamily: 'SimHei, Heiti SC, sans-serif',
+            fontFamily: 'FusionPixel, sans-serif',
             fontSize: 16,
             fill: popup.color,
             stroke: { color: '#000000', width: 2 }
@@ -901,19 +867,6 @@ function render() {
     if (!game) return;
     const now = performance.now();
 
-    if (!loadingHidden && spritesheetTexture) {
-        const loadingScreen = document.getElementById('loading-screen');
-        if (loadingScreen) {
-            loadingScreen.classList.add('hidden');
-            setTimeout(() => {
-                if (loadingScreen.parentNode) loadingScreen.parentNode.removeChild(loadingScreen);
-            }, 500);
-        }
-        loadingHidden = true;
-        return;
-    }
-    if (!spritesheetTexture) return;
-
     if (!game.started) {
         if (ufoSummonEl) ufoSummonEl.style.display = 'none';
         app.render();
@@ -938,10 +891,20 @@ function render() {
 }
 
 function handleResize() {
-    const scale = Math.min(window.innerWidth / PANEL_WIDTH, window.innerHeight / PANEL_HEIGHT);
-    const canvas = app.canvas;
-    canvas.style.width = PANEL_WIDTH * scale + 'px';
-    canvas.style.height = PANEL_HEIGHT * scale + 'px';
+    const isLandscape = window.innerWidth >= window.innerHeight;
+    const scale = isLandscape
+        ? window.innerHeight / PANEL_HEIGHT
+        : window.innerWidth / PANEL_WIDTH;
+    const newWidth = Math.floor(PANEL_WIDTH * scale);
+    const newHeight = Math.floor(PANEL_HEIGHT * scale);
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    app.renderer.resolution = dpr;
+    app.renderer.resize(newWidth, newHeight);
+
+    if (app && app.stage && scale > 0) {
+        app.stage.scale.set(scale);
+    }
 }
 
 function getGameTimeSeconds() {
@@ -984,10 +947,12 @@ async function init() {
         width: PANEL_WIDTH,
         height: PANEL_HEIGHT,
         backgroundAlpha: 0,
-        antialias: false,
         resolution: Math.min(window.devicePixelRatio || 1, 2),
-        autoDensity: true
+        autoDensity: true,
+        antialias: true,
     });
+
+    console.log('devicePixelRatio:', window.devicePixelRatio);
 
     app.ticker.maxFPS = 60;
 
@@ -995,25 +960,79 @@ async function init() {
     container.appendChild(app.canvas);
     handleResize();
 
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', () => setTimeout(handleResize, 100));
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(handleResize, 100);
+    });
+    window.addEventListener('orientationchange', () => setTimeout(handleResize, 200));
 
-    await loadAssets();
+    loadingManager.init();
+
+    let voiceCount = 0;
+    let voiceConfig = {};
+    try {
+        const res = await fetch('sound/index.json');
+        voiceConfig = await res.json();
+        voiceCount = Object.values(voiceConfig).reduce((sum, c) => sum + (c || 0), 0);
+    } catch (e) {
+        console.warn('Failed to fetch sound config:', e);
+    }
+
+    loadingManager.setTotal(5 + 3 + 1 + voiceCount);
+
+    loadingManager.tick('正在装个逼…… images/spritesheet.png');
+    spritesheetTexture = await Assets.load('images/spritesheet.png');
+    frameW = spritesheetTexture.width / 5;
+    frameH = spritesheetTexture.height / 11;
+    for (let level = 0; level < FRUITS.length; level++) {
+        fruitTextures[level] = [];
+        for (let col = 0; col < 5; col++) {
+            fruitTextures[level][col] = new Texture({
+                source: spritesheetTexture.source,
+                frame: new Rectangle(col * frameW, level * frameH, frameW, frameH)
+            });
+        }
+    }
+
+    loadingManager.tick('正在+5000…… images/3-panel.png');
+    panelSprite = await loadSprite('images/3-panel.png');
+    panelSprite.width = PANEL_WIDTH;
+    panelSprite.height = PANEL_HEIGHT;
+
+    loadingManager.tick('正在咕咕嘎嘎…… images/0-front.png');
+    frontSprite = await loadSprite('images/0-front.png');
+
+    loadingManager.tick('正在入侵地球…… images/0-ufo.png');
+    ufoTexture = await Assets.load('images/0-ufo.png');
+
+    loadingManager.tick('正在刺死…… images/0-boop.png');
+    boopTexture = await Assets.load('images/0-boop.png');
+    boopFrameH = boopTexture.height / 5;
+    for (let f = 0; f < 5; f++) {
+        boopSubTextures[f] = new Texture({
+            source: boopTexture.source,
+            frame: new Rectangle(0, f * boopFrameH, boopTexture.width, boopFrameH)
+        });
+    }
+
     soundManager.init();
 
-    try {
-        await Promise.all([
-            soundManager.load('falling', 'sound/falling.wav'),
-            soundManager.load('merge', 'sound/bubble.wav'),
-            soundManager.load('gameover', 'sound/gameover.wav')
-        ]);
+    loadingManager.tick('正在加载下落音效……');
+    await soundManager.load('falling', 'sound/falling.wav');
+    loadingManager.tick('正在加载合成音效……');
+    await soundManager.load('merge', 'sound/bubble.wav');
+    loadingManager.tick('正在加载结束音效……');
+    await soundManager.load('gameover', 'sound/gameover.wav');
 
-        const res = await fetch('sound/index.json');
-        const config = await res.json();
-        await soundManager.loadVoiceConfig(config);
-    } catch (e) {
-        console.warn('Audio load failed:', e);
+    if (voiceCount > 0) {
+        await soundManager.loadVoiceConfig(voiceConfig, (level) => {
+            loadingManager.tick(`正在加载语音包 Lv${level}`);
+        });
     }
+
+    loadingManager.tick('正在初始化……');
+    loadingManager.hide();
 
     game = new Game(soundManager);
 
@@ -1057,6 +1076,26 @@ function closeRecords() {
     document.getElementById('start-screen').classList.remove('hidden');
 }
 
+function openAbout() {
+    const startScreen = document.getElementById('start-screen');
+    startScreen.style.transition = 'none';
+    startScreen.classList.add('hidden');
+    startScreen.offsetHeight;
+    startScreen.style.transition = '';
+
+    document.getElementById('about-screen').classList.remove('hidden');
+}
+
+function closeAbout() {
+    const aboutScreen = document.getElementById('about-screen');
+    aboutScreen.style.transition = 'none';
+    aboutScreen.classList.add('hidden');
+    aboutScreen.offsetHeight;
+    aboutScreen.style.transition = '';
+
+    document.getElementById('start-screen').classList.remove('hidden');
+}
+
 function resumeGame() {
     if (!game || !game.paused) return;
     game.togglePause();
@@ -1096,15 +1135,40 @@ function resetUfoSummonState() {
     ufoFlyingTime = 0;
 }
 
+function animateButtonPress(el) {
+    gsap.to(el, {
+        scale: 0.95,
+        duration: 0.08,
+        ease: 'power2.in',
+        onComplete: () => {
+            gsap.to(el, {
+                scale: 1,
+                duration: 0.2,
+                ease: 'back.out(2)'
+            });
+        }
+    });
+}
+
 function setupHTMLButtons() {
-    document.getElementById('start-btn').addEventListener('click', startGame);
-    document.getElementById('records-btn').addEventListener('click', openRecords);
-    document.getElementById('resume-btn').addEventListener('click', resumeGame);
-    document.getElementById('pause-restart-btn').addEventListener('click', restartGameFromPause);
-    document.getElementById('quit-btn-1').addEventListener('click', quitToHome);
-    document.getElementById('quit-btn-2').addEventListener('click', quitToHome);
-    document.getElementById('restart-btn').addEventListener('click', restartFromModal);
-    document.getElementById('close-records-btn').addEventListener('click', closeRecords);
+    const bind = (id, handler) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('click', (e) => {
+            animateButtonPress(el);
+            handler(e);
+        });
+    };
+
+    bind('start-btn', startGame);
+    bind('records-btn', openRecords);
+    bind('about-btn', openAbout);
+    bind('resume-btn', resumeGame);
+    bind('pause-restart-btn', restartGameFromPause);
+    bind('quit-btn-1', quitToHome);
+    bind('quit-btn-2', quitToHome);
+    bind('restart-btn', restartFromModal);
+    bind('close-records-btn', closeRecords);
+    bind('close-about-btn', closeAbout);
 }
 
 setupHTMLButtons();
