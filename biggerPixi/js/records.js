@@ -16,6 +16,7 @@ export function loadRecords() {
 }
 
 export function saveRecord(scoreVal, durationSec) {
+    if (scoreVal <= 0) return;
     let records = loadRecords();
     const record = { score: scoreVal, duration: Math.floor(durationSec), ts: Date.now() };
     records.push(record);
@@ -46,22 +47,36 @@ export function renderRecordsTable() {
     tbody.innerHTML = '';
 
     if (records.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="empty-records">暂无记录</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="empty-records">暂无记录</td></tr>';
+        updateScrollHint();
         return;
     }
 
     records.forEach((r, i) => {
-        const date = new Date(r.ts);
-        const dateStr = (date.getMonth() + 1) + '/' + date.getDate() + ' ' +
-            String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
-        let rankIcon = i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : '';
         const tr = document.createElement('tr');
         tr.innerHTML =
-            '<td>' + rankIcon + (i + 1) + '</td>' +
+            '<td>' + (i + 1) + '</td>' +
             '<td>' + formatScore(r.score) + '</td>' +
-            '<td>' + formatTime(r.duration) + '</td>' +
-            '<td>' + dateStr + '</td>';
-        if (i === 0) tr.classList.add('top-record');
+            '<td>' + formatTime(r.duration) + '</td>';
+        if (i === 0) {
+            tr.classList.add('rank-1');
+        } else if (i === 1) {
+            tr.classList.add('rank-2');
+        } else if (i === 2) {
+            tr.classList.add('rank-3');
+        }
         tbody.appendChild(tr);
     });
+
+    updateScrollHint();
+}
+
+function updateScrollHint() {
+    const wrap = document.querySelector('.records-table-wrap');
+    if (!wrap) return;
+    if (wrap.scrollHeight > wrap.clientHeight) {
+        wrap.classList.add('overflow');
+    } else {
+        wrap.classList.remove('overflow', 'scrolled-bottom');
+    }
 }

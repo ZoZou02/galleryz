@@ -932,11 +932,10 @@ function showGameOverModal(finalScore) {
 
     const rankEl = document.getElementById('score-rank');
     if (rankEl) {
-        if (rankFinal <= 10) {
-            rankEl.textContent = '\u7B2C ' + rankFinal + ' \u540D';
-            rankEl.style.display = 'block';
+        if (finalScore === 0) {
+            rankEl.textContent = '\u{1F47D}';
         } else {
-            rankEl.style.display = 'none';
+            rankEl.textContent = rankFinal <= 10 ? String(rankFinal) : '-';
         }
     }
 }
@@ -1056,12 +1055,6 @@ function startGame() {
 }
 
 function openRecords() {
-    const startScreen = document.getElementById('start-screen');
-    startScreen.style.transition = 'none';
-    startScreen.classList.add('hidden');
-    startScreen.offsetHeight;
-    startScreen.style.transition = '';
-
     renderRecordsTable();
     document.getElementById('records-screen').classList.remove('hidden');
 }
@@ -1072,17 +1065,9 @@ function closeRecords() {
     recordsScreen.classList.add('hidden');
     recordsScreen.offsetHeight;
     recordsScreen.style.transition = '';
-
-    document.getElementById('start-screen').classList.remove('hidden');
 }
 
 function openAbout() {
-    const startScreen = document.getElementById('start-screen');
-    startScreen.style.transition = 'none';
-    startScreen.classList.add('hidden');
-    startScreen.offsetHeight;
-    startScreen.style.transition = '';
-
     document.getElementById('about-screen').classList.remove('hidden');
 }
 
@@ -1092,8 +1077,6 @@ function closeAbout() {
     aboutScreen.classList.add('hidden');
     aboutScreen.offsetHeight;
     aboutScreen.style.transition = '';
-
-    document.getElementById('start-screen').classList.remove('hidden');
 }
 
 function resumeGame() {
@@ -1106,6 +1089,18 @@ function restartGameFromPause() {
     document.getElementById('pause-screen').classList.add('hidden');
     game.restart();
     resetUfoSummonState();
+}
+
+function endGameFromPause() {
+    document.getElementById('pause-screen').classList.add('hidden');
+    if (game.paused && game.pauseStart > 0) {
+        game.pauseAccumulated += performance.now() - game.pauseStart;
+        game.pauseStart = 0;
+    }
+    game.paused = false;
+    game.gameOver = true;
+    game.gameOverAnimating = false;
+    showGameOverModal(game.score);
 }
 
 function quitToHome() {
@@ -1136,26 +1131,54 @@ function resetUfoSummonState() {
 }
 
 function animateButtonPress(el) {
-    gsap.to(el, {
-        scale: 0.95,
-        duration: 0.08,
-        ease: 'power2.in',
-        onComplete: () => {
-            gsap.to(el, {
-                scale: 1,
-                duration: 0.2,
-                ease: 'back.out(2)'
-            });
-        }
+    gsap.killTweensOf(el);
+
+    const tl = gsap.timeline();
+    tl.to(el, {
+        y: 8,
+        duration: 0.1,
+        ease: 'power2.in'
+    })
+    .to(el, {
+        scale: 1,
+        y: 0,
+        duration: 0.3,
+        ease: 'elastic.out(1, 0.35)'
+    }, '-=0.05');
+}
+
+function addHoverBounce(el) {
+    el.addEventListener('mouseenter', () => {
+        gsap.killTweensOf(el);
+        gsap.to(el, {
+            scale: 1.08,
+            y: -3,
+            duration: 0.3,
+            ease: 'back.out(2)'
+        });
+    });
+    el.addEventListener('mouseleave', () => {
+        gsap.killTweensOf(el);
+        gsap.to(el, {
+            scale: 1,
+            y: 0,
+            duration: 0.2,
+            ease: 'power2.out'
+        });
     });
 }
 
 function setupHTMLButtons() {
+    const startBtns = document.querySelectorAll('.start-btn-main');
+    startBtns.forEach(addHoverBounce);
+    const modalBtns = document.querySelectorAll('.modal-btn');
+    modalBtns.forEach(addHoverBounce);
+
     const bind = (id, handler) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('click', (e) => {
             animateButtonPress(el);
-            handler(e);
+            setTimeout(() => handler(e), 150);
         });
     };
 
@@ -1164,7 +1187,7 @@ function setupHTMLButtons() {
     bind('about-btn', openAbout);
     bind('resume-btn', resumeGame);
     bind('pause-restart-btn', restartGameFromPause);
-    bind('quit-btn-1', quitToHome);
+    bind('quit-btn-1', endGameFromPause);
     bind('quit-btn-2', quitToHome);
     bind('restart-btn', restartFromModal);
     bind('close-records-btn', closeRecords);
@@ -1172,4 +1195,18 @@ function setupHTMLButtons() {
 }
 
 setupHTMLButtons();
+
+function setupRecordsScrollListener() {
+    const wrap = document.querySelector('.records-table-wrap');
+    if (!wrap) return;
+    wrap.addEventListener('scroll', () => {
+        if (wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 8) {
+            wrap.classList.add('scrolled-bottom');
+        } else {
+            wrap.classList.remove('scrolled-bottom');
+        }
+    });
+}
+
+setupRecordsScrollListener();
 init();

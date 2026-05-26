@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/style.css" version="0.11.0">
+    <link rel="stylesheet" href="css/style.css" version="0.11.1">
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
 
@@ -70,7 +70,7 @@
             <div class="pause-buttons">
                 <button id="resume-btn" class="modal-btn modal-btn-primary"><span class="icon-triangle"></span> 继续游戏</button>
                 <button id="pause-restart-btn" class="modal-btn modal-btn-secondary"><span class="icon-restart"></span> 重新开始</button>
-                <button class="modal-btn modal-btn-purple" id="quit-btn-1"><span class="icon-back"></span> 返回主页</button>
+                <button class="modal-btn modal-btn-purple" id="quit-btn-1">结束游戏</button>
             </div>
         </div>
     </div>
@@ -79,16 +79,18 @@
         <div class="modal-bg-deco"></div>
         <div class="modal-content records-content">
             <div class="modal-stamp">RECORDS</div>
-            <h1>排行榜</h1>
+            <h1>本地排行</h1>
             <div class="score-stars"></div>
             <div class="records-table-wrap">
                 <table id="records-table">
                     <thead>
-                        <tr><th>排名</th><th>分数</th><th>时长</th><th>日期</th></tr>
+                        <tr><th>排名</th><th>分数</th><th>时长</th></tr>
                     </thead>
                     <tbody></tbody>
                 </table>
             </div>
+            <div class="records-scroll-hint"></div>
+            <div class="records-footer">*分数仅保存在本地</div>
             <button class="modal-btn modal-btn-purple" id="close-records-btn">返回</button>
         </div>
     </div>
@@ -114,18 +116,29 @@
         <div class="modal-content">
             <div class="modal-stamp">GAME OVER</div>
             <h1>游戏结束</h1>
-            <div class="score-label">最终分数</div>
-            <div id="final-score" class="score-display">0</div>
-            <div id="game-stats" class="game-stats">
-                <span class="stat-item"><span class="icon-clock-sm"></span> <span id="game-duration">0:00</span></span>
-            </div>
-            <div id="score-rank" class="score-rank">第 - 名</div>
             <div class="score-stars"></div>
-            <button id="restart-btn" class="modal-btn modal-btn-primary">再来一局</button>
-            <button class="modal-btn modal-btn-purple" id="quit-btn-2">返回主页</button>
+            <div id="final-score-wrap" class="final-score-wrap">
+                <div id="final-score" class="score-display">0</div>
+            </div>
+            <div id="game-stats" class="game-stats">
+                <div class="stat-row">
+                    <span class="stat-label">游戏时间</span>
+                    <span id="game-duration">0:00</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">分数名次</span>
+                    <span id="score-rank">-</span>
+                </div>
+            </div>
+            <div class="pause-buttons">
+                <button id="restart-btn" class="modal-btn modal-btn-primary">再来一局</button>
+                <button class="modal-btn modal-btn-purple" id="quit-btn-2">返回主页</button>
+            </div>
         </div>
     </div>
 
-    <script type="module" src="js/main.js" version="0.11.0"></script>
+    <div class="version-tag">v0.11.1</div>
+
+    <script type="module" src="js/main.js" version="0.11.1"></script>
 </body>
 </html>
