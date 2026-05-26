@@ -14,14 +14,29 @@ class SoundManager {
         this._mergeVoiceTimerId = null;
         this._mergeMaxLevel = -1;
         this._mergeMaxBuf = null;
+
+        this.sfxGain = null;
+        this.musicGain = null;
+        this.musicSource = null;
+        this.musicBuffer = null;
+        this._sfxVolume = 0.5;
+        this._musicVolume = 0.5;
     }
 
     init() {
+        if (this.ctx) return;
         try {
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
         } catch (e) {
             console.warn('Web Audio API not available');
+            return;
         }
+        this.sfxGain = this.ctx.createGain();
+        this.musicGain = this.ctx.createGain();
+        this.sfxGain.connect(this.ctx.destination);
+        this.musicGain.connect(this.ctx.destination);
+        this.sfxGain.gain.value = this._sfxVolume;
+        this.musicGain.gain.value = this._musicVolume;
     }
 
     async load(name, url) {
@@ -57,7 +72,7 @@ class SoundManager {
         source.buffer = buf;
         const gain = this.ctx.createGain();
         source.connect(gain);
-        gain.connect(this.ctx.destination);
+        gain.connect(this.sfxGain);
 
         const now = this.ctx.currentTime;
         const dur = opts.duration != null ? opts.duration : buf.duration;
@@ -149,6 +164,77 @@ class SoundManager {
             this._mergeMaxLevel = -1;
             this._mergeMaxBuf = null;
         }, this._voiceDelay + 100);
+    }
+
+    playVoice(level) {
+        const buf = this._pickVoice(level);
+        if (buf) this._playBuf(buf, { duration: 2.5 });
+    }
+
+    playAlienVoice() {
+        const bufs = this._voiceBufs[0];
+        if (!bufs || bufs.length === 0) return;
+        const buf = bufs[0];
+        if (buf) this._playBuf(buf, { duration: 2.5 });
+    }
+
+    playButton() {
+        this.play('button', { duration: 0.3 });
+    }
+
+    async loadBGM(url) {
+        if (!this.ctx) return;
+        try {
+            const res = await fetch(url);
+            const buf = await res.arrayBuffer();
+            this.musicBuffer = await this.ctx.decodeAudioData(buf);
+        } catch (e) {
+            console.warn('Failed to load BGM:', url);
+        }
+    }
+
+    startBGM() {
+        if (!this.ctx || !this.musicBuffer) return;
+        this.stopBGM();
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume().then(() => this._startBGMSource());
+            return;
+        }
+        this._startBGMSource();
+    }
+
+    _startBGMSource() {
+        if (!this.ctx || !this.musicBuffer || this.ctx.state !== 'running') return;
+        this.musicSource = this.ctx.createBufferSource();
+        this.musicSource.buffer = this.musicBuffer;
+        this.musicSource.loop = true;
+        this.musicSource.connect(this.musicGain);
+        this.musicSource.start();
+    }
+
+    stopBGM() {
+        if (this.musicSource) {
+            try { this.musicSource.stop(); } catch (e) {}
+            this.musicSource = null;
+        }
+    }
+
+    setSfxVolume(v) {
+        this._sfxVolume = v;
+        if (this.sfxGain) this.sfxGain.gain.value = v;
+    }
+
+    setMusicVolume(v) {
+        this._musicVolume = v;
+        if (this.musicGain) this.musicGain.gain.value = v;
+    }
+
+    getSfxVolume() {
+        return this._sfxVolume;
+    }
+
+    getMusicVolume() {
+        return this._musicVolume;
     }
 
     reset() {

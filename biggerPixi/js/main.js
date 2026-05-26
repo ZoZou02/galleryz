@@ -32,8 +32,14 @@ let ufoFlyingAway = false;
 let ufoPaused = false;
 let ufoPauseTime = 0;
 let ufoFlyingTime = 0;
+let ufoFloatAnim = null;
+let ufoOffScreen = false;
+let ufoOffScreenTime = 0;
 const UFO_FLY_DURATION = 60000;
-const UFO_PAUSE_TIMEOUT = 3000;
+const UFO_PAUSE_TIMEOUT = 300000;
+const UFO_OFFSCREEN_DELAY = 1800;
+const UFO_BASE_SPEED = 5;
+const UFO_V_DRIFT_RATIO = 0.25;
 
 let gameContainer, fruitContainer, effectContainer;
 let currentFruitSprite, currentFruitContainer;
@@ -315,7 +321,12 @@ function buildUfoSummon() {
             ufoPauseTime = performance.now();
             ufoSummonVx = 0;
             ufoSummonVy = 0;
+
+            soundManager.playAlienVoice();
+
+            _startUfoFloat();
         } else {
+            _resetUfoFloat();
             game.activateAlien();
             ufoFlyingAway = true;
             ufoSummonEl.style.transition = 'top 0.3s ease-in, opacity 0.3s ease-in';
@@ -397,6 +408,7 @@ function setupInput() {
 
         const local = gameContainer.toLocal(e.global);
         if (isInsidePauseBtn(local.x, local.y)) {
+            soundManager.playButton();
             game.togglePause();
             const pauseScreen = document.getElementById('pause-screen');
             if (game.paused) {
@@ -790,23 +802,53 @@ function updateScorePopups() {
 
 /** -------------------- 主循环 & 初始化 -------------------- */
 
+function _spawnUfoAtSide() {
+    const elW = 64, elH = 64;
+    const W = window.innerWidth, H = window.innerHeight;
+    const fromLeft = Math.random() < 0.5;
+
+    const vx = UFO_BASE_SPEED + Math.random() * 2;
+    const vyMax = vx * (UFO_V_DRIFT_RATIO * H / W);
+    const vy = (Math.random() * 0.6 + 0.4) * vyMax * (Math.random() < 0.5 ? 1 : -1);
+
+    const driftMargin = H * UFO_V_DRIFT_RATIO;
+    const yMin = driftMargin;
+    const yMax = H - elH - driftMargin;
+
+    if (fromLeft) {
+        ufoSummonEl.style.left = (-elW) + 'px';
+        ufoSummonVx = Math.abs(vx);
+    } else {
+        ufoSummonEl.style.left = W + 'px';
+        ufoSummonVx = -Math.abs(vx);
+    }
+    ufoSummonEl.style.top = (yMin + Math.random() * Math.max(0, yMax - yMin)) + 'px';
+    ufoSummonVy = vy;
+    ufoSummonEl.style.display = 'block';
+    gsap.set(ufoSummonEl, { y: 0 });
+}
+
+function _resetUfoFloat() {
+    if (ufoFloatAnim) { ufoFloatAnim.kill(); ufoFloatAnim = null; }
+    gsap.set(ufoSummonEl, { y: 0 });
+}
+
+function _startUfoFloat() {
+    _resetUfoFloat();
+    ufoFloatAnim = gsap.timeline({ repeat: -1 });
+    ufoFloatAnim
+        .to(ufoSummonEl, { y: -8, duration: 2.5, ease: 'sine.inOut' })
+        .to(ufoSummonEl, { y: 0, duration: 2.5, ease: 'sine.inOut' });
+}
+
 function updateUfoSummon() {
     if (!ufoSummonEl || !game) return;
 
     if (ufoFlyingAway) return;
 
     if (game.ufoSummoned) {
-        if (ufoSummonEl.style.display === 'none') {
-            ufoSummonEl.style.display = 'block';
-            const spawnEdge = Math.floor(Math.random() * 4);
-            switch (spawnEdge) {
-                case 0: ufoSummonEl.style.left = '-64px'; ufoSummonEl.style.top = (Math.random() * window.innerHeight) + 'px'; break;
-                case 1: ufoSummonEl.style.left = window.innerWidth + 'px'; ufoSummonEl.style.top = (Math.random() * window.innerHeight) + 'px'; break;
-                case 2: ufoSummonEl.style.left = (Math.random() * window.innerWidth) + 'px'; ufoSummonEl.style.top = '-64px'; break;
-                case 3: ufoSummonEl.style.left = (Math.random() * window.innerWidth) + 'px'; ufoSummonEl.style.top = window.innerHeight + 'px'; break;
-            }
-            ufoSummonVx = (Math.random() - 0.5) * 50;
-            ufoSummonVy = (Math.random() - 0.5) * 10;
+        if (ufoSummonEl.style.display === 'none' && !ufoOffScreen) {
+            _spawnUfoAtSide();
             ufoSpawnTime = performance.now();
             ufoFlyingTime = 0;
             ufoFlyingAway = false;
@@ -817,6 +859,7 @@ function updateUfoSummon() {
             if (performance.now() - ufoPauseTime > UFO_PAUSE_TIMEOUT) {
                 ufoSpawnTime = performance.now() - ufoFlyingTime;
                 ufoPaused = false;
+                _resetUfoFloat();
             } else {
                 return;
             }
@@ -826,6 +869,7 @@ function updateUfoSummon() {
 
         if (ufoFlyingTime > UFO_FLY_DURATION) {
             ufoFlyingAway = true;
+            _resetUfoFloat();
             ufoSummonEl.style.transition = 'top 0.3s ease-in, opacity 0.3s ease-in';
             ufoSummonEl.style.top = '-100px';
             ufoSummonEl.style.opacity = '0';
@@ -840,22 +884,30 @@ function updateUfoSummon() {
             return;
         }
 
+        const now = performance.now();
+
+        if (ufoOffScreen) {
+            if (now - ufoOffScreenTime > UFO_OFFSCREEN_DELAY) {
+                ufoOffScreen = false;
+                _spawnUfoAtSide();
+            }
+            return;
+        }
+
         let left = parseFloat(ufoSummonEl.style.left) + ufoSummonVx;
         let top = parseFloat(ufoSummonEl.style.top) + ufoSummonVy;
 
         const elW = 64;
         const elH = 64;
-        if (left < 0 || left + elW > window.innerWidth) {
-            ufoSummonVx *= -1;
-            left = Math.max(0, Math.min(window.innerWidth - elW, left));
-        }
-        if (top < 0 || top + elH > window.innerHeight) {
-            ufoSummonVy *= -1;
-            top = Math.max(0, Math.min(window.innerHeight - elH, top));
+        if (left + elW < 0 || left > window.innerWidth) {
+            ufoOffScreen = true;
+            ufoOffScreenTime = now;
+            ufoSummonEl.style.display = 'none';
+            return;
         }
 
         ufoSummonEl.style.left = left + 'px';
-        ufoSummonEl.style.top = top + 'px';
+        ufoSummonEl.style.top = Math.max(0, Math.min(window.innerHeight - elH, top)) + 'px';
     } else {
         ufoSummonEl.style.display = 'none';
         ufoFlyingAway = false;
@@ -1023,6 +1075,11 @@ async function init() {
     await soundManager.load('merge', 'sound/bubble.wav');
     loadingManager.tick('正在加载结束音效……');
     await soundManager.load('gameover', 'sound/gameover.wav');
+    loadingManager.tick('正在加载按钮音效……');
+    await soundManager.load('button', 'sound/button.mp3');
+
+    loadingManager.tick('正在加载背景音乐……');
+    await soundManager.loadBGM('sound/music.mp3');
 
     if (voiceCount > 0) {
         await soundManager.loadVoiceConfig(voiceConfig, (level) => {
@@ -1044,6 +1101,7 @@ async function init() {
 
     app.ticker.add(render);
     handleResize();
+    soundManager.startBGM();
 }
 
 function startGame() {
@@ -1051,6 +1109,7 @@ function startGame() {
     document.getElementById('pixi-container').classList.remove('hidden');
     document.body.classList.add('game-active');
     soundManager.init();
+    applyVolumeSettings();
     game.start();
 }
 
@@ -1079,6 +1138,91 @@ function closeAbout() {
     aboutScreen.style.transition = '';
 }
 
+function openSettings() {
+    document.getElementById('settings-screen').classList.remove('hidden');
+}
+
+function closeSettings() {
+    document.getElementById('settings-screen').classList.add('hidden');
+}
+
+function loadVolumeSettings() {
+    try {
+        const raw = localStorage.getItem('biggerPixi_volumes');
+        if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return { sfx: 0.5, music: 0.5 };
+}
+
+function saveVolumeSettings(sfx, music) {
+    try {
+        localStorage.setItem('biggerPixi_volumes', JSON.stringify({ sfx, music }));
+    } catch (e) {}
+}
+
+function applyVolumeSettings() {
+    const vol = loadVolumeSettings();
+    soundManager.setSfxVolume(vol.sfx);
+    soundManager.setMusicVolume(vol.music);
+    const sfxSlider = document.getElementById('sfx-volume');
+    const musicSlider = document.getElementById('music-volume');
+    const pauseSfxSlider = document.getElementById('pause-sfx-volume');
+    const pauseMusicSlider = document.getElementById('pause-music-volume');
+    if (sfxSlider) sfxSlider.value = Math.round(vol.sfx * 100);
+    if (musicSlider) musicSlider.value = Math.round(vol.music * 100);
+    if (pauseSfxSlider) pauseSfxSlider.value = Math.round(vol.sfx * 100);
+    if (pauseMusicSlider) pauseMusicSlider.value = Math.round(vol.music * 100);
+}
+
+function setupSettingsSliders() {
+    const sfxSlider = document.getElementById('sfx-volume');
+    const musicSlider = document.getElementById('music-volume');
+    const pauseSfxSlider = document.getElementById('pause-sfx-volume');
+    const pauseMusicSlider = document.getElementById('pause-music-volume');
+
+    applyVolumeSettings();
+
+    const onSfxInput = (v) => {
+        soundManager.setSfxVolume(v);
+        const vol = loadVolumeSettings();
+        saveVolumeSettings(v, vol.music);
+    };
+
+    const onMusicInput = (v) => {
+        soundManager.setMusicVolume(v);
+        const vol = loadVolumeSettings();
+        saveVolumeSettings(vol.sfx, v);
+    };
+
+    sfxSlider.addEventListener('input', () => {
+        const v = sfxSlider.value / 100;
+        onSfxInput(v);
+        if (pauseSfxSlider) pauseSfxSlider.value = sfxSlider.value;
+    });
+
+    musicSlider.addEventListener('input', () => {
+        const v = musicSlider.value / 100;
+        onMusicInput(v);
+        if (pauseMusicSlider) pauseMusicSlider.value = musicSlider.value;
+    });
+
+    if (pauseSfxSlider) {
+        pauseSfxSlider.addEventListener('input', () => {
+            const v = pauseSfxSlider.value / 100;
+            onSfxInput(v);
+            if (sfxSlider) sfxSlider.value = pauseSfxSlider.value;
+        });
+    }
+
+    if (pauseMusicSlider) {
+        pauseMusicSlider.addEventListener('input', () => {
+            const v = pauseMusicSlider.value / 100;
+            onMusicInput(v);
+            if (musicSlider) musicSlider.value = pauseMusicSlider.value;
+        });
+    }
+}
+
 function resumeGame() {
     if (!game || !game.paused) return;
     game.togglePause();
@@ -1099,6 +1243,7 @@ function endGameFromPause() {
     }
     game.paused = false;
     game.gameOver = true;
+    game.gameOverStartTime = performance.now();
     game.gameOverAnimating = false;
     showGameOverModal(game.score);
 }
@@ -1128,6 +1273,8 @@ function resetUfoSummonState() {
     ufoFlyingAway = false;
     ufoPaused = false;
     ufoFlyingTime = 0;
+    ufoOffScreen = false;
+    _resetUfoFloat();
 }
 
 function animateButtonPress(el) {
@@ -1177,6 +1324,7 @@ function setupHTMLButtons() {
     const bind = (id, handler) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('click', (e) => {
+            soundManager.playButton();
             animateButtonPress(el);
             setTimeout(() => handler(e), 150);
         });
@@ -1192,9 +1340,12 @@ function setupHTMLButtons() {
     bind('restart-btn', restartFromModal);
     bind('close-records-btn', closeRecords);
     bind('close-about-btn', closeAbout);
+    bind('settings-btn', openSettings);
+    bind('close-settings-btn', closeSettings);
 }
 
 setupHTMLButtons();
+setupSettingsSliders();
 
 function setupRecordsScrollListener() {
     const wrap = document.querySelector('.records-table-wrap');

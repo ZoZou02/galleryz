@@ -46,9 +46,14 @@ export class Game {
         this.alienChargeCount = 0;
         this.ufoSummoned = false;
 
+        this.alienTransformQueue = null;
+        this.alienTransformIndex = 0;
+        this.alienTransformNextTime = 0;
+
         this.startTime = 0;
         this.pauseAccumulated = 0;
         this.pauseStart = 0;
+        this.gameOverStartTime = 0;
         this.elapsed = 0;
 
         this._init();
@@ -95,6 +100,7 @@ export class Game {
         this.startTime = performance.now();
         this.pauseAccumulated = 0;
         this.pauseStart = 0;
+        this.gameOverStartTime = 0;
         this.paused = false;
     }
 
@@ -115,6 +121,10 @@ export class Game {
         let paused = 0;
         if (this.paused && this.pauseStart > 0) {
             paused = now - this.pauseStart;
+        }
+        if (this.gameOver && this.gameOverStartTime > 0) {
+            now = this.gameOverStartTime;
+            paused = 0;
         }
         return (now - this.startTime - this.pauseAccumulated - paused) / 1000;
     }
@@ -184,6 +194,7 @@ export class Game {
         }
 
         this._processPendingMerges(timestamp);
+        this._updateAlienTransform(timestamp);
         this._updateFruitStates(timestamp);
         this._updateUFOFruits();
         this._updateScorePopups(timestamp);
@@ -377,6 +388,7 @@ export class Game {
 
     _startGameOverAnimation() {
         this.gameOver = true;
+        this.gameOverStartTime = performance.now();
         this.gameOverAnimating = true;
         this.gameOverExplodeIndex = 0;
         this.gameOverExplodeTime = 0;
@@ -462,20 +474,48 @@ export class Game {
         if (!this.ufoSummoned || this.gameOver) return;
         this.ufoSummoned = false;
 
-        const alienRadius = FRUITS[0].radius;
-        const now = performance.now();
+        const sortedFruits = [...this.fruits].sort((a, b) => {
+            return (a.body.position.y - FRUITS[a.level].radius) -
+                   (b.body.position.y - FRUITS[b.level].radius);
+        });
 
-        for (const fruit of this.fruits) {
-            const oldRadius = FRUITS[fruit.level].radius;
-            const scale = alienRadius / oldRadius;
-            Body.scale(fruit.body, scale, scale);
-            fruit.level = 0;
-            fruit.animationOffset = Math.floor(Math.random() * 3000);
-            fruit.state = 'idle';
-            fruit.mergeAnimStartTime = now;
+        this.alienTransformQueue = sortedFruits;
+        this.alienTransformIndex = 0;
+        this.alienTransformNextTime = performance.now();
+    }
+
+    _updateAlienTransform(now) {
+        if (!this.alienTransformQueue || this.alienTransformIndex >= this.alienTransformQueue.length) {
+            this.alienTransformQueue = null;
+            return;
         }
 
-        this._addScorePopup(0, '#8bc34a');
+        if (now < this.alienTransformNextTime) return;
+
+        const fruit = this.alienTransformQueue[this.alienTransformIndex];
+        const alienRadius = FRUITS[0].radius;
+        const oldRadius = FRUITS[fruit.level].radius;
+        const scale = alienRadius / oldRadius;
+
+        Body.scale(fruit.body, scale, scale);
+
+        this.mergeEffects.push({
+            x: fruit.body.position.x,
+            y: fruit.body.position.y,
+            radius: alienRadius,
+            startTime: now,
+            frame: 0
+        });
+
+        fruit.level = 0;
+        fruit.animationOffset = Math.floor(Math.random() * 3000);
+        fruit.state = 'idle';
+        fruit.mergeAnimStartTime = now;
+
+        this.sound.playAlienVoice();
+
+        this.alienTransformIndex++;
+        this.alienTransformNextTime = now + SKILLS.alienTransformDelay;
     }
 
     restart() {
@@ -505,9 +545,14 @@ export class Game {
         this.alienChargeCount = 0;
         this.ufoSummoned = false;
 
+        this.alienTransformQueue = null;
+        this.alienTransformIndex = 0;
+        this.alienTransformNextTime = 0;
+
         this.startTime = performance.now();
         this.pauseAccumulated = 0;
         this.pauseStart = 0;
+        this.gameOverStartTime = 0;
         this.paused = false;
 
         this.currentFruitLevel = this._getRandomInitialLevel();

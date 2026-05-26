@@ -66,7 +66,8 @@ export const SKILLS = {
     ufoMaxUpSpeed: 2.5,
     ufoDamping: 0.97,
     ufoUpBaseline: 0.2,
-    alienDropCharge: 5  // 外星人掉落个数
+    alienDropCharge: 5,     // 外星人掉落个数
+    alienTransformDelay: 120 // 外星人逐个变身的间隔(ms)
 };
 
 export const EGG_ANIM = {
@@ -86,7 +87,7 @@ export const DROP_DELAY = 500;
 
 export const VOICE_CFG = {
     voiceVariants: [],
-    voiceChance: 0.35
+    voiceChance: 0.15
 };
 
 export function formatScore(n) {
