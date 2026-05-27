@@ -17,8 +17,11 @@ class SoundManager {
 
         this.sfxGain = null;
         this.musicGain = null;
-        this.musicSource = null;
-        this.musicBuffer = null;
+        this.bgmBuffers = {};
+        this._bgmSource = null;
+        this._bgmPrevSource = null;
+        this._bgmCurrent = null;
+        this._bgmFadeTimer = null;
         this._sfxVolume = 0.5;
         this._musicVolume = 0.5;
     }
@@ -182,41 +185,57 @@ class SoundManager {
         this.play('button', { duration: 0.3 });
     }
 
-    async loadBGM(url) {
+    async loadBGM(type, url) {
         if (!this.ctx) return;
         try {
             const res = await fetch(url);
             const buf = await res.arrayBuffer();
-            this.musicBuffer = await this.ctx.decodeAudioData(buf);
+            this.bgmBuffers[type] = await this.ctx.decodeAudioData(buf);
         } catch (e) {
-            console.warn('Failed to load BGM:', url);
+            console.warn('Failed to load BGM:', type, url);
+        }
+    }
+
+    crossfadeTo(type, duration = 0.5) {
+        if (!this.ctx || !this.bgmBuffers[type]) return;
+        if (this._bgmCurrent === type) return;
+        const targetBuf = this.bgmBuffers[type];
+        const now = this.ctx.currentTime;
+
+        const newSource = this.ctx.createBufferSource();
+        newSource.buffer = targetBuf;
+        newSource.loop = true;
+        const newGain = this.ctx.createGain();
+        newGain.gain.setValueAtTime(0, now);
+        newGain.gain.linearRampToValueAtTime(1, now + duration);
+        newSource.connect(newGain);
+        newGain.connect(this.musicGain);
+        newSource.start(now);
+
+        if (this._bgmSource) {
+            const oldSource = this._bgmSource;
+            const oldGain = this._bgmPrevSource;
+            if (oldGain) {
+                oldGain.gain.setValueAtTime(oldGain.gain.value, now);
+                oldGain.gain.linearRampToValueAtTime(0, now + duration);
+            }
+            this._bgmPrevSource = newGain;
+            this._bgmSource = newSource;
+            this._bgmCurrent = type;
+            clearTimeout(this._bgmFadeTimer);
+            this._bgmFadeTimer = setTimeout(() => {
+                try { oldSource.stop(); } catch (e) {}
+            }, (duration + 0.1) * 1000);
+        } else {
+            this._bgmSource = newSource;
+            this._bgmPrevSource = newGain;
+            this._bgmCurrent = type;
         }
     }
 
     startBGM() {
-        if (!this.ctx || !this.musicBuffer) return;
-        this.stopBGM();
-        if (this.ctx.state === 'suspended') {
-            this.ctx.resume().then(() => this._startBGMSource());
-            return;
-        }
-        this._startBGMSource();
-    }
-
-    _startBGMSource() {
-        if (!this.ctx || !this.musicBuffer || this.ctx.state !== 'running') return;
-        this.musicSource = this.ctx.createBufferSource();
-        this.musicSource.buffer = this.musicBuffer;
-        this.musicSource.loop = true;
-        this.musicSource.connect(this.musicGain);
-        this.musicSource.start();
-    }
-
-    stopBGM() {
-        if (this.musicSource) {
-            try { this.musicSource.stop(); } catch (e) {}
-            this.musicSource = null;
-        }
+        console.log('startBGM');
+        this.crossfadeTo('menu', 0);
     }
 
     setSfxVolume(v) {
@@ -242,6 +261,8 @@ class SoundManager {
         this._mergeVoiceTimerId = null;
         this._mergeMaxLevel = -1;
         this._mergeMaxBuf = null;
+        clearTimeout(this._bgmFadeTimer);
+        this._bgmFadeTimer = null;
     }
 }
 

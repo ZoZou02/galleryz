@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/style.css" version="0.12.0">
+    <link rel="stylesheet" href="css/style.css" version="0.13.0">
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
 
@@ -28,6 +28,12 @@
     </script>
 </head>
 <body>
+    <!-- 全局头像网格背景 -->
+    <div id="loading-bg-container">
+        <div class="loading-bg-text-bg"></div>
+        <div class="loading-bg-coutinue-text">TOUCH TO CONTINUE</div>
+    </div>
+
     <div id="loading-screen">
         <div class="loading-container">
             <div class="loading-ring">
@@ -47,6 +53,17 @@
                 <span class="loading-counter">0/0</span>
             </div>
         </div>
+    </div>
+
+    <!-- 加载完成后合并的主菜单页面 -->
+    <div id="main-menu" class="hidden">
+        <div class="start-content">
+            <img class="title-image" src="images/0-title.png" alt="合成大GB">
+            <button id="start-btn" class="start-btn-main">开始游戏</button>
+            <button id="records-btn" class="start-btn-main">本地排行</button>
+            <button id="about-btn" class="start-btn-main">关于游戏</button>
+        </div>
+        <button id="settings-btn" class="settings-btn"></button>
     </div>
 
     <div id="settings-screen" class="hidden">
@@ -70,19 +87,6 @@
     </div>
 
     <div id="pixi-container" class="hidden"></div>
-
-    <div id="start-screen">
-        <div class="start-bg-deco"></div>
-        <div class="start-content">
-            <img class="title-image" src="images/0-title.png" alt="合成大GB">
-            <button id="start-btn" class="start-btn-main">开始游戏</button>
-            <button id="records-btn" class="start-btn-main">本地排行</button>
-            <button id="about-btn" class="start-btn-main">关于游戏</button>
-        </div>
-        <button id="settings-btn" class="settings-btn">
-            <span class="settings-icon"></span>
-        </button>
-    </div>
 
     <div id="pause-screen" class="hidden">
         <div class="modal-bg-deco"></div>
@@ -170,8 +174,8 @@
         </div>
     </div>
 
-    <div class="version-tag">v0.12.0</div>
+    <div class="version-tag">v0.13.0</div>
 
-    <script type="module" src="js/main.js" version="0.12.0"></script>
+    <script type="module" src="js/main.js" version="0.13.0"></script>
 </body>
 </html>

@@ -14,6 +14,7 @@ import { Game } from './game.js';
 import { soundManager } from './audio.js';
 import { loadRecords, saveRecord, getRecordRank, isNewRecord, renderRecordsTable } from './records.js';
 import { loadingManager } from './loading.js';
+import { loadingBg } from './loadingBg.js';
 
 /** -------------------- 全局变量 -------------------- */
 
@@ -35,6 +36,7 @@ let ufoFlyingTime = 0;
 let ufoFloatAnim = null;
 let ufoOffScreen = false;
 let ufoOffScreenTime = 0;
+let ufoLastFromLeft = false;
 const UFO_FLY_DURATION = 60000;
 const UFO_PAUSE_TIMEOUT = 300000;
 const UFO_OFFSCREEN_DELAY = 1800;
@@ -431,7 +433,7 @@ function updateSkillBtnHover(globalPos) {
 
 function isInsidePauseBtn(localX, localY) {
     return localX >= pauseBtnRect.x && localX <= pauseBtnRect.x + pauseBtnRect.w &&
-           localY >= pauseBtnRect.y && localY <= pauseBtnRect.y + pauseBtnRect.h;
+        localY >= pauseBtnRect.y && localY <= pauseBtnRect.y + pauseBtnRect.h;
 }
 
 /** -------------------- 渲染更新 -------------------- */
@@ -639,7 +641,7 @@ function updateDropGuideLine() {
     const local = gameContainer.toLocal({ x: globalX, y: 0 });
     const x = Math.max(WALL_THICKNESS + fruitInfo.radius, Math.min(GAME_WIDTH - WALL_THICKNESS - fruitInfo.radius, local.x));
     const minRadius = FRUITS[0].radius;
-    const startY = 80 + minRadius; 
+    const startY = 80 + minRadius;
     const endY = GAME_HEIGHT;
     const dashLen = 6;
     const gapLen = 4;
@@ -805,7 +807,8 @@ function updateScorePopups() {
 function _spawnUfoAtSide() {
     const elW = 64, elH = 64;
     const W = window.innerWidth, H = window.innerHeight;
-    const fromLeft = Math.random() < 0.5;
+    ufoLastFromLeft = !ufoLastFromLeft;
+    const fromLeft = ufoLastFromLeft;
 
     const vx = UFO_BASE_SPEED + Math.random() * 2;
     const vyMax = vx * (UFO_V_DRIFT_RATIO * H / W);
@@ -957,6 +960,25 @@ function handleResize() {
     if (app && app.stage && scale > 0) {
         app.stage.scale.set(scale);
     }
+
+    const settingsBtn = document.getElementById('settings-btn');
+    const aboutBtn = document.getElementById('about-btn');
+    if (isLandscape && settingsBtn && aboutBtn) {
+        const aboutRect = aboutBtn.getBoundingClientRect();
+        const btnSize = 56;
+        const gap = 10;
+        
+
+        // 布局隐患点
+        // -------------------------------------------------
+        settingsBtn.style.left = (aboutRect.left - btnSize - gap) + 'px';
+        settingsBtn.style.top = (aboutRect.bottom - btnSize) + 'px';
+        settingsBtn.style.bottom = 'auto';
+    } else if (settingsBtn) {
+        settingsBtn.style.left = '';
+        settingsBtn.style.top = '';
+        settingsBtn.style.bottom = '';
+    }
 }
 
 function getGameTimeSeconds() {
@@ -1014,9 +1036,15 @@ async function init() {
     let resizeTimer;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(handleResize, 100);
+        resizeTimer = setTimeout(() => {
+            handleResize();
+            loadingBg.resize();
+        }, 100);
     });
-    window.addEventListener('orientationchange', () => setTimeout(handleResize, 200));
+    window.addEventListener('orientationchange', () => setTimeout(() => {
+        handleResize();
+        loadingBg.resize();
+    }, 200));
 
     loadingManager.init();
 
@@ -1030,9 +1058,15 @@ async function init() {
         console.warn('Failed to fetch sound config:', e);
     }
 
+    // 加载资源数量统计
     loadingManager.setTotal(5 + 3 + 1 + voiceCount);
 
-    loadingManager.tick('正在装个逼…… images/spritesheet.png');
+    // 加载字体
+    loadingManager.tick('正在加载字体……');
+    await Assets.load('https://fusion-pixel-font.takwolf.com/fusion-pixel-12px-proportional-zh_hans.otf.woff2');
+
+    // 加载头像纹理
+    loadingManager.tick('正在装个逼……');
     spritesheetTexture = await Assets.load('images/spritesheet.png');
     frameW = spritesheetTexture.width / 5;
     frameH = spritesheetTexture.height / 11;
@@ -1046,18 +1080,29 @@ async function init() {
         }
     }
 
-    loadingManager.tick('正在+5000…… images/3-panel.png');
+    // 加载背景动画
+    const bgContainer = document.getElementById('loading-bg-container');
+    await loadingBg.init(bgContainer);
+    const spritesheetImg = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = 'images/spritesheet.png';
+    });
+    await loadingBg.startWithSpritesheet(spritesheetImg);
+
+    loadingManager.tick('正在+5000……');
     panelSprite = await loadSprite('images/3-panel.png');
     panelSprite.width = PANEL_WIDTH;
     panelSprite.height = PANEL_HEIGHT;
 
-    loadingManager.tick('正在咕咕嘎嘎…… images/0-front.png');
+    loadingManager.tick('正在咕咕嘎嘎……');
     frontSprite = await loadSprite('images/0-front.png');
 
-    loadingManager.tick('正在入侵地球…… images/0-ufo.png');
+    loadingManager.tick('正在入侵地球……');
     ufoTexture = await Assets.load('images/0-ufo.png');
 
-    loadingManager.tick('正在刺死…… images/0-boop.png');
+    loadingManager.tick('正在刺死……');
     boopTexture = await Assets.load('images/0-boop.png');
     boopFrameH = boopTexture.height / 5;
     for (let f = 0; f < 5; f++) {
@@ -1079,7 +1124,9 @@ async function init() {
     await soundManager.load('button', 'sound/button.mp3');
 
     loadingManager.tick('正在加载背景音乐……');
-    await soundManager.loadBGM('sound/music.mp3');
+    await soundManager.loadBGM('menu', 'sound/menu_bgm.mp3');
+    loadingManager.tick('正在加载游戏音乐……');
+    await soundManager.loadBGM('gameplay', 'sound/gameplay_bgm.mp3');
 
     if (voiceCount > 0) {
         await soundManager.loadVoiceConfig(voiceConfig, (level) => {
@@ -1088,7 +1135,12 @@ async function init() {
     }
 
     loadingManager.tick('正在初始化……');
-    loadingManager.hide();
+    loadingManager.onReady(() => {
+        document.getElementById('main-menu').classList.remove('hidden');
+        loadingManager.hide();
+    });
+
+    loadingManager.showReady();
 
     game = new Game(soundManager);
 
@@ -1101,16 +1153,43 @@ async function init() {
 
     app.ticker.add(render);
     handleResize();
-    soundManager.startBGM();
 }
 
 function startGame() {
-    document.getElementById('start-screen').classList.add('hidden');
-    document.getElementById('pixi-container').classList.remove('hidden');
+    document.getElementById('main-menu').classList.add('hidden');
+    const pixiContainer = document.getElementById('pixi-container');
+    pixiContainer.classList.remove('hidden');
+    pixiContainer.style.opacity = 0;
+    void pixiContainer.offsetHeight;
+    requestAnimationFrame(() => {
+        pixiContainer.style.opacity = 1;
+    });
     document.body.classList.add('game-active');
+    loadingBg.enterGameMode();
     soundManager.init();
     applyVolumeSettings();
+    soundManager.crossfadeTo('gameplay');
     game.start();
+
+    //gsap 动画写法
+    // const pixiContainer = document.getElementById('pixi-container');
+    // const menu = document.getElementById('main-menu');
+    // const startGameTimeline = gsap.timeline({
+    //     onComplete: () => {
+    //         document.body.classList.add('game-active');
+    //         loadingBg.enterGameMode();
+    //         soundManager.init();
+    //         applyVolumeSettings();
+    //         soundManager.crossfadeTo('gameplay');
+    //         game.start();
+    //     }
+    // });
+    // startGameTimeline.to(menu, { opacity: 0, duration: 0.2, ease: 'power2.inOut' })
+    //     .set(menu, { className: '+=hidden' })
+    //     .set(pixiContainer, { className: '+=hidden' })
+    //     .fromTo(pixiContainer, { opacity: 0 }, {
+    //         opacity: 1, duration: 0.5, ease: 'power2.inOut'
+    //     });
 }
 
 function openRecords() {
@@ -1150,14 +1229,14 @@ function loadVolumeSettings() {
     try {
         const raw = localStorage.getItem('biggerPixi_volumes');
         if (raw) return JSON.parse(raw);
-    } catch (e) {}
+    } catch (e) { }
     return { sfx: 0.5, music: 0.5 };
 }
 
 function saveVolumeSettings(sfx, music) {
     try {
         localStorage.setItem('biggerPixi_volumes', JSON.stringify({ sfx, music }));
-    } catch (e) {}
+    } catch (e) { }
 }
 
 function applyVolumeSettings() {
@@ -1251,13 +1330,15 @@ function endGameFromPause() {
 function quitToHome() {
     document.getElementById('pause-screen').classList.add('hidden');
     document.getElementById('game-over-modal').classList.remove('visible');
-    document.getElementById('start-screen').classList.remove('hidden');
+    document.getElementById('main-menu').classList.remove('hidden');
     document.getElementById('pixi-container').classList.add('hidden');
     document.body.classList.remove('game-active');
+    loadingBg.exitGameMode();
     game.restart();
     game.started = false;
     game.paused = false;
     resetUfoSummonState();
+    soundManager.crossfadeTo('menu');
 }
 
 function restartFromModal() {
@@ -1274,6 +1355,7 @@ function resetUfoSummonState() {
     ufoPaused = false;
     ufoFlyingTime = 0;
     ufoOffScreen = false;
+    ufoLastFromLeft = false;
     _resetUfoFloat();
 }
 
@@ -1286,12 +1368,12 @@ function animateButtonPress(el) {
         duration: 0.1,
         ease: 'power2.in'
     })
-    .to(el, {
-        scale: 1,
-        y: 0,
-        duration: 0.3,
-        ease: 'elastic.out(1, 0.35)'
-    }, '-=0.05');
+        .to(el, {
+            scale: 1,
+            y: 0,
+            duration: 0.3,
+            ease: 'elastic.out(1, 0.35)'
+        }, '-=0.05');
 }
 
 function addHoverBounce(el) {
@@ -1320,6 +1402,9 @@ function setupHTMLButtons() {
     startBtns.forEach(addHoverBounce);
     const modalBtns = document.querySelectorAll('.modal-btn');
     modalBtns.forEach(addHoverBounce);
+
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) addHoverBounce(settingsBtn);
 
     const bind = (id, handler) => {
         const el = document.getElementById(id);
