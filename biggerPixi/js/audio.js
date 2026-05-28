@@ -20,6 +20,7 @@ class SoundManager {
         this.bgmBuffers = {};
         this._bgmSource = null;
         this._bgmPrevSource = null;
+        this._countdownSource = null;
         this._bgmCurrent = null;
         this._bgmFadeTimer = null;
         this._sfxVolume = 0.5;
@@ -56,17 +57,20 @@ class SoundManager {
 
     play(name, opts = {}) {
         if (!this.ctx || !this.buffers[name]) return;
-        this._playBuf(this.buffers[name], opts);
+        const source = this._playBuf(this.buffers[name], opts);
+        if (name === 'countdown') {
+            this._countdownSource = source;
+        }
     }
 
     _playBuf(buf, opts = {}) {
-        if (!this.ctx || !buf) return;
+        if (!this.ctx || !buf) return null;
         if (this.ctx.state === 'suspended') {
             this.ctx.resume().then(() => this._startSource(buf, opts));
-            return;
+            return null;
         }
-        if (this.ctx.state !== 'running') return;
-        this._startSource(buf, opts);
+        if (this.ctx.state !== 'running') return null;
+        return this._startSource(buf, opts);
     }
 
     _startSource(buf, opts) {
@@ -95,6 +99,7 @@ class SoundManager {
         }
 
         source.start(now, 0, dur);
+        return source;
     }
 
     async _loadVoiceLevel(level) {
@@ -263,6 +268,14 @@ class SoundManager {
         this._mergeMaxBuf = null;
         clearTimeout(this._bgmFadeTimer);
         this._bgmFadeTimer = null;
+        this._countdownSource = null;
+    }
+
+    stopCountdown() {
+        if (this._countdownSource) {
+            try { this._countdownSource.stop(); } catch (e) {}
+            this._countdownSource = null;
+        }
     }
 
     /** 暂停音频（页面失焦时调用） */

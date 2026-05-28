@@ -404,6 +404,7 @@ function setupInput() {
                     });
                 }
             });
+            soundManager.play('alien');
             game.activateUFO();
             return;
         }
@@ -985,12 +986,12 @@ function getGameTimeSeconds() {
     return game ? game.getGameTimeSeconds() : 0;
 }
 
-function showGameOverModal(finalScore) {
+function showGameOverModal(finalScore, gbCount) {
     const durationSec = getGameTimeSeconds();
     const recordsBefore = loadRecords();
     const newRec = isNewRecord(finalScore, recordsBefore);
 
-    saveRecord(finalScore, durationSec);
+    saveRecord(finalScore, durationSec, gbCount);
     const recordsAfter = loadRecords();
     const rankFinal = getRecordRank(finalScore, recordsAfter);
 
@@ -1011,6 +1012,30 @@ function showGameOverModal(finalScore) {
         } else {
             rankEl.textContent = rankFinal <= 10 ? String(rankFinal) : '-';
         }
+    }
+
+    const gbEl = document.getElementById('gb-count');
+    if (gbEl) {
+        if (gbCount > 0) {
+            gbEl.textContent = gbCount;
+        } else {
+            gbEl.textContent = '0';
+        }
+    }
+
+    const newRecTag = document.getElementById('new-record-tag');
+    if (newRecTag) {
+        if (newRec && finalScore > 0) {
+            newRecTag.classList.remove('hidden');
+        } else {
+            newRecTag.classList.add('hidden');
+        }
+    }
+
+    const highestEl = document.getElementById('highest-record');
+    if (highestEl) {
+        const highest = recordsAfter.length > 0 ? recordsAfter[0].score : finalScore;
+        highestEl.textContent = formatScore(highest);
     }
 }
 
@@ -1062,11 +1087,11 @@ async function init() {
     loadingManager.setTotal(5 + 3 + 1 + voiceCount);
 
     // 加载字体
-    loadingManager.tick('正在加载字体……');
+    loadingManager.tick('正在tb山沟搜索911612…');
     await Assets.load('https://fusion-pixel-font.takwolf.com/fusion-pixel-12px-proportional-zh_hans.otf.woff2');
 
     // 加载头像纹理
-    loadingManager.tick('正在装个逼……');
+    loadingManager.tick('正在从中华田园犬变成人形…');
     spritesheetTexture = await Assets.load('images/spritesheet.png');
     frameW = spritesheetTexture.width / 5;
     frameH = spritesheetTexture.height / 11;
@@ -1091,18 +1116,18 @@ async function init() {
     });
     await loadingBg.startWithSpritesheet(spritesheetImg);
 
-    loadingManager.tick('正在+5000……');
+    loadingManager.tick('正在+5000…');
     panelSprite = await loadSprite('images/3-panel.png');
     panelSprite.width = PANEL_WIDTH;
     panelSprite.height = PANEL_HEIGHT;
 
-    loadingManager.tick('正在咕咕嘎嘎……');
+    loadingManager.tick('正在咕咕嘎嘎…');
     frontSprite = await loadSprite('images/0-front.png');
 
-    loadingManager.tick('正在入侵地球……');
+    loadingManager.tick('正在刘C梦…');
     ufoTexture = await Assets.load('images/0-ufo.png');
 
-    loadingManager.tick('正在刺死……');
+    loadingManager.tick('正在刺死…');
     boopTexture = await Assets.load('images/0-boop.png');
     boopFrameH = boopTexture.height / 5;
     for (let f = 0; f < 5; f++) {
@@ -1114,27 +1139,30 @@ async function init() {
 
     soundManager.init();
 
-    loadingManager.tick('正在加载下落音效……');
-    await soundManager.load('falling', 'sound/falling.wav');
-    loadingManager.tick('正在加载合成音效……');
-    await soundManager.load('merge', 'sound/bubble.wav');
-    loadingManager.tick('正在加载结束音效……');
-    await soundManager.load('gameover', 'sound/gameover.wav');
-    loadingManager.tick('正在加载按钮音效……');
+    loadingManager.tick('正在长按重生geebar…');
+    await soundManager.load('falling', 'sound/falling.mp3');
+    loadingManager.tick('正在和弹幕吵架…');
+    await soundManager.load('merge', 'sound/bubble.mp3');
+    loadingManager.tick('正在双人站市场…');
+    await soundManager.load('gameover', 'sound/gameover.mp3');
+    loadingManager.tick('正在部署爆能器…');
     await soundManager.load('button', 'sound/button.mp3');
-
-    loadingManager.tick('正在加载背景音乐……');
+    loadingManager.tick('正在G头刷抖…');
     await soundManager.loadBGM('menu', 'sound/menu_bgm.mp3');
-    loadingManager.tick('正在加载游戏音乐……');
+    loadingManager.tick('正在马来的路上…');
     await soundManager.loadBGM('gameplay', 'sound/gameplay_bgm.mp3');
+    loadingManager.tick('正在bbkk…');
+    await soundManager.load('countdown', 'sound/count_down.mp3');
+    loadingManager.tick('正在单排上神话…');
+    await soundManager.load('alien', 'sound/ufo.mp3');
 
     if (voiceCount > 0) {
         await soundManager.loadVoiceConfig(voiceConfig, (level) => {
-            loadingManager.tick(`正在加载语音包 Lv${level}`);
+            loadingManager.tick(`正在戒烟 day${level}`);
         });
     }
 
-    loadingManager.tick('正在初始化……');
+    loadingManager.tick('正在急急急…');
     loadingManager.onReady(() => {
         document.getElementById('main-menu').classList.remove('hidden');
         loadingManager.hide();
@@ -1144,8 +1172,8 @@ async function init() {
 
     game = new Game(soundManager);
 
-    game.on('gameOver', (finalScore) => {
-        showGameOverModal(finalScore);
+    game.on('gameOver', (finalScore, gbCount) => {
+        showGameOverModal(finalScore, gbCount);
     });
 
     buildScene();
@@ -1324,7 +1352,7 @@ function endGameFromPause() {
     game.gameOver = true;
     game.gameOverStartTime = performance.now();
     game.gameOverAnimating = false;
-    showGameOverModal(game.score);
+    showGameOverModal(game.score, game.gbCount);
 }
 
 function quitToHome() {

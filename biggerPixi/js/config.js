@@ -59,14 +59,14 @@ export const MERGE_AUDIO_CFG = {
 export const SKILLS = {
     btnW: 90, btnH: 52,
     btnGap: 18,
-    btnY: GAME_OFFSET_Y + GAME_HEIGHT + 20,
+    btnY: GAME_OFFSET_Y + GAME_HEIGHT + 40,
     ufoMaxUses: 2,
-    ufoDuration: 3500,
+    ufoDuration: 3500,//UFO吸引时间
     ufoUpAccel: 0.0080,
     ufoMaxUpSpeed: 2.5,
     ufoDamping: 0.97,
     ufoUpBaseline: 0.2,
-    alienDropCharge: 5,     // 外星人掉落个数
+    alienDropCharge: 10,// UFO飞行触发所需的level0掉落个数
     alienTransformDelay: 120 // 外星人逐个变身的间隔(ms)
 };
 

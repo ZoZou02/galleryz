@@ -21,6 +21,7 @@ export class Game {
         this.pendingMerges = [];
         this.mergeEffects = [];
         this.score = 0;
+        this.gbCount = 0;
         this.scorePopups = [];
 
         this.gameOver = false;
@@ -34,6 +35,7 @@ export class Game {
         this.dangerLineY = 100;
         this.dangerTime = 0;
         this.dangerCooldownStart = 0;
+        this._countdownPlayed = false;
 
         this.gameOverAnimating = false;
         this.gameOverExplodeIndex = 0;
@@ -162,7 +164,7 @@ export class Game {
         this.nextFruitLevel = this._getRandomInitialLevel();
         this.lastDropTime = now;
 
-        if (droppedLevel === 0) {
+        if (droppedLevel === 0 && this.ufoUsesLeft <= 0) {
             this.alienChargeCount++;
             if (this.alienChargeCount >= SKILLS.alienDropCharge) {
                 this.ufoSummoned = true;
@@ -302,6 +304,7 @@ export class Game {
             });
 
             this.score += newFruitInfo.score;
+            if (pm.newLevel === 10) this.gbCount++;
             this._addScorePopup(newFruitInfo.score, '#f9ca71');
 
             this.mergeEffects.push({
@@ -356,6 +359,8 @@ export class Game {
                 } else if (now - this.dangerCooldownStart > 500) {
                     this.dangerTime = 0;
                     this.dangerCooldownStart = 0;
+                    this._countdownPlayed = false;
+                    this.sound.stopCountdown();
                 }
             } else {
                 this.dangerCooldownStart = 0;
@@ -364,11 +369,16 @@ export class Game {
             this.dangerCooldownStart = 0;
             if (hasStableFruitAbove) {
                 this.dangerTime = now;
+                this._countdownPlayed = false;
             }
         }
 
         if (this.dangerTime > 0) {
             const elapsed = (now - this.dangerTime) / 1000;
+            if (!this._countdownPlayed) {
+                this.sound.play('countdown');
+                this._countdownPlayed = true;
+            }
             if (elapsed > DIFFICULTY.dangerTimeoutSeconds) {
                 return true;
             }
@@ -407,7 +417,7 @@ export class Game {
             this.fruits = [];
             this.mergeEffects = [];
             this.gameOverAnimating = false;
-            this._onGameOver && this._onGameOver(this.score);
+            this._onGameOver && this._onGameOver(this.score, this.gbCount);
             return;
         }
 
@@ -512,7 +522,9 @@ export class Game {
         fruit.state = 'idle';
         fruit.mergeAnimStartTime = now;
 
-        this.sound.playAlienVoice();
+        if (this.alienTransformIndex % 4 === 0) {
+            this.sound.playAlienVoice();
+        }
 
         this.alienTransformIndex++;
         this.alienTransformNextTime = now + SKILLS.alienTransformDelay;
@@ -526,12 +538,14 @@ export class Game {
         this.pendingMerges = [];
         this.mergeEffects = [];
         this.score = 0;
+        this.gbCount = 0;
         this.gameOver = false;
         this.gameOverAnimating = false;
         this.gameOverExplodeIndex = 0;
         this.gameOverExplodeTime = 0;
         this.dangerTime = 0;
         this.dangerCooldownStart = 0;
+        this._countdownPlayed = false;
         this.lastDropTime = 0;
         this.lastPopupBaseY = 15;
         this.sound.reset();

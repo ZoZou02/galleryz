@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/style.css" version="0.13.1">
+    <link rel="stylesheet" href="css/style.css" version="0.13.2">
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
 
@@ -105,8 +105,8 @@
                 </div>
             </div>
             <div class="pause-buttons">
-                <button id="resume-btn" class="modal-btn modal-btn-primary"><span class="icon-triangle"></span> 继续游戏</button>
-                <button id="pause-restart-btn" class="modal-btn modal-btn-secondary"><span class="icon-restart"></span> 重新开始</button>
+                <button id="resume-btn" class="modal-btn modal-btn-primary">继续游戏</button>
+                <button id="pause-restart-btn" class="modal-btn modal-btn-secondary">重新开始</button>
                 <button class="modal-btn modal-btn-purple" id="quit-btn-1">结束游戏</button>
             </div>
         </div>
@@ -156,6 +156,7 @@
             <div class="score-stars"></div>
             <div id="final-score-wrap" class="final-score-wrap">
                 <div id="final-score" class="score-display">0</div>
+                <span id="new-record-tag" class="new-record-tag hidden">NEW RECORD</span>
             </div>
             <div id="game-stats" class="game-stats">
                 <div class="stat-row">
@@ -166,6 +167,14 @@
                     <span class="stat-label">分数名次</span>
                     <span id="score-rank">-</span>
                 </div>
+                <div class="stat-row">
+                    <span class="stat-label">最高记录</span>
+                    <span id="highest-record">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">GB数量</span>
+                    <span id="gb-count">0</span>
+                </div>
             </div>
             <div class="pause-buttons">
                 <button id="restart-btn" class="modal-btn modal-btn-primary">再来一局</button>
@@ -174,8 +183,7 @@
         </div>
     </div>
 
-    <div class="version-tag">v0.13.1 made by zozou</div>
-
-    <script type="module" src="js/main.js" version="0.13.1"></script>
+    <div class="version-tag">v0.13.2 by zozou</div>
+    <script type="module" src="js/main.js" version="0.13.2"></script>
 </body>
 </html>

@@ -15,10 +15,10 @@ export function loadRecords() {
     } catch (e) { return []; }
 }
 
-export function saveRecord(scoreVal, durationSec) {
+export function saveRecord(scoreVal, durationSec, gbCount) {
     if (scoreVal <= 0) return;
     let records = loadRecords();
-    const record = { score: scoreVal, duration: Math.floor(durationSec), ts: Date.now() };
+    const record = { score: scoreVal, duration: Math.floor(durationSec), ts: Date.now(), gb: gbCount || 0 };
     records.push(record);
     records.sort((a, b) => b.score - a.score);
     records = records.slice(0, MAX_RECORDS);
@@ -36,8 +36,9 @@ export function getRecordRank(scoreVal, records) {
 }
 
 export function isNewRecord(scoreVal, records) {
-    if (records.length < MAX_RECORDS) return true;
-    return scoreVal > records[records.length - 1].score;
+    if (scoreVal <= 0) return false;
+    if (records.length === 0) return true;
+    return scoreVal > records[0].score;
 }
 
 export function renderRecordsTable() {
@@ -54,10 +55,11 @@ export function renderRecordsTable() {
 
     records.forEach((r, i) => {
         const tr = document.createElement('tr');
+        const gbTag = (r.gb && r.gb > 0) ? '<span class="gb-tag">G</span>' : '';
         tr.innerHTML =
             '<td>' + (i + 1) + '</td>' +
-            '<td>' + formatScore(r.score) + '</td>' +
-            '<td>' + formatTime(r.duration) + '</td>';
+            '<td>' + formatScore(r.score)  + '</td>' +
+            '<td>' + formatTime(r.duration)+ gbTag + '</td>';
         if (i === 0) {
             tr.classList.add('rank-1');
         } else if (i === 1) {
