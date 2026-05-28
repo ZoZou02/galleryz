@@ -1446,3 +1446,23 @@ function setupRecordsScrollListener() {
 
 setupRecordsScrollListener();
 init();
+
+// ========== 页面聚焦/失焦处理 ==========
+// 网页不在前台时暂停所有动画、游戏和音频，回到前台后恢复
+function handleVisibilityChange() {
+    if (document.hidden) {
+        loadingBg.pauseAnimation();
+        soundManager.suspendAudio();
+
+        // 游戏运行中且未暂停，自动触发暂停
+        if (game && game.started && !game.paused && !game.gameOver) {
+            game.togglePause();
+            document.getElementById('pause-screen').classList.remove('hidden');
+        }
+    } else {
+        loadingBg.resumeAnimation();
+        soundManager.resumeAudio();
+    }
+}
+
+document.addEventListener('visibilitychange', handleVisibilityChange);

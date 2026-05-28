@@ -5,6 +5,14 @@
  */
 const SHAPES = ['club', 'diamond', 'heart', 'spade'];
 
+// ========== 扑克花色 SVG 路径（Path2D，保持原始 24×24 viewBox） ==========
+const SHAPE_PATHS = {
+    club: new Path2D("M13.775 11.04C14.933 9.266 16 7.632 16 6a4 4 0 0 0-8 0c0 1.633 1.067 3.267 2.225 5.04h.001l.234.359q-.433-.331-.808-.626C8.276 9.697 7.386 9 6 9a4 4 0 0 0 0 8c1.633 0 3.267-1.067 5.04-2.225l.03-.02c-.093 2.281-.958 3.683-1.913 5.23l-.369.602c-.384.636.087 1.413.83 1.413h4.764c.743 0 1.214-.777.83-1.413l-.369-.602c-.955-1.547-1.82-2.949-1.913-5.23l.03.02C14.734 15.933 16.368 17 18 17a4 4 0 0 0 0-8c-1.386 0-2.276.697-3.652 1.773q-.375.296-.808.626z"),
+    diamond: new Path2D("M4.036 10.734l7.19-8.788a1 1 0 0 1 1.548 0l7.19 8.787a2 2 0 0 1 0 2.534l-7.19 8.787a1 1 0 0 1-1.548 0l-7.19-8.787a2 2 0 0 1 0-2.533"),
+    heart: new Path2D("M2 8.5a5.5 5.5 0 0 1 10-3.163A5.5 5.5 0 0 1 22 8.5c0 7.5-10 12.985-10 12.985S2 16 2 8.5"),
+    spade: new Path2D("M10.951 15.893A5.83 5.83 0 0 1 7.5 17C4.462 17 2 14.761 2 12c0-3.548 3.525-6.089 6.644-8.338C9.92 2.742 11.129 1.872 12 1c.871.871 2.08 1.742 3.356 2.662C18.476 5.911 22 8.452 22 12c0 2.761-2.462 5-5.5 5a5.83 5.83 0 0 1-3.451-1.107c.284 1.646 1.009 2.82 1.794 4.092l.369.602c.384.636-.087 1.413-.83 1.413H9.618c-.743 0-1.214-.777-.83-1.413l.369-.602c.785-1.272 1.51-2.446 1.794-4.092"),
+};
+
 // ========== 可调节动画参数 ==========
 // ※ SCROLL_DURATION 是循环核心参数，修改后 cycleH / scrollT 均随之变化，直接影响循环流程
 const SCROLL_DURATION = 30;    // [★循环关键] 头像网格滚动一整圈的时长(秒)，越大越慢
@@ -29,6 +37,10 @@ export class LoadingBackground {
         this._shapeTypes = [];
         this._running = false;
         this._darkOverlay = null;
+        this._animCurrentY = 0;
+        this._animAbsTime = 0;
+        this._animLastTime = 0;
+        this._animPaused = false;
     }
 
     async init(containerEl) {
@@ -55,6 +67,8 @@ export class LoadingBackground {
         this._frameW = img.width / 5;
         this._frameH = img.height / 11;
 
+        this._animCurrentY = 0;
+        this._animAbsTime = 0;
         this._generateShapeTypes();
         this._buildGrid();
         this._startAnimation();
@@ -73,9 +87,12 @@ export class LoadingBackground {
         const W = window.innerWidth;
         const H = window.innerHeight;
 
-        const cellW = Math.ceil(W / this._numCols * 0.6);  // 每个单元格的宽度
+        const isPortrait = W < H; // 竖屏设备
+        const cellScale = isPortrait ? 1.5 : 0.6; // 竖屏时放大头像
+        const cellW = Math.ceil(W / this._numCols * cellScale);  // 每个单元格的宽度
         const cellH = cellW;
-        const rowsNeeded = Math.ceil(H / cellH) + 2;
+        let rowsNeeded = Math.ceil(H / cellH) + 2;
+        if (rowsNeeded % 2 !== 0) rowsNeeded++; // 确保偶数，保证周期内容一致
         this._gridCycleH = rowsNeeded * cellH;
 
         const extraCols = 5;   // 额外的列数，用于循环布局
@@ -121,186 +138,59 @@ export class LoadingBackground {
     }
 
     _drawShape(ctx, type, cx, cy, r) {
+        const path = SHAPE_PATHS[type];
+        if (!path) return;
+
         ctx.save();
         ctx.fillStyle = 'rgba(255,255,255,0.22)';
         ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-        ctx.lineWidth = 2;
 
-        ctx.beginPath();
+        // 将 24×24 viewBox 的 SVG 路径缩放并平移到目标位置
+        ctx.translate(cx - r, cy - r);
+        const s = (r * 2) / 24;
+        ctx.scale(s, s);
+        ctx.lineWidth = 2 / s; // 补偿缩放，保持实际线宽为 2px
 
-        switch (type) {
-            case 'square':
-                ctx.roundRect(cx - r, cy - r, r * 2, r * 2, 4);
-                break;
-            case 'triangle': {
-                const h = r * 1.6;
-                ctx.moveTo(cx, cy - h);
-                ctx.lineTo(cx + r * 1.4, cy + h * 0.5);
-                ctx.lineTo(cx - r * 1.4, cy + h * 0.5);
-                ctx.closePath();
-                break;
-            }
-            case 'diamond':
-                ctx.moveTo(cx, cy - r);
-                ctx.lineTo(cx + r, cy);
-                ctx.lineTo(cx, cy + r);
-                ctx.lineTo(cx - r, cy);
-                ctx.closePath();
-                break;
-            case 'cross': {
-                const armW = r * 0.45;
-                const armH = r * 1.1;
-                ctx.moveTo(cx - armW, cy - armH);
-                ctx.lineTo(cx + armW, cy - armH);
-                ctx.lineTo(cx + armW, cy - armW);
-                ctx.lineTo(cx + armH, cy - armW);
-                ctx.lineTo(cx + armH, cy + armW);
-                ctx.lineTo(cx + armW, cy + armW);
-                ctx.lineTo(cx + armW, cy + armH);
-                ctx.lineTo(cx - armW, cy + armH);
-                ctx.lineTo(cx - armW, cy + armW);
-                ctx.lineTo(cx - armH, cy + armW);
-                ctx.lineTo(cx - armH, cy - armW);
-                ctx.lineTo(cx - armW, cy - armW);
-                ctx.closePath();
-                break;
-            }
-            case 'star': {
-                const spikes = 5;
-                const outerR = r;
-                const innerR = r * 0.4;
-                for (let i = 0; i < spikes * 2; i++) {
-                    const radius = i % 2 === 0 ? outerR : innerR;
-                    const angle = (Math.PI / 2 * 3) + (i * Math.PI / spikes);
-                    const sx = cx + Math.cos(angle) * radius;
-                    const sy = cy + Math.sin(angle) * radius;
-                    if (i === 0) ctx.moveTo(sx, sy);
-                    else ctx.lineTo(sx, sy);
-                }
-                ctx.closePath();
-                break;
-            }
-            // ===== 扑克牌花色 =====
-            case 'heart': {
-                const top = cy - r * 0.3;
-                const bottom = cy + r * 0.9;
-                const midY = cy + r * 0.2;
-
-                ctx.moveTo(cx, bottom);
-                ctx.bezierCurveTo(
-                    cx + r * 1.2, midY,
-                    cx + r, top,
-                    cx, cy - r * 0.6
-                );
-                ctx.bezierCurveTo(
-                    cx - r, top,
-                    cx - r * 1.2, midY,
-                    cx, bottom
-                );
-                ctx.closePath();
-                break;
-            }
-
-            case 'club': {
-                const stemW = r * 0.18;
-                const stemH = r * 0.9;
-
-                // 茎
-                ctx.moveTo(cx - stemW, cy + r * 0.3);
-                ctx.lineTo(cx - stemW, cy + stemH);
-                ctx.lineTo(cx + stemW, cy + stemH);
-                ctx.lineTo(cx + stemW, cy + r * 0.3);
-                ctx.closePath();
-
-                // 下面左圆
-                ctx.moveTo(cx - r * 0.55 + r * 0.5, cy + r * 0.15);
-                ctx.arc(cx - r * 0.55, cy + r * 0.15, r * 0.5, 0, Math.PI * 2);
-                // 下面右圆
-                ctx.moveTo(cx + r * 0.55 + r * 0.5, cy + r * 0.15);
-                ctx.arc(cx + r * 0.55, cy + r * 0.15, r * 0.5, 0, Math.PI * 2);
-                // 上面圆
-                ctx.moveTo(cx + r * 0.55, cy - r * 0.35);
-                ctx.arc(cx, cy - r * 0.35, r * 0.55, 0, Math.PI * 2);
-                break;
-            }
-
-            case 'spade': {
-                const top = cy - r * 0.5;
-                const bottom = cy + r * 0.6;
-
-                // 上半部分
-                ctx.moveTo(cx, top - r * 0.4);
-                ctx.bezierCurveTo(
-                    cx + r * 1.1, top + r * 0.3,
-                    cx + r * 0.6, bottom,
-                    cx, bottom
-                );
-                ctx.bezierCurveTo(
-                    cx - r * 0.6, bottom,
-                    cx - r * 1.1, top + r * 0.3,
-                    cx, top - r * 0.4
-                );
-                ctx.closePath();
-
-                // 茎
-                const stemW = r * 0.15;
-                ctx.moveTo(cx - stemW, bottom);
-                ctx.lineTo(cx - stemW * 1.5, bottom + r * 0.7);
-                ctx.lineTo(cx + stemW * 1.5, bottom + r * 0.7);
-                ctx.lineTo(cx + stemW, bottom);
-                ctx.closePath();
-                break;
-            }
-            // =====================
-
-            default: // circle
-                ctx.arc(cx, cy, r, 0, Math.PI * 2);
-                break;
-        }
-
-        ctx.fill();
-        ctx.stroke();
+        ctx.fill(path);
+        ctx.stroke(path);
         ctx.restore();
     }
 
     _startAnimation() {
         this._stopAnimation();
+        this._animPaused = false;
 
         this._canvas.style.transformOrigin = '50% 50%';
 
         const gridCycleH = this._gridCycleH;
         const speed = gridCycleH / SCROLL_DURATION; // px/s
-        const maxCycles = 4; // 5 周期画布，用前 4 个循环滚动，保留 1 个缓冲区
+        const cycleCount = 3; // 循环序列包含 3 个周期 (0→1→2→0)
+        const maxScrollCycles = 3; // 滚动到第 3 个周期末尾（周期3=周期0）时重置
 
-        let lastTime = performance.now();
-        let currentY = 0;
-        let absTime = 0; // 累计时间，用于摆动相位（不取模）
-
-        console.log('[loadingBg] 动画启动 | gridCycleH:', gridCycleH.toFixed(0),
-            '| speed:', speed.toFixed(1), 'px/s | canvasCycles: 5 | SCROLL_DURATION:', SCROLL_DURATION, 's');
+        this._animLastTime = performance.now();
 
         const tick = (now) => {
             if (!this._running) return;
             this._animFrameId = requestAnimationFrame(tick);
 
-            const dt = Math.min((now - lastTime) / 1000, 0.2); // 防大跳帧
-            lastTime = now;
-            absTime += dt;
+            const dt = Math.min((now - this._animLastTime) / 1000, 0.2); // 防大跳帧
+            this._animLastTime = now;
+            this._animAbsTime += dt;
 
             // y 持续累减，不取模 → 无 CSS 值跳变
-            currentY -= speed * dt;
+            this._animCurrentY -= speed * dt;
 
-            // 逼近缓冲区边界时，向上平移一个周期（视觉内容完全一致）
-            if (currentY <= -gridCycleH * maxCycles) {
-                currentY += gridCycleH;
+            // 滚动到周期3（=周期0）时，重置回周期0起点，实现无缝循环
+            if (this._animCurrentY <= -gridCycleH * maxScrollCycles) {
+                this._animCurrentY += gridCycleH * cycleCount;
             }
 
             // 摆动：sin(2π * t / T)，用不取模的 absTime 保证连续
-            const phase = (absTime / SWAY_DURATION) * Math.PI * 2;
+            const phase = (this._animAbsTime / SWAY_DURATION) * Math.PI * 2;
             const rotation = Math.sin(phase) * SWAY_ANGLE;
 
             this._canvas.style.transform =
-                `translate3d(0, ${currentY}px, 0) rotate(${rotation}deg)`;
+                `translate3d(0, ${this._animCurrentY}px, 0) rotate(${rotation}deg)`;
         };
 
         this._animFrameId = requestAnimationFrame(tick);
@@ -311,6 +201,21 @@ export class LoadingBackground {
             cancelAnimationFrame(this._animFrameId);
             this._animFrameId = null;
         }
+    }
+
+    /** 暂停背景动画（页面失焦时调用），保留当前滚动状态 */
+    pauseAnimation() {
+        if (!this._running || this._animPaused) return;
+        this._stopAnimation();
+        this._animPaused = true;
+    }
+
+    /** 恢复背景动画（页面聚焦时调用），从暂停位置继续 */
+    resumeAnimation() {
+        if (!this._running || !this._animPaused || !this._spritesheetImg) return;
+        this._animPaused = false;
+        this._animLastTime = performance.now();
+        this._startAnimation();
     }
 
     showContinueTextAndBg() {
@@ -407,6 +312,8 @@ export class LoadingBackground {
     resize() {
         if (!this._running || !this._spritesheetImg) return;
         this._stopAnimation();
+        this._animCurrentY = 0;
+        this._animAbsTime = 0;
         this._buildGrid();
         this._startAnimation();
     }

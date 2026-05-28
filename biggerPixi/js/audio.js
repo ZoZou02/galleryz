@@ -264,6 +264,20 @@ class SoundManager {
         clearTimeout(this._bgmFadeTimer);
         this._bgmFadeTimer = null;
     }
+
+    /** 暂停音频（页面失焦时调用） */
+    suspendAudio() {
+        if (this.ctx && this.ctx.state === 'running') {
+            this.ctx.suspend();
+        }
+    }
+
+    /** 恢复音频（页面聚焦时调用） */
+    resumeAudio() {
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
 }
 
 export const soundManager = new SoundManager();
