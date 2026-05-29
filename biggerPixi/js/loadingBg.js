@@ -395,16 +395,16 @@ export class LoadingBackground {
 
         // -- Level 8 专用动画参数 --
         const L8_FALL_START_Y = -fh;                                    // 下落起始（屏幕外）
-        const L8_FALL_DUR = 0.8;                                        // 下落时长
-        const L8_FALL_EASE = 'power2.in';                               // 下落缓动
-        const L8_ROLL_DUR = 0.55;                                       // 滚动时长
-        const L8_ROLL_EASE = 'power2.inOut';                            // 滚动缓动
+        const L8_FALL_DUR = 0.3;                                        // 下落时长
+        const L8_FALL_EASE = 'back.out(0.5)';                               // 下落缓动
+        const L8_ROLL_DUR = 0.6;                                       // 滚动时长
+        const L8_ROLL_EASE = 'power3.inOut';                            // 滚动缓动
 
         // -- 其余头像下落通用参数 --
         const OTHER_FALL_START_Y = -fh;                                 // 起始Y（屏幕外）
-        const OTHER_FALL_DUR = 0.45;                                    // 下落时长
+        const OTHER_FALL_DUR = 0.3;                                    // 下落时长
         const OTHER_FALL_EASE = 'back.out(0.5)';                           // 下落缓动
-        const OTHER_STAGGER = 0.2;                                      // 交错间隔
+        const OTHER_STAGGER = 0.1;                                      // 交错间隔
 
         // ========== 游戏idle循环参数 ==========
         const IDLE_SEQUENCE = [0, 1, 2, 3, 1, 0];
@@ -499,7 +499,7 @@ export class LoadingBackground {
                 }
             });
 
-            // GSDevTools.create({ animation: tl });
+            GSDevTools.create({ animation: tl });
 
             // ===== Level 10: 始终位于容器底部中央，淡入 =====
             tl.set(avatars[10], { x: 0, y: `+=${cellFix}`, left: '50%', bottom: '0%', xPercent: -50, autoAlpha: 0 });
@@ -518,7 +518,7 @@ export class LoadingBackground {
                 rotation: 0
             }, {
                 x: 0,
-                y: 0,
+                y: `+=64`,
                 left: '50%',
                 bottom: '0%',
                 autoAlpha: 1,
@@ -531,7 +531,7 @@ export class LoadingBackground {
 
             tl.to(avatars[8], {
                 x: cellW+128,
-                y: `+=${cellFix}`,
+                y: cellFix,
                 left: '50%',
                 bottom: '0%',
                 autoAlpha: 1,
