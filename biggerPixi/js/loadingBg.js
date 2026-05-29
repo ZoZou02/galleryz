@@ -499,7 +499,7 @@ export class LoadingBackground {
                 }
             });
 
-            GSDevTools.create({ animation: tl });
+            // GSDevTools.create({ animation: tl });
 
             // ===== Level 10: 始终位于容器底部中央，淡入 =====
             tl.set(avatars[10], { x: 0, y: `+=${cellFix}`, left: '50%', bottom: '0%', xPercent: -50, autoAlpha: 0 });
