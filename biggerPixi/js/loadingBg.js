@@ -276,6 +276,7 @@ export class LoadingBackground {
     }
 
     enterGameMode() {
+        this.hideEntranceAvatars();
         gsap.killTweensOf(this._canvas, 'filter');
         gsap.killTweensOf(this._darkOverlay);
         gsap.to(this._canvas, {
@@ -293,6 +294,7 @@ export class LoadingBackground {
     }
 
     exitGameMode() {
+        this.showEntranceAvatars();
         gsap.killTweensOf(this._canvas, 'filter');
         gsap.killTweensOf(this._darkOverlay);
         gsap.to(this._canvas, {
@@ -320,12 +322,304 @@ export class LoadingBackground {
 
     destroy() {
         this._stopAnimation();
+        this.removeEntranceAvatars();
         if (this._canvas && this._canvas.parentNode) {
             this._canvas.parentNode.removeChild(this._canvas);
         }
         this._canvas = null;
         this._ctx = null;
         this._running = false;
+    }
+
+    // 启动入口头像动画
+    // 1. 清理上一次的入口头像
+    // 2. 计算目标位置
+    // 3. 播放动画
+    async startEntranceAnimation() {
+        if (!this._spritesheetImg || !this._container) return;
+
+        this.removeEntranceAvatars();
+
+        const W = window.innerWidth;
+        const H = window.innerHeight;
+        const fw = this._frameW;
+        const fh = this._frameH;
+        const img = this._spritesheetImg;
+        const imgW = img.width;
+        const imgH = img.height;
+
+        // ==========================================
+        //         所有可调节参数（手动调整区）
+        // ==========================================
+
+        // -- 基础间距 --
+        const GAP = 32;
+        const AVATAR_SCALE = 0.5;                                       // 单个头像缩放倍率（1.0=原始大小）
+        const cellW = fw * AVATAR_SCALE - GAP;                          // 头像+间距宽度
+
+        // -- 容器动画 --
+        const CONTAINER_SCALE = 0.25;                                   // 最终缩放比例
+        const CONTAINER_DUR = 1.5;                                      // 缩放+下移时长
+        const CONTAINER_EASE = 'power2.inOut';                          // 缓动
+        const CONTAINER_BOTTOM_GAP = 0;                                     // 容器底部距屏幕底部的像素偏移（正值=上移）
+
+        // -- 背景渐变 --
+        const OVERLAY_COLOR = '#61a8c9';                                // 目标颜色
+        const OVERLAY_DUR = 0.7;                                        // 渐变时长
+        const OVERLAY_EASE = 'power2.inOut';                            // 缓动
+
+        // -- 头像最终位置Y轴（容器内） --
+        const BOTTOM_ROW_Y = H - fh / 2;                                // 底行：头像底部贴容器底部
+        const TOP_ROW_Y = BOTTOM_ROW_Y - fh - GAP;                     // 顶行：底行上方
+
+        // -- 所有头像参数（x: 容器内绝对坐标 / y: 行Y / rotation: 下落时旋转起始角度°） --
+        const avatarParams = {
+            10: { left: '50%', bottom: '0%', rotation: 0 },          //gb
+            8: { left: '50%', bottom: '0%', rotation: 0, scale: 0.1 },           //yjfn
+            9: { x: cellW, y: 128, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -10, scale: AVATAR_SCALE },//lee
+            7: { x: -cellW, y: 128, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 10, scale: AVATAR_SCALE },//ump
+            6: { x: -2 * cellW, y: 128, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 5, scale: AVATAR_SCALE },//xzyy
+            5: { x: 0.5 * cellW, y: 128 - cellW + 32, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 10, scale: AVATAR_SCALE },//mmc
+            4: { x: -0.5 * cellW, y: 128 - cellW + 32, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -18, scale: AVATAR_SCALE },//fld
+            3: { x: 1.5 * cellW, y: 128 - cellW + 32, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -15, scale: AVATAR_SCALE },//hwx
+            2: { x: -1.5 * cellW, y: 128 - cellW + 64, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 15, scale: 0.4 },//kjk
+            1: { x: -cellW-32, y: 128 - 2 * cellW + 96, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -15, scale: 0.4 },//cs
+            0: { x: cellW, y: 128 - 2 * cellW + 96, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 15, scale: 0.4 },//wxr
+        };
+
+        // -- Level 10 淡入 --
+        const L10_FADE_DUR = 0.8;                                       // 淡入时长
+        const L10_FADE_EASE = 'power2.inOut';                           // 缓动
+
+        // -- Level 8 专用动画参数 --
+        const L8_FALL_START_Y = -fh;                                    // 下落起始（屏幕外）
+        const L8_FALL_DUR = 0.8;                                        // 下落时长
+        const L8_FALL_EASE = 'power2.in';                               // 下落缓动
+        const L8_ROLL_DUR = 0.55;                                       // 滚动时长
+        const L8_ROLL_EASE = 'power2.inOut';                            // 滚动缓动
+
+        // -- 其余头像下落通用参数 --
+        const OTHER_FALL_START_Y = -fh;                                 // 起始Y（屏幕外）
+        const OTHER_FALL_DUR = 0.45;                                    // 下落时长
+        const OTHER_FALL_EASE = 'back.out(0.5)';                           // 下落缓动
+        const OTHER_STAGGER = 0.2;                                      // 交错间隔
+
+        // ========== 游戏idle循环参数 ==========
+        const IDLE_SEQUENCE = [0, 1, 2, 3, 1, 0];
+        const IDLE_FRAME_MS = 50;
+        const IDLE_LOOP_DELAY = 2000;
+        const IDLE_ACTIVE_MS = IDLE_SEQUENCE.length * IDLE_FRAME_MS;
+        const IDLE_CYCLE_MS = IDLE_ACTIVE_MS + IDLE_LOOP_DELAY;
+
+        // ========== 头像容器 ==========
+        const avatarContainer = document.createElement('div');
+        avatarContainer.className = 'entrance-avatar-container';
+        avatarContainer.style.cssText = [
+            'position:fixed;left:0%;bottom:40%;',
+            `width:100vw;height:100vh;`,
+            'pointer-events:none;z-index:4;',
+            'outline:3px dashed lime;',
+            'scale:1.0;'
+        ].join('');
+        gsap.set(avatarContainer, { transformOrigin: '50% 100%' });
+        this._container.appendChild(avatarContainer);
+        this._entranceContainer = avatarContainer;
+
+        return new Promise((resolve) => {
+            const overlay = this._container.querySelector('#loading-bg-overlay');
+
+            gsap.set(overlay, { background: '#000', opacity: 1 });
+            gsap.set(this._canvas, { autoAlpha: 0 });
+
+            const idleEls = [];
+            let idleAnimId = null;
+
+            const tickIdle = (now) => {
+                for (const el of idleEls) {
+                    const elapsed = now - el._idleStartTime;
+                    const cycleTime = elapsed % IDLE_CYCLE_MS;
+                    let frame;
+                    if (cycleTime < IDLE_ACTIVE_MS) {
+                        frame = IDLE_SEQUENCE[Math.floor(cycleTime / IDLE_FRAME_MS)];
+                    } else {
+                        frame = 0;
+                    }
+                    el.style.backgroundPosition = `-${frame * fw}px -${parseInt(el.dataset.level) * fh}px`;
+                }
+                idleAnimId = requestAnimationFrame(tickIdle);
+            };
+
+            const startIdle = () => {
+                idleAnimId = requestAnimationFrame(tickIdle);
+            };
+
+            const stopIdle = () => {
+                if (idleAnimId) { cancelAnimationFrame(idleAnimId); idleAnimId = null; }
+            };
+
+            const createAvatar = (level) => {
+                const el = document.createElement('div');
+                el.className = 'entrance-avatar';
+                el.dataset.level = String(level);
+                el._idleStartTime = 0;
+                el.style.cssText = [
+                    'position:absolute;left:0%;bottom:0%;',
+                    `width:${fw}px;height:${fh}px;`,
+                    `background-image:url(${img.src});`,
+                    `background-size:${imgW}px ${imgH}px;`,
+                    `background-position:0px -${level * fh}px;`,
+                    'image-rendering:pixelated;',
+                    'z-index:4;pointer-events:none;',
+                    'transform-origin:center center;',
+                    `transform:scale(${AVATAR_SCALE});`
+                ].join('');
+                avatarContainer.appendChild(el);
+                return el;
+            };
+
+            const avatars = {};
+            for (let lv = 0; lv <= 10; lv++) {
+                avatars[lv] = createAvatar(lv);
+            }
+
+            startIdle();
+
+            const tl = gsap.timeline({
+                id: 'entrance',
+                onComplete: () => {
+                    stopIdle();
+                    for (const el of Object.values(avatars)) {
+                        const level = parseInt(el.dataset.level);
+                        el.style.backgroundPosition = `0px -${level * fh}px`;
+                    }
+                    this._entranceAvatars = Object.values(avatars);
+                    resolve();
+                }
+            });
+
+            // GSDevTools.create({ animation: tl });
+
+            // ===== Level 10: 始终位于容器底部中央，淡入 =====
+            tl.set(avatars[10], { x: 0, y: '+=128', left: '50%', bottom: '0%', xPercent: -50, autoAlpha: 0 });
+            avatars[10]._idleStartTime = performance.now();
+            idleEls.push(avatars[10]);
+            tl.to(avatars[10], { autoAlpha: 1, duration: L10_FADE_DUR, ease: L10_FADE_EASE });
+
+            // B1. Level 8 — 从Level10正上方下落，转一圈，落地后向右滚动一个头像直径
+            tl.set(avatars[8], { x: 0, y: 0, left: '50%', bottom: '0%', xPercent: -50, autoAlpha: 0 });
+            tl.fromTo(avatars[8], {
+                x: 0,
+                y: 0,
+                left: '50%',
+                bottom: '100%',
+                autoAlpha: 0,
+                rotation: 0
+            }, {
+                x: 0,
+                y: 0,
+                left: '50%',
+                bottom: '0%',
+                autoAlpha: 1,
+                rotation: 0,
+                duration: L8_FALL_DUR,
+                ease: L8_FALL_EASE
+            }, 'enter');
+            avatars[8]._idleStartTime = performance.now();
+            idleEls.push(avatars[8]);
+
+            tl.to(avatars[8], {
+                x: cellW + 200,
+                y: '+=128',
+                left: '50%',
+                bottom: '0%',
+                autoAlpha: 1,
+                rotation: 375,
+                duration: L8_ROLL_DUR,
+                ease: L8_ROLL_EASE
+            });
+
+            // ===== 两个并行动画：A.容器缩放+下移 / B.头像下落 =====
+            tl.addLabel('enter', '+=0.3');
+
+            // A. 容器向底部中央缩放
+            tl.to(avatarContainer, {
+                scale: 0.7,
+                bottom: '0%',
+                left: '0%',
+                duration: CONTAINER_DUR,
+                ease: CONTAINER_EASE
+            }, 'enter');
+
+            // 背景渐变
+            tl.to(overlay, { background: OVERLAY_COLOR, duration: OVERLAY_DUR, ease: OVERLAY_EASE }, 'enter+=0.15');
+
+            // B2. 其余头像依次从屏幕外下落（x固定不变，旋转角度各自可调）
+            const otherLevels = [9, 7, 6, 5, 4, 3, 2, 1, 0];
+            otherLevels.forEach((lv, i) => {
+                const pos = avatarParams[lv];
+                const stagger = i * OTHER_STAGGER;
+
+                tl.fromTo(avatars[lv], {
+                    x: pos.x,
+                    y: pos.y,
+                    left: pos.left,
+                    bottom: pos.bottom,
+                    xPercent: -50,
+                    autoAlpha: 0,
+                    rotation: 0,
+                    scale: pos.scale
+                }, {
+                    x: pos.x,
+                    y: pos.y,
+                    left: pos.lastLeft,
+                    bottom: pos.lastBottom,
+                    xPercent: -50,
+                    autoAlpha: 1,
+                    rotation: pos.rotation,
+                    duration: OTHER_FALL_DUR,
+                    ease: OTHER_FALL_EASE,
+                    scale: pos.scale
+                }, `enter+=${stagger}`);
+                avatars[lv]._idleStartTime = performance.now();
+                idleEls.push(avatars[lv]);
+            });
+        });
+    }
+
+    /** 隐藏入口头像（进入游戏模式时调用） */
+    hideEntranceAvatars() {
+        if (this._entranceContainer) {
+            gsap.to(this._entranceContainer, {
+                autoAlpha: 0,
+                duration: 0.3,
+                ease: 'power2.inOut'
+            });
+        }
+    }
+
+    /** 显示入口头像（回到主页面时调用） */
+    showEntranceAvatars() {
+        if (this._entranceContainer) {
+            gsap.to(this._entranceContainer, {
+                autoAlpha: 1,
+                duration: 0.3,
+                ease: 'power2.inOut'
+            });
+        }
+    }
+
+    /** 移除入口动画残留头像（彻底清理） */
+    removeEntranceAvatars() {
+        if (this._entranceAvatars) {
+            for (const el of this._entranceAvatars) {
+                if (el.parentNode) el.remove();
+            }
+            this._entranceAvatars = null;
+        }
+        if (this._entranceContainer) {
+            this._entranceContainer.remove();
+            this._entranceContainer = null;
+        }
     }
 }
 
