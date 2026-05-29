@@ -354,8 +354,10 @@ export class LoadingBackground {
 
         // -- 基础间距 --
         const GAP = 32;
-        const AVATAR_SCALE = 0.5;                                       // 单个头像缩放倍率（1.0=原始大小）
+        const AVATAR_SCALE = 0.3;                                       // 单个头像缩放倍率（1.0=原始大小）
+        const AVATAR_SCALE_SMALL = 0.25;
         const cellW = fw * AVATAR_SCALE - GAP;                          // 头像+间距宽度
+        const cellFix = 192;
 
         // -- 容器动画 --
         const CONTAINER_SCALE = 0.25;                                   // 最终缩放比例
@@ -376,15 +378,15 @@ export class LoadingBackground {
         const avatarParams = {
             10: { left: '50%', bottom: '0%', rotation: 0 },          //gb
             8: { left: '50%', bottom: '0%', rotation: 0, scale: 0.1 },           //yjfn
-            9: { x: cellW, y: 128, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -10, scale: AVATAR_SCALE },//lee
-            7: { x: -cellW, y: 128, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 10, scale: AVATAR_SCALE },//ump
-            6: { x: -2 * cellW, y: 128, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 5, scale: AVATAR_SCALE },//xzyy
-            5: { x: 0.5 * cellW, y: 128 - cellW + 32, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 10, scale: AVATAR_SCALE },//mmc
-            4: { x: -0.5 * cellW, y: 128 - cellW + 32, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -18, scale: AVATAR_SCALE },//fld
-            3: { x: 1.5 * cellW, y: 128 - cellW + 32, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -15, scale: AVATAR_SCALE },//hwx
-            2: { x: -1.5 * cellW, y: 128 - cellW + 64, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 15, scale: 0.4 },//kjk
-            1: { x: -cellW-32, y: 128 - 2 * cellW + 96, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -15, scale: 0.4 },//cs
-            0: { x: cellW, y: 128 - 2 * cellW + 96, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 15, scale: 0.4 },//wxr
+            9: { x: cellW, y: cellFix, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -10, scale: AVATAR_SCALE },//lee
+            7: { x: -cellW, y: cellFix, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 10, scale: AVATAR_SCALE },//ump
+            6: { x: -2 * cellW, y: cellFix, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 5, scale: AVATAR_SCALE },//xzyy
+            5: { x: 0.5 * cellW, y: cellFix - cellW + 16, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -10, scale: AVATAR_SCALE },//mmc
+            4: { x: -0.5 * cellW, y: cellFix - cellW + 12, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 15, scale: AVATAR_SCALE_SMALL },//fld
+            3: { x: 1.5 * cellW, y: cellFix - cellW + 16, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -15, scale: AVATAR_SCALE_SMALL },//hwx
+            2: { x: -1.5 * cellW, y: cellFix - cellW+16, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 15, scale: AVATAR_SCALE_SMALL },//kjk
+            1: { x: -cellW-12, y: cellFix - 2*cellW + 48, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -15, scale: 0.2 },//cs
+            0: { x: cellW+12, y: cellFix - 2*cellW + 52, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 15, scale: 0.2 },//wxr
         };
 
         // -- Level 10 淡入 --
@@ -500,7 +502,7 @@ export class LoadingBackground {
             // GSDevTools.create({ animation: tl });
 
             // ===== Level 10: 始终位于容器底部中央，淡入 =====
-            tl.set(avatars[10], { x: 0, y: '+=128', left: '50%', bottom: '0%', xPercent: -50, autoAlpha: 0 });
+            tl.set(avatars[10], { x: 0, y: `+=${cellFix}`, left: '50%', bottom: '0%', xPercent: -50, autoAlpha: 0 });
             avatars[10]._idleStartTime = performance.now();
             idleEls.push(avatars[10]);
             tl.to(avatars[10], { autoAlpha: 1, duration: L10_FADE_DUR, ease: L10_FADE_EASE });
@@ -528,8 +530,8 @@ export class LoadingBackground {
             idleEls.push(avatars[8]);
 
             tl.to(avatars[8], {
-                x: cellW + 200,
-                y: '+=128',
+                x: cellW+128,
+                y: `+=${cellFix}`,
                 left: '50%',
                 bottom: '0%',
                 autoAlpha: 1,
@@ -591,7 +593,7 @@ export class LoadingBackground {
         if (this._entranceContainer) {
             gsap.to(this._entranceContainer, {
                 autoAlpha: 0,
-                duration: 0.3,
+                duration: 0.2,
                 ease: 'power2.inOut'
             });
         }
@@ -602,7 +604,7 @@ export class LoadingBackground {
         if (this._entranceContainer) {
             gsap.to(this._entranceContainer, {
                 autoAlpha: 1,
-                duration: 0.3,
+                duration: 0.2,
                 ease: 'power2.inOut'
             });
         }
