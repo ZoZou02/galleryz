@@ -154,12 +154,6 @@ export class LoadingManager {
             if (this._rotTL) { this._rotTL.kill(); this._rotTL = null; }
             if (this._spacingTween) { this._spacingTween.kill(); this._spacingTween = null; }
 
-            // 背景头像网格淡入 + 遮罩调低透明度
-            loadingBg.fadeIn();
-            loadingBg.fadeOverlay(0.8, ANIM.OVERLAY_FADE_DURATION);
-            soundManager.startBGM();
-            loadingBg.showContinueTextAndBg();
-
             // 加载内容逐个淡出
             const elements = [
                 this._ring,
@@ -171,8 +165,14 @@ export class LoadingManager {
                 duration: ANIM.FADE_OUT_DURATION,
                 ease: ANIM.FADE_OUT_EASE,
                 stagger: ANIM.FADE_OUT_STAGGER,
-                onComplete: () => {
-                    // 淡出完成后，点击页面触发主菜单显示
+                onComplete: async () => {
+                    // 入场动画（黑屏 → 头像序列入场）
+                    await loadingBg.startEntranceAnimation();
+                    // 入场动画完成后，显示背景网格 + 遮罩 + BGM + touch to continue
+                    loadingBg.fadeIn();
+                    loadingBg.fadeOverlay(0.8, ANIM.OVERLAY_FADE_DURATION);
+                    soundManager.startBGM();
+                    loadingBg.showContinueTextAndBg();
                     this._setupClickToReveal();
                 }
             });
