@@ -140,24 +140,61 @@ function buildUI() {
         fontFamily: 'FusionPixel, sans-serif',
         fontSize: 16,
         fill: '#ffffff',
-        stroke: { color: '#000000', width: 1 },
+        // stroke: { color: '#000000', width: 1 },
         align: 'center'
     });
 
     const textCenterY = barY + boxH / 2;
 
+    // --- 顶部背景条 ---
+    const timeShadow = new Graphics();
+    timeShadow.roundRect(0, barY - 2 + 6, 56, boxH + 4, 4);
+    timeShadow.fill({ color: 0x000000, alpha: 0.1 });
+    gameContainer.addChild(timeShadow);
+
+    const timeBg = new Graphics();
+    timeBg.roundRect(0, barY - 2, 56, boxH + 4, 4);
+    timeBg.fill({ color: 0x9ddef6 });
+    timeBg.roundRect(0, barY - 2, 56, boxH + 4, 4);
+    timeBg.stroke({ color: 0xffffff, width: 4 });
+    gameContainer.addChild(timeBg);
+
+    const scoreShadow = new Graphics();
+    scoreShadow.roundRect(GAME_WIDTH / 2 - 36, barY - 2 + 6, 72, boxH + 4, 4);
+    scoreShadow.fill({ color: 0x000000, alpha: 0.1 });
+    gameContainer.addChild(scoreShadow);
+
+    const scoreBg = new Graphics();
+    scoreBg.roundRect(GAME_WIDTH / 2 - 36, barY - 2, 72, boxH + 4, 4);
+    scoreBg.fill({ color: 0xfab545 });
+    scoreBg.roundRect(GAME_WIDTH / 2 - 36, barY - 2, 72, boxH + 4, 4);
+    scoreBg.stroke({ color: 0xffffff, width: 4 });
+    gameContainer.addChild(scoreBg);
+
+    const pauseShadow = new Graphics();
+    pauseShadow.roundRect(GAME_WIDTH - margin - boxW - 2, barY - 2 + 6, boxW + 4, boxH + 4, 4);
+    pauseShadow.fill({ color: 0x000000, alpha: 0.1 });
+    gameContainer.addChild(pauseShadow);
+
+    const pauseBg = new Graphics();
+    pauseBg.roundRect(GAME_WIDTH - margin - boxW - 2, barY - 2, boxW + 4, boxH + 4, 4);
+    pauseBg.fill({ color: 0xbcb5ff });
+    pauseBg.roundRect(GAME_WIDTH - margin - boxW - 2, barY - 2, boxW + 4, boxH + 4, 4);
+    pauseBg.stroke({ color: 0xffffff, width: 4 });
+    gameContainer.addChild(pauseBg);
+
     // --- 左侧：时间 ---
-    const clockGfx = new Graphics();
-    const cx = margin, cy = barY + boxH / 2;
-    clockGfx.circle(cx, cy, 6);
-    clockGfx.fill({ color: 0xffffff });
-    clockGfx.stroke({ color: 0x6f6f6f, width: 2, alpha: 0.6 });
-    clockGfx.moveTo(cx, cy);
-    clockGfx.lineTo(cx, cy - 3);
-    clockGfx.moveTo(cx, cy);
-    clockGfx.lineTo(cx + 3, cy);
-    clockGfx.stroke({ color: 0x6f6f6f, width: 2, alpha: 0.6 });
-    gameContainer.addChild(clockGfx);
+    // const clockGfx = new Graphics();
+    // const cx = margin, cy = barY + boxH / 2;
+    // clockGfx.circle(cx, cy, 6);
+    // clockGfx.fill({ color: 0xffffff });
+    // clockGfx.stroke({ color: 0x6f6f6f, width: 2, alpha: 0.6 });
+    // clockGfx.moveTo(cx, cy);
+    // clockGfx.lineTo(cx, cy - 3);
+    // clockGfx.moveTo(cx, cy);
+    // clockGfx.lineTo(cx + 3, cy);
+    // clockGfx.stroke({ color: 0x6f6f6f, width: 2, alpha: 0.6 });
+    // gameContainer.addChild(clockGfx);
 
     timerText = new Text({ text: '0:00', style: textStyle });
     timerText.anchor.set(0, 0.5);
@@ -214,7 +251,7 @@ function buildSkillButtons() {
     const circleD = 62;
     const startX = (PANEL_WIDTH - circleD) / 2;
 
-    ufoBtn = createCircleSkillButton(startX, SKILLS.btnY, circleD, '#b55861');
+    ufoBtn = createCircleSkillButton(startX, SKILLS.btnY, circleD, '#fab545');
 
     ufoShadowGfx = new Graphics();
     skillBtnContainer.addChild(ufoShadowGfx);
@@ -238,7 +275,7 @@ function createCircleSkillButton(x, y, d, accentColor) {
 
     const highlight = new Graphics();
     highlight.circle(r, r, r - 4);
-    highlight.fill({ color: 0xffffff, alpha: 0.08 });
+    highlight.fill({ color: 0xffffff, alpha: 0.04 });
     container.addChild(highlight);
 
     const iconSize = d * 0.48;
@@ -248,7 +285,7 @@ function createCircleSkillButton(x, y, d, accentColor) {
     ufoIcon.y = r;
     ufoIcon.width = iconSize;
     ufoIcon.height = iconSize;
-    ufoIcon.tint = 0x691168;
+    ufoIcon.tint = 0xffffff;
     container.addChild(ufoIcon);
 
     const slash = new Graphics();
@@ -700,13 +737,13 @@ function drawSkillBtnVisual(btn, usesLeft, hovered, isCharging, chargeMax, charg
         const shadowR = r + 2;
         ufoShadowGfx.clear();
         ufoShadowGfx.circle(shadowCx, shadowCy, shadowR);
-        ufoShadowGfx.fill({ color: 0xe07407, alpha: 0.5 });
+        ufoShadowGfx.fill({ color: 0x000000, alpha: 0.1 });
 
         btn.bg.clear();
         btn.bg.circle(r, r, r);
         btn.bg.fill({ color: bgColor });
         btn.bg.circle(r, r, r);
-        btn.bg.stroke({ color: 0x691168, width: 4 });
+        btn.bg.stroke({ color: 0xffffff, width: 4 });
 
         btn.highlight.alpha = hoverActive ? 0.80 : 0.06;
 
@@ -717,23 +754,23 @@ function drawSkillBtnVisual(btn, usesLeft, hovered, isCharging, chargeMax, charg
             const inset = r * 0.3;
             btn.slash.moveTo(inset, inset);
             btn.slash.lineTo(btn.w - inset, btn.h - inset);
-            btn.slash.stroke({ color: 0x691168, width: 4, alpha: 0.5 });
+            btn.slash.stroke({ color: 0xffffff, width: 4, alpha: 0.5 });
         }
 
-        const arcR = r + 9;
-        const perAngle = (Math.PI / 2) / btn.maxUses;
-        const arcGap = 0;
+        const dotR = 7;
+        const dotGap = 14;
+        const dotX = r * 2 + 10;
 
         ufoArcGfx.clear();
         for (let i = 0; i < btn.maxUses; i++) {
-            const segStart = Math.PI / 4 + i * perAngle;
-            const segEnd = segStart + perAngle;
+            const dotY = r - dotGap / 2 + i * dotGap;
             const filled = i >= btn.maxUses - usesLeft;
 
-            ufoArcGfx.arc(r, r, arcR, segStart + arcGap, segEnd - arcGap);
-            ufoArcGfx.stroke({ color: 0x691168, width: 10, cap: 'round' });
-            ufoArcGfx.arc(r, r, arcR, segStart + arcGap, segEnd - arcGap);
-            ufoArcGfx.stroke({ color: filled ? 0xb55861 : 0xffb15e, width: 2, cap: 'round' });
+            ufoArcGfx.circle(dotX, dotY, dotR);
+            ufoArcGfx.fill({ color: 0xffffff });
+
+            ufoArcGfx.circle(dotX, dotY, dotR - 2.5);
+            ufoArcGfx.fill({ color: filled ? 0xfab545 : 0x666666 });
         }
     } else {
         const iconAlpha = !active && !isCharging ? 0.4 : (isCharging && usesLeft === 0 ? 0.47 : 1);
@@ -791,7 +828,10 @@ function updateScorePopups() {
             fontFamily: 'FusionPixel, sans-serif',
             fontSize: 16,
             fill: popup.color,
-            stroke: { color: '#000000', width: 2 }
+            dropShadow: true,
+            dropShadowColor: '#666666',
+            dropShadowBlur: 1,
+            dropShadowDistance: 2
         });
         const text = new Text({ text: formatScore(popup.amount), style });
         text.anchor.set(0.5, 0);
@@ -968,7 +1008,6 @@ function handleResize() {
         const aboutRect = aboutBtn.getBoundingClientRect();
         const btnSize = 56;
         const gap = 10;
-        
 
         // 布局隐患点
         // -------------------------------------------------
@@ -1164,8 +1203,8 @@ async function init() {
 
     loadingManager.tick('正在急急急…');
     loadingManager.onReady(() => {
-        document.getElementById('main-menu').classList.remove('hidden');
-        loadingManager.hide();
+        // main-menu 已在 animateToMainMenu 衔接动画中显示
+        // loading-screen 的淡出也由衔接动画回调处理
     });
 
     loadingManager.showReady();
@@ -1293,6 +1332,7 @@ function setupSettingsSliders() {
         soundManager.setSfxVolume(v);
         const vol = loadVolumeSettings();
         saveVolumeSettings(v, vol.music);
+        soundManager.playAlienVoice();
     };
 
     const onMusicInput = (v) => {

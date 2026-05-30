@@ -160,6 +160,9 @@ export class LoadingManager {
                 this._screen.querySelector('.loading-progress-wrap'),
                 this._screen.querySelector('.loading-info')
             ];
+            // 同步启动背景变黑 + loading 元素淡出（背景变黑时长覆盖stagger）
+            const fadeTotalDur = ANIM.FADE_OUT_DURATION + ANIM.FADE_OUT_STAGGER * (elements.length - 1);
+            loadingBg.fadeToBlack(fadeTotalDur);
             gsap.to(elements, {
                 autoAlpha: 0,
                 duration: ANIM.FADE_OUT_DURATION,
@@ -167,12 +170,13 @@ export class LoadingManager {
                 stagger: ANIM.FADE_OUT_STAGGER,
                 onComplete: async () => {
                     // 入场动画（黑屏 → 头像序列入场）
-                    await loadingBg.startEntranceAnimation();
-                    // 入场动画完成后，显示背景网格 + 遮罩 + BGM + touch to continue
+                    await loadingBg.startEntranceAnimation(() => soundManager.startBGM());
+                    // 入场动画完成后，显示背景网格 + 遮罩 + touch to continue
                     loadingBg.fadeIn();
                     loadingBg.fadeOverlay(0.8, ANIM.OVERLAY_FADE_DURATION);
-                    soundManager.startBGM();
                     loadingBg.showContinueTextAndBg();
+                    // 过渡衔接：缩小下移 continue 条 + 标题从 scale 0.1 弹出
+                    setTimeout(() => loadingBg.shrinkContinueAndShowTitle(), 1500);
                     this._setupClickToReveal();
                 }
             });
@@ -193,9 +197,23 @@ export class LoadingManager {
         this._clickHandler = () => {
             this._screen.removeEventListener('click', this._clickHandler);
             this._clickHandler = null;
-            if (this._onReadyCallback) {
-                this._onReadyCallback();
-            }
+
+            loadingBg.animateToMainMenu(() => {
+                soundManager.playButton();
+                gsap.to(this._screen, {
+                    autoAlpha: 0,
+                    duration: 0.4,
+                    ease: 'power2.in',
+                    onComplete: () => {
+                        if (this._screen.parentNode) {
+                            this._screen.parentNode.removeChild(this._screen);
+                        }
+                    }
+                });
+                if (this._onReadyCallback) {
+                    this._onReadyCallback();
+                }
+            });
         };
         this._screen.addEventListener('click', this._clickHandler);
     }

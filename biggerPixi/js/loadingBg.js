@@ -252,6 +252,103 @@ export class LoadingBackground {
         });
     }
 
+    /**
+     * 过渡衔接：标题从 scale 0.1 弹出在 continue 条上方
+     * 在 showContinueTextAndBg 动画完成后调用
+     */
+    shrinkContinueAndShowTitle() {
+        // 克隆主菜单标题图片
+        const mainTitle = document.querySelector('#main-menu .title-image');
+        const tempTitle = document.createElement('img');
+        tempTitle.className = 'loading-transition-title';
+        tempTitle.src = mainTitle ? mainTitle.src : '';
+        tempTitle.style.cssText =
+            'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.1);'
+            + 'width:320px;height:auto;image-rendering:auto;z-index:1002;pointer-events:none;opacity:0;';
+        this._container.appendChild(tempTitle);
+        this._tempTitle = tempTitle;
+
+        // 标题从 scale 0.1 弹出，位于 continue 条上方
+        gsap.to(tempTitle, {
+            scale: 1,
+            opacity: 1,
+            y: -60,
+            duration: 0.5,
+            ease: 'back.out(1.7)'
+        });
+    }
+
+    /**
+     * 点击后的衔接动画：标题上移到最终位置，主页面按钮从屏幕下方冲上来
+     * @param {Function} onComplete 动画完成后的回调
+     */
+    animateToMainMenu(onComplete) {
+        const continueText = this._container.querySelector('.loading-bg-coutinue-text');
+        const continueBg = this._container.querySelector('.loading-bg-text-bg');
+        const tempTitle = this._tempTitle;
+
+        if (!tempTitle) { onComplete(); return; }
+
+        const menu = document.getElementById('main-menu');
+        const mainTitle = menu.querySelector('.title-image');
+        const buttons = menu.querySelectorAll('.start-btn-main');
+
+        // 临时显示 main-menu 计算目标位置
+        menu.classList.remove('hidden');
+        menu.style.pointerEvents = 'none';
+        const targetRect = mainTitle.getBoundingClientRect();
+        const currentRect = tempTitle.getBoundingClientRect();
+        const deltaX = targetRect.left + targetRect.width / 2 - (currentRect.left + currentRect.width / 2);
+        const deltaY = targetRect.top + targetRect.height / 2 - (currentRect.top + currentRect.height / 2);
+        menu.classList.add('hidden');
+        menu.style.pointerEvents = '';
+
+        // 显示 main-menu，按钮初始在下方
+        menu.classList.remove('hidden');
+        menu.style.transition = 'none';
+        gsap.set(mainTitle, { autoAlpha: 0 });
+        gsap.set(buttons, { y: 250, autoAlpha: 0 });
+
+        const tl = gsap.timeline({
+            onComplete: () => {
+                if (this._tempTitle) {
+                    this._tempTitle.remove();
+                    this._tempTitle = null;
+                }
+                continueText.style.display = 'none';
+                continueBg.style.display = 'none';
+                menu.style.pointerEvents = '';
+                menu.style.transition = '';
+                if (onComplete) onComplete();
+            }
+        });
+
+        // continue 条淡出
+        tl.to([continueBg, continueText], {
+            autoAlpha: 0,
+            duration: 0.3,
+            ease: 'power2.in'
+        }, 0)
+        // 标题移动到最终位置
+        .to(tempTitle, {
+            x: deltaX,
+            y: deltaY,
+            duration: 0.5,
+            ease: 'power3.inOut'
+        }, 0)
+        // 真实标题淡入，隐藏临时标题
+        .to(mainTitle, { autoAlpha: 1, duration: 0.15 }, '>-=0.1')
+        .set(tempTitle, { display: 'none' }, '<')
+        // 按钮从下方冲上来
+        .to(buttons, {
+            y: 0,
+            autoAlpha: 1,
+            duration: 0.5,
+            stagger: 0.08,
+            ease: 'back.out(1)'
+        }, '<');
+    }
+
     fadeIn() {
         gsap.to(this._canvas, {
             autoAlpha: 1,
@@ -273,6 +370,18 @@ export class LoadingBackground {
             duration: duration || 0.6,
             ease: 'power2.inOut'
         });
+    }
+
+    /**
+     * 开始变黑（loading消失时同步调用）
+     * @param {number} duration 动画时长(秒)
+     */
+    fadeToBlack(duration) {
+        const overlay = this._container.querySelector('#loading-bg-overlay');
+        if (overlay) {
+            gsap.to(overlay, { background: '#000', opacity: 1, duration, ease: 'power2.in' });
+        }
+        gsap.to(this._canvas, { autoAlpha: 0, duration, ease: 'power2.in' });
     }
 
     enterGameMode() {
@@ -335,7 +444,7 @@ export class LoadingBackground {
     // 1. 清理上一次的入口头像
     // 2. 计算目标位置
     // 3. 播放动画
-    async startEntranceAnimation() {
+    async startEntranceAnimation(onStartBGM) {
         if (!this._spritesheetImg || !this._container) return;
 
         this.removeEntranceAvatars();
@@ -357,12 +466,12 @@ export class LoadingBackground {
         const AVATAR_SCALE = 0.3;                                       // 单个头像缩放倍率（1.0=原始大小）
         const AVATAR_SCALE_SMALL = 0.25;
         const cellW = fw * AVATAR_SCALE - GAP;                          // 头像+间距宽度
-        const cellFix = 192;
+        const cellFix = 164;
 
         // -- 容器动画 --
         const CONTAINER_SCALE = 0.25;                                   // 最终缩放比例
-        const CONTAINER_DUR = 1.5;                                      // 缩放+下移时长
-        const CONTAINER_EASE = 'power2.inOut';                          // 缓动
+        const CONTAINER_DUR = 1.0;                                      // 缩放+下移时长
+        const CONTAINER_EASE = 'power3.inOut';                          // 缓动
         const CONTAINER_BOTTOM_GAP = 0;                                     // 容器底部距屏幕底部的像素偏移（正值=上移）
 
         // -- 背景渐变 --
@@ -390,26 +499,35 @@ export class LoadingBackground {
         };
 
         // -- Level 10 淡入 --
-        const L10_FADE_DUR = 0.8;                                       // 淡入时长
+        const L10_FADE_DUR = 3;                                       // 淡入时长（覆盖2次idle循环）
         const L10_FADE_EASE = 'power2.inOut';                           // 缓动
 
         // -- Level 8 专用动画参数 --
         const L8_FALL_START_Y = -fh;                                    // 下落起始（屏幕外）
         const L8_FALL_DUR = 0.3;                                        // 下落时长
         const L8_FALL_EASE = 'back.out(0.5)';                               // 下落缓动
-        const L8_ROLL_DUR = 0.6;                                       // 滚动时长
-        const L8_ROLL_EASE = 'power3.inOut';                            // 滚动缓动
+        const L8_ROLL_DUR = 1.5;                                       // 滚动总时长
+        const L8_ROLL_TOTAL_ROTATION = 375;                            // 滚动总旋转角度
+        const L8_ROLL_PHASE1_RATIO = 0.45;                             // 第一阶段时间占比（右→下到level9）
+        const L8_ROLL_PHASE2_RATIO = 0.55;                             // 第二阶段时间占比（右到最终位置）
+
+        // -- 容器砸到瞬间效果参数 --
+        const CONTAINER_IMPACT_SCALE_FROM = 1.5;                     // 砸到前容器scale
+        const CONTAINER_IMPACT_SCALE_TO = 1.3;                       // 砸到后容器scale
+        const CONTAINER_IMPACT_SCALE_DUR = 0.15;                     // 缩放时长
+        const CONTAINER_IMPACT_SHAKE = 6;                            // 抖动幅度(px)
+        const CONTAINER_IMPACT_SHAKE_DUR = 0.04;                     // 单次抖动时长
 
         // -- 其余头像下落通用参数 --
         const OTHER_FALL_START_Y = -fh;                                 // 起始Y（屏幕外）
-        const OTHER_FALL_DUR = 0.3;                                    // 下落时长
-        const OTHER_FALL_EASE = 'back.out(0.5)';                           // 下落缓动
+        const OTHER_FALL_DUR = 0.2;                                    // 下落时长
+        const OTHER_FALL_EASE = 'back.out(0.3)';                           // 下落缓动（前慢后快）
         const OTHER_STAGGER = 0.1;                                      // 交错间隔
 
         // ========== 游戏idle循环参数 ==========
         const IDLE_SEQUENCE = [0, 1, 2, 3, 1, 0];
         const IDLE_FRAME_MS = 50;
-        const IDLE_LOOP_DELAY = 2000;
+        const IDLE_LOOP_DELAY = 800;
         const IDLE_ACTIVE_MS = IDLE_SEQUENCE.length * IDLE_FRAME_MS;
         const IDLE_CYCLE_MS = IDLE_ACTIVE_MS + IDLE_LOOP_DELAY;
 
@@ -419,19 +537,16 @@ export class LoadingBackground {
         avatarContainer.style.cssText = [
             'position:fixed;left:0%;bottom:40%;',
             `width:100vw;height:100vh;`,
-            'pointer-events:none;z-index:4;',
-            'outline:3px dashed lime;',
-            'scale:1.0;'
+            'pointer-events:none;z-index:4;'
         ].join('');
-        gsap.set(avatarContainer, { transformOrigin: '50% 100%' });
+        gsap.set(avatarContainer, { transformOrigin: '50% 100%', scale: 1.5 });
         this._container.appendChild(avatarContainer);
         this._entranceContainer = avatarContainer;
 
         return new Promise((resolve) => {
             const overlay = this._container.querySelector('#loading-bg-overlay');
 
-            gsap.set(overlay, { background: '#000', opacity: 1 });
-            gsap.set(this._canvas, { autoAlpha: 0 });
+            // 背景变黑已在 loading.js showReady 中同步启动
 
             const idleEls = [];
             let idleAnimId = null;
@@ -473,7 +588,8 @@ export class LoadingBackground {
                     'image-rendering:pixelated;',
                     'z-index:4;pointer-events:none;',
                     'transform-origin:center center;',
-                    `transform:scale(${AVATAR_SCALE});`
+                    `transform:scale(${AVATAR_SCALE});`,
+                    'visibility:hidden;'
                 ].join('');
                 avatarContainer.appendChild(el);
                 return el;
@@ -503,60 +619,102 @@ export class LoadingBackground {
 
             // ===== Level 10: 始终位于容器底部中央，淡入 =====
             tl.set(avatars[10], { x: 0, y: `+=${cellFix}`, left: '50%', bottom: '0%', xPercent: -50, autoAlpha: 0 });
-            avatars[10]._idleStartTime = performance.now();
-            idleEls.push(avatars[10]);
-            tl.to(avatars[10], { autoAlpha: 1, duration: L10_FADE_DUR, ease: L10_FADE_EASE });
+            tl.to(avatars[10], {
+                autoAlpha: 1, duration: L10_FADE_DUR, ease: L10_FADE_EASE,
+                onStart: () => {
+                    avatars[10]._idleStartTime = performance.now();
+                    idleEls.push(avatars[10]);
+                    if (onStartBGM) onStartBGM();
+                },
+                onComplete: stopIdle
+            });
 
             // B1. Level 8 — 从Level10正上方下落，转一圈，落地后向右滚动一个头像直径
+            const L8_IMPACT = L8_FALL_DUR;                              // 砸到时间点（相对于'enter'）
+            const L8_ROLL_START = L8_IMPACT + CONTAINER_IMPACT_SCALE_DUR; // 滚动起始（容器impact后）
+
             tl.set(avatars[8], { x: 0, y: 0, left: '50%', bottom: '0%', xPercent: -50, autoAlpha: 0 });
             tl.fromTo(avatars[8], {
-                x: 0,
-                y: 0,
-                left: '50%',
-                bottom: '100%',
-                autoAlpha: 0,
-                rotation: 0
+                x: 0, y: 0, left: '50%', bottom: '100%', autoAlpha: 0, rotation: 0
             }, {
-                x: 0,
-                y: `+=64`,
-                left: '50%',
-                bottom: '0%',
-                autoAlpha: 1,
-                rotation: 0,
-                duration: L8_FALL_DUR,
-                ease: L8_FALL_EASE
+                x: 0, y: 38, left: '50%', bottom: '0%', autoAlpha: 1, rotation: 0,
+                duration: L8_FALL_DUR, ease: L8_FALL_EASE
             }, 'enter');
-            avatars[8]._idleStartTime = performance.now();
-            idleEls.push(avatars[8]);
+
+            // 8 砸到瞬间：容器抖动 + scale + level8 切换 hit 动画帧
+            const CS = CONTAINER_IMPACT_SHAKE;
+            const CSD = CONTAINER_IMPACT_SHAKE_DUR;
+            const HIT_DUR = 500;                                        // hit 动画持续时间（同游戏内）
+            const HIT_FRAME = 4;                                        // hit 帧索引（第5帧）
+            tl.to(avatarContainer, { x: CS, duration: CSD }, `enter+=${L8_IMPACT-0.1}`);
+            tl.to(avatarContainer, { x: -CS, duration: CSD }, `enter+=${L8_IMPACT-0.1 + CSD}`);
+            tl.to(avatarContainer, { x: 0, duration: CSD }, `enter+=${L8_IMPACT-0.1 + CSD * 2}`);
+            tl.to(avatarContainer, { scale: 1.0, duration: CONTAINER_IMPACT_SCALE_DUR, ease: 'power2.out' }, `enter+=${L8_IMPACT-0.1}`);
+            // level8 切换到 hit 帧
+            tl.call(() => {
+                avatars[8].style.backgroundPosition = `-${HIT_FRAME * fw}px -${8 * fh}px`;
+            }, null, `enter+=${L8_IMPACT-0.1}`);
+            // level10 也切换到 hit 帧
+            tl.call(() => {
+                avatars[10].style.backgroundPosition = `-${HIT_FRAME * fw}px -${10 * fh}px`;
+            }, null, `enter+=${L8_IMPACT-0.1}`);
+            // hit 结束后切回第1帧
+            tl.call(() => {
+                avatars[8].style.backgroundPosition = `0px -${8 * fh}px`;
+                avatars[10].style.backgroundPosition = `0px -${10 * fh}px`;
+            }, null, `enter+=${L8_IMPACT-0.1 + HIT_DUR / 1000}`);
+
+            // 向右滚动（两阶段 motion path）
+            // 第一阶段：向右下滚到 level9 位置；第二阶段：向右滚到 level8 最终位置
+            // rotation 通过 onUpdate 实时同步 x 位移比例，模拟真实滚动
+            const L8_FINAL_X = cellW + 128;
+            const L8_FINAL_Y = cellFix;
+            const L9_MID_X = cellW;
+            const PHASE1_DUR = L8_ROLL_DUR * L8_ROLL_PHASE1_RATIO;
+            const PHASE2_DUR = L8_ROLL_DUR * L8_ROLL_PHASE2_RATIO;
 
             tl.to(avatars[8], {
-                x: cellW+128,
-                y: cellFix,
-                left: '50%',
-                bottom: '0%',
-                autoAlpha: 1,
-                rotation: 375,
-                duration: L8_ROLL_DUR,
-                ease: L8_ROLL_EASE
-            });
+                x: L9_MID_X, y: L8_FINAL_Y,
+                duration: PHASE1_DUR, ease: 'power3.in',
+                onUpdate: () => {
+                    const dx = gsap.getProperty(avatars[8], 'x');
+                    gsap.set(avatars[8], { rotation: (dx / L8_FINAL_X) * L8_ROLL_TOTAL_ROTATION });
+                }
+            }, `enter+=${L8_ROLL_START}`);
+
+            tl.to(avatars[8], {
+                x: L8_FINAL_X,
+                duration: PHASE2_DUR, ease: 'power2.out',
+                onUpdate: () => {
+                    const dx = gsap.getProperty(avatars[8], 'x');
+                    gsap.set(avatars[8], { rotation: (dx / L8_FINAL_X) * L8_ROLL_TOTAL_ROTATION });
+                }
+            }, `enter+=${L8_ROLL_START + PHASE1_DUR}`);
 
             // ===== 两个并行动画：A.容器缩放+下移 / B.头像下落 =====
             tl.addLabel('enter', '+=0.3');
 
-            // A. 容器向底部中央缩放
+            // A. 容器向底部移动（scale在impact时处理）
             tl.to(avatarContainer, {
-                scale: 0.7,
                 bottom: '0%',
                 left: '0%',
                 duration: CONTAINER_DUR,
                 ease: CONTAINER_EASE
             }, 'enter');
 
+
+            // 容器继续缩放到最终大小
+            tl.to(avatarContainer, {
+                scale: 0.7,
+                duration: CONTAINER_DUR,
+                ease: CONTAINER_EASE
+            }, `enter`);
+
             // 背景渐变
             tl.to(overlay, { background: OVERLAY_COLOR, duration: OVERLAY_DUR, ease: OVERLAY_EASE }, 'enter+=0.15');
 
             // B2. 其余头像依次从屏幕外下落（x固定不变，旋转角度各自可调）
-            const otherLevels = [9, 7, 6, 5, 4, 3, 2, 1, 0];
+            const otherLevels = [6, 7, 9, 5, 4, 3, 2, 1, 0];
             otherLevels.forEach((lv, i) => {
                 const pos = avatarParams[lv];
                 const stagger = i * OTHER_STAGGER;
@@ -582,8 +740,6 @@ export class LoadingBackground {
                     ease: OTHER_FALL_EASE,
                     scale: pos.scale
                 }, `enter+=${stagger}`);
-                avatars[lv]._idleStartTime = performance.now();
-                idleEls.push(avatars[lv]);
             });
         });
     }
