@@ -136,7 +136,7 @@ body.game-active {
     left: 50%;
     transform: translate(-50%, -50%);
     width: 0;
-    height: 100px;
+    height: 60px;
     background: #009ac5;
     z-index: 999;
     opacity: 0.5;
@@ -243,7 +243,7 @@ body.game-active {
     height: 12px;
     background: #3a7a9e;
     border: 2px solid #fafcfd;
-    border-radius: 4px;
+    border-radius: 6px;
     overflow: hidden;
 }
 
@@ -251,7 +251,7 @@ body.game-active {
     height: 100%;
     width: 0%;
     background: #ffb15e;
-    border-radius: 2px;
+    border-radius: 6px;
 }
 
 .loading-info {
