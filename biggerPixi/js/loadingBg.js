@@ -327,21 +327,21 @@ export class LoadingBackground {
             duration: 0.3,
             ease: 'power2.in'
         }, 0)
-        // 标题上移到最终位置
-        .to(mainTitle, {
-            x: 0,
-            y: 0,
-            duration: 0.5,
-            ease: 'power3.inOut'
-        }, 0)
-        // 按钮从下方冲上来（包括设置按钮）
-        .to(allButtons, {
-            y: 0,
-            autoAlpha: 1,
-            duration: 0.5,
-            stagger: 0.08,
-            ease: 'back.out(1)'
-        }, '>-=0.15');
+            // 标题上移到最终位置
+            .to(mainTitle, {
+                x: 0,
+                y: 0,
+                duration: 0.5,
+                ease: 'power3.inOut'
+            }, 0)
+            // 按钮从下方冲上来（包括设置按钮）
+            .to(allButtons, {
+                y: 0,
+                autoAlpha: 1,
+                duration: 0.5,
+                stagger: 0.08,
+                ease: 'back.out(1)'
+            }, '>-=0.15');
     }
 
     fadeIn() {
@@ -456,12 +456,16 @@ export class LoadingBackground {
         //         所有可调节参数（手动调整区）
         // ==========================================
 
+        // -- 精灵图缩放常量（影响所有距离和大小参数） --
+        const SPRITE_SCALE = 0.5;                                      // 精灵图分辨率缩放比例
+        const containerScale = 2;
+
         // -- 基础间距 --
-        const GAP = 32;
+        const GAP = 32 * SPRITE_SCALE;
         const AVATAR_SCALE = 0.3;                                       // 单个头像缩放倍率（1.0=原始大小）
         const AVATAR_SCALE_SMALL = 0.25;
         const cellW = fw * AVATAR_SCALE - GAP;                          // 头像+间距宽度
-        const cellFix = 164;
+        const cellFix = 164 * SPRITE_SCALE;
 
         // -- 容器动画 --
         const CONTAINER_SCALE = 0.25;                                   // 最终缩放比例
@@ -485,12 +489,12 @@ export class LoadingBackground {
             9: { x: cellW, y: cellFix, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -10, scale: AVATAR_SCALE },//lee
             7: { x: -cellW, y: cellFix, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 10, scale: AVATAR_SCALE },//ump
             6: { x: -2 * cellW, y: cellFix, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 5, scale: AVATAR_SCALE },//xzyy
-            5: { x: 0.5 * cellW, y: cellFix - cellW + 16, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -10, scale: AVATAR_SCALE },//mmc
-            4: { x: -0.5 * cellW, y: cellFix - cellW + 12, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 15, scale: AVATAR_SCALE_SMALL },//fld
-            3: { x: 1.5 * cellW, y: cellFix - cellW + 16, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -15, scale: AVATAR_SCALE_SMALL },//hwx
-            2: { x: -1.5 * cellW, y: cellFix - cellW+16, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 15, scale: AVATAR_SCALE_SMALL },//kjk
-            1: { x: -cellW-12, y: cellFix - 2*cellW + 48, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -15, scale: 0.2 },//cs
-            0: { x: cellW+12, y: cellFix - 2*cellW + 52, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 15, scale: 0.2 },//wxr
+            5: { x: 0.5 * cellW, y: cellFix - cellW + 16 * SPRITE_SCALE, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -10, scale: AVATAR_SCALE },//mmc
+            4: { x: -0.5 * cellW, y: cellFix - cellW + 12 * SPRITE_SCALE, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 15, scale: AVATAR_SCALE_SMALL },//fld
+            3: { x: 1.5 * cellW, y: cellFix - cellW + 16 * SPRITE_SCALE, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -15, scale: AVATAR_SCALE_SMALL },//hwx
+            2: { x: -1.5 * cellW, y: cellFix - cellW + 16 * SPRITE_SCALE, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 15, scale: AVATAR_SCALE_SMALL },//kjk
+            1: { x: -cellW - 12 * SPRITE_SCALE, y: cellFix - 2 * cellW + 48 * SPRITE_SCALE, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: -15, scale: 0.2 },//cs
+            0: { x: cellW + 12 * SPRITE_SCALE, y: cellFix - 2 * cellW + 52 * SPRITE_SCALE, left: '50%', bottom: '200%', lastLeft: '50%', lastBottom: '0%', rotation: 15, scale: 0.2 },//wxr
         };
 
         // -- Level 10 淡入 --
@@ -510,7 +514,7 @@ export class LoadingBackground {
         const CONTAINER_IMPACT_SCALE_FROM = 1.5;                     // 砸到前容器scale
         const CONTAINER_IMPACT_SCALE_TO = 1.3;                       // 砸到后容器scale
         const CONTAINER_IMPACT_SCALE_DUR = 0.15;                     // 缩放时长
-        const CONTAINER_IMPACT_SHAKE = 6;                            // 抖动幅度(px)
+        const CONTAINER_IMPACT_SHAKE = 6 * SPRITE_SCALE;                            // 抖动幅度(px)
         const CONTAINER_IMPACT_SHAKE_DUR = 0.04;                     // 单次抖动时长
 
         // -- 其余头像下落通用参数 --
@@ -534,7 +538,7 @@ export class LoadingBackground {
             `width:100vw;height:100vh;`,
             'pointer-events:none;z-index:4;'
         ].join('');
-        gsap.set(avatarContainer, { transformOrigin: '50% 100%', scale: 1.5 });
+        gsap.set(avatarContainer, { transformOrigin: '50% 100%', scale: 1.5 * containerScale });
         this._container.appendChild(avatarContainer);
         this._entranceContainer = avatarContainer;
 
@@ -632,7 +636,7 @@ export class LoadingBackground {
             tl.fromTo(avatars[8], {
                 x: 0, y: 0, left: '50%', bottom: '100%', autoAlpha: 0, rotation: 0
             }, {
-                x: 0, y: 38, left: '50%', bottom: '0%', autoAlpha: 1, rotation: 0,
+                x: 0, y: 38 * SPRITE_SCALE, left: '50%', bottom: '0%', autoAlpha: 1, rotation: 0,
                 duration: L8_FALL_DUR, ease: L8_FALL_EASE
             }, 'enter');
 
@@ -641,28 +645,28 @@ export class LoadingBackground {
             const CSD = CONTAINER_IMPACT_SHAKE_DUR;
             const HIT_DUR = 500;                                        // hit 动画持续时间（同游戏内）
             const HIT_FRAME = 4;                                        // hit 帧索引（第5帧）
-            tl.to(avatarContainer, { x: CS, duration: CSD }, `enter+=${L8_IMPACT-0.1}`);
-            tl.to(avatarContainer, { x: -CS, duration: CSD }, `enter+=${L8_IMPACT-0.1 + CSD}`);
-            tl.to(avatarContainer, { x: 0, duration: CSD }, `enter+=${L8_IMPACT-0.1 + CSD * 2}`);
-            tl.to(avatarContainer, { scale: 1.0, duration: CONTAINER_IMPACT_SCALE_DUR, ease: 'power2.out' }, `enter+=${L8_IMPACT-0.1}`);
+            tl.to(avatarContainer, { x: CS, duration: CSD }, `enter+=${L8_IMPACT - 0.1}`);
+            tl.to(avatarContainer, { x: -CS, duration: CSD }, `enter+=${L8_IMPACT - 0.1 + CSD}`);
+            tl.to(avatarContainer, { x: 0, duration: CSD }, `enter+=${L8_IMPACT - 0.1 + CSD * 2}`);
+            tl.to(avatarContainer, { scale: 1.0 * containerScale, duration: CONTAINER_IMPACT_SCALE_DUR, ease: 'power2.out' }, `enter+=${L8_IMPACT - 0.1}`);
             // level8 切换到 hit 帧
             tl.call(() => {
                 avatars[8].style.backgroundPosition = `-${HIT_FRAME * fw}px -${8 * fh}px`;
-            }, null, `enter+=${L8_IMPACT-0.1}`);
+            }, null, `enter+=${L8_IMPACT - 0.1}`);
             // level10 也切换到 hit 帧
             tl.call(() => {
                 avatars[10].style.backgroundPosition = `-${HIT_FRAME * fw}px -${10 * fh}px`;
-            }, null, `enter+=${L8_IMPACT-0.1}`);
+            }, null, `enter+=${L8_IMPACT - 0.1}`);
             // hit 结束后切回第1帧
             tl.call(() => {
                 avatars[8].style.backgroundPosition = `0px -${8 * fh}px`;
                 avatars[10].style.backgroundPosition = `0px -${10 * fh}px`;
-            }, null, `enter+=${L8_IMPACT-0.1 + HIT_DUR / 1000}`);
+            }, null, `enter+=${L8_IMPACT - 0.1 + HIT_DUR / 1000}`);
 
             // 向右滚动（两阶段 motion path）
             // 第一阶段：向右下滚到 level9 位置；第二阶段：向右滚到 level8 最终位置
             // rotation 通过 onUpdate 实时同步 x 位移比例，模拟真实滚动
-            const L8_FINAL_X = cellW + 128;
+            const L8_FINAL_X = cellW + 128 * SPRITE_SCALE;
             const L8_FINAL_Y = cellFix;
             const L9_MID_X = cellW;
             const PHASE1_DUR = L8_ROLL_DUR * L8_ROLL_PHASE1_RATIO;
@@ -703,7 +707,7 @@ export class LoadingBackground {
 
             // 容器继续缩放到最终大小
             tl.to(avatarContainer, {
-                scale: 0.7,
+                scale: 0.7 * containerScale,
                 duration: CONTAINER_DUR,
                 ease: CONTAINER_EASE
             }, `enter`);

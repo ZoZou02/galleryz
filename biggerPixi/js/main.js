@@ -1130,7 +1130,7 @@ async function init() {
 
     // 加载头像纹理
     loadingManager.tick('正在从中华田园犬变成人形…');
-    spritesheetTexture = await Assets.load('images/spritesheet.png');
+    spritesheetTexture = await Assets.load('images/spritesheet0.25.png');
     frameW = spritesheetTexture.width / 5;
     frameH = spritesheetTexture.height / 11;
     for (let level = 0; level < FRUITS.length; level++) {
@@ -1143,6 +1143,8 @@ async function init() {
         }
     }
 
+    console.log('spritesheetTexture:', spritesheetTexture);
+
     // 加载背景动画
     const bgContainer = document.getElementById('loading-bg-container');
     await loadingBg.init(bgContainer);
@@ -1151,7 +1153,7 @@ async function init() {
             const img = new Image();
             img.onload = () => resolve(img);
             img.onerror = reject;
-            img.src = 'images/spritesheet.png';
+            img.src = 'images/spritesheet0.5.png';
         });
         await loadingBg.startWithSpritesheet(spritesheetImg);
     }
