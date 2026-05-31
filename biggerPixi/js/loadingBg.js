@@ -223,31 +223,36 @@ export class LoadingBackground {
 
         this._container.querySelector('.loading-bg-coutinue-text').style.display = 'block';
         this._container.querySelector('.loading-bg-text-bg').style.display = 'block';
+        this._container.querySelector('.loading-bg-text').style.display = 'block';
 
         t1.to(this._container.querySelector('.loading-bg-text-bg'), {
             width: '100vw',
             duration: 1,
             ease: 'power2.inOut'
+        }).to(this._container.querySelector('.loading-bg-text'), {
+            opacity: 1,
+            duration: 1,
+            ease: 'power1.inOut'
+        }).to(this._container.querySelector('.loading-bg-coutinue-text'), {
+            opacity: 1,
+            duration: 1,
+            repeat: -1,
+            yoyo: true,
+            ease: 'power1.inOut'
         })
-            .to(this._container.querySelector('.loading-bg-coutinue-text'), {
-                opacity: 1,
-                duration: 1,
-                repeat: -1,
-                yoyo: true,
-                ease: 'power1.inOut'
-            })
     }
 
     hideContinueTextAndBg() {
         gsap.killTweensOf(this._container.querySelector('.loading-bg-coutinue-text'));
         gsap.killTweensOf(this._container.querySelector('.loading-bg-text-bg'));
-        gsap.to([".loading-bg-coutinue-text", ".loading-bg-text-bg"], {
+        gsap.to([".loading-bg-coutinue-text", ".loading-bg-text-bg", ".loading-bg-text"], {
             opacity: 0,
             duration: 0.2,
             ease: "power2.inOut",
             onComplete: () => {
                 document.querySelector(".loading-bg-coutinue-text").style.display = "none";
                 document.querySelector(".loading-bg-text-bg").style.display = "none";
+                document.querySelector(".loading-bg-text").style.display = "none";
             }
         });
     }
@@ -294,6 +299,7 @@ export class LoadingBackground {
     animateToMainMenu(onComplete) {
         const continueText = this._container.querySelector('.loading-bg-coutinue-text');
         const continueBg = this._container.querySelector('.loading-bg-text-bg');
+        const loadingText = this._container.querySelector('.loading-bg-text');
         const menu = document.getElementById('main-menu');
         const mainTitle = menu.querySelector('.title-image');
         const startButtons = menu.querySelectorAll('.start-btn-main');
@@ -322,7 +328,7 @@ export class LoadingBackground {
         });
 
         // continue 条淡出
-        tl.to([continueBg, continueText], {
+        tl.to([continueBg, continueText, loadingText], {
             autoAlpha: 0,
             duration: 0.3,
             ease: 'power2.in'

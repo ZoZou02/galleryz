@@ -103,9 +103,37 @@ body.game-active {
     z-index: 0;
 }
 
-.loading-bg-coutinue-text {
+.loading-bg-text{
     position: absolute;
     top: 60%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    color: var(--white);
+    z-index: 1000;
+    opacity: 0;
+    letter-spacing: 2px;
+    white-space: nowrap;
+}
+
+/* 竖屏 */
+@media (orientation: portrait) {
+    .loading-bg-text {
+        font-size: 16px;
+    }
+}
+
+/* 横屏 */
+@media (orientation: landscape) {
+    .loading-bg-text {
+        font-size: 24px;
+    }
+}
+
+
+.loading-bg-coutinue-text {
+    position: absolute;
+    top: 52%;
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 24px;
