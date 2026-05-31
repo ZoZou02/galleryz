@@ -176,7 +176,7 @@ export class LoadingManager {
                     loadingBg.fadeOverlay(0.8, ANIM.OVERLAY_FADE_DURATION);
                     loadingBg.showContinueTextAndBg();
                     // 过渡衔接：缩小下移 continue 条 + 标题从 scale 0.1 弹出
-                    setTimeout(() => loadingBg.shrinkContinueAndShowTitle(), 1500);
+                    setTimeout(() => loadingBg.shrinkContinueAndShowTitle(), 200);
                     this._setupClickToReveal();
                 }
             });
@@ -197,9 +197,9 @@ export class LoadingManager {
         this._clickHandler = () => {
             this._screen.removeEventListener('click', this._clickHandler);
             this._clickHandler = null;
+            soundManager.playButton();
 
             loadingBg.animateToMainMenu(() => {
-                soundManager.playButton();
                 gsap.to(this._screen, {
                     autoAlpha: 0,
                     duration: 0.4,

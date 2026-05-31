@@ -18,7 +18,7 @@ const SHAPE_PATHS = {
 const SCROLL_DURATION = 30;    // [★循环关键] 头像网格滚动一整圈的时长(秒)，越大越慢
 const SWAY_ANGLE = 3;          // 左右倾斜最大角度(度)，0-10 合适，不影响循环
 const SWAY_DURATION = 10;       // 左右倾斜往复一次的时长(秒)，与滚动周期独立，不影响循环
-const FADEIN_DURATION = 0.8;   // 头像网格首次淡入时长(秒)，不影响循环
+const FADEIN_DURATION = 1;   // 头像网格首次淡入时长(秒)，不影响循环
 const GAME_BLUR = 3;           // 游戏模式下头像模糊量(px)，0-10，不影响循环
 const GAME_DARKEN = 0.35;      // 游戏模式下暗色遮罩透明度(0-1)，越大越暗，不影响循环
 const GAME_MODE_DURATION = 0.5;// 进入/退出游戏模式过渡时长(秒)，不影响循环
@@ -257,22 +257,31 @@ export class LoadingBackground {
      * 在 showContinueTextAndBg 动画完成后调用
      */
     shrinkContinueAndShowTitle() {
-        // 克隆主菜单标题图片
-        const mainTitle = document.querySelector('#main-menu .title-image');
-        const tempTitle = document.createElement('img');
-        tempTitle.className = 'loading-transition-title';
-        tempTitle.src = mainTitle ? mainTitle.src : '';
-        tempTitle.style.cssText =
-            'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.1);'
-            + 'width:320px;height:auto;image-rendering:auto;z-index:1002;pointer-events:none;opacity:0;';
-        this._container.appendChild(tempTitle);
-        this._tempTitle = tempTitle;
+        const menu = document.getElementById('main-menu');
+        const mainTitle = menu.querySelector('.title-image');
+        const startButtons = menu.querySelectorAll('.start-btn-main');
+        const settingsBtn = document.getElementById('settings-btn');
 
-        // 标题从 scale 0.1 弹出，位于 continue 条上方
-        gsap.to(tempTitle, {
+        menu.classList.remove('hidden');
+        menu.style.transition = 'none';
+
+        // 计算标题从自然位置到屏幕中央的偏移
+        const rect = mainTitle.getBoundingClientRect();
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        const offsetX = cx - (rect.left + rect.width / 2);
+        const offsetY = cy - (rect.top + rect.height / 2) - 100;
+
+        // 标题定位到 continue 条上方，scale 0.1
+        gsap.set(mainTitle, { x: offsetX, y: offsetY, scale: 0.1, autoAlpha: 0 });
+        // 所有按钮隐藏（包括设置按钮）
+        gsap.set(startButtons, { y: 250, autoAlpha: 0 });
+        gsap.set(settingsBtn, { y: 250, autoAlpha: 0 });
+
+        // 标题从 scale 0.1 弹出
+        gsap.to(mainTitle, {
             scale: 1,
-            opacity: 1,
-            y: -60,
+            autoAlpha: 1,
             duration: 0.5,
             ease: 'back.out(1.7)'
         });
@@ -285,39 +294,28 @@ export class LoadingBackground {
     animateToMainMenu(onComplete) {
         const continueText = this._container.querySelector('.loading-bg-coutinue-text');
         const continueBg = this._container.querySelector('.loading-bg-text-bg');
-        const tempTitle = this._tempTitle;
-
-        if (!tempTitle) { onComplete(); return; }
-
         const menu = document.getElementById('main-menu');
         const mainTitle = menu.querySelector('.title-image');
-        const buttons = menu.querySelectorAll('.start-btn-main');
+        const startButtons = menu.querySelectorAll('.start-btn-main');
+        const settingsBtn = document.getElementById('settings-btn');
+        const allButtons = [...startButtons, settingsBtn];
 
-        // 临时显示 main-menu 计算目标位置
-        menu.classList.remove('hidden');
-        menu.style.pointerEvents = 'none';
-        const targetRect = mainTitle.getBoundingClientRect();
-        const currentRect = tempTitle.getBoundingClientRect();
-        const deltaX = targetRect.left + targetRect.width / 2 - (currentRect.left + currentRect.width / 2);
-        const deltaY = targetRect.top + targetRect.height / 2 - (currentRect.top + currentRect.height / 2);
-        menu.classList.add('hidden');
-        menu.style.pointerEvents = '';
-
-        // 显示 main-menu，按钮初始在下方
-        menu.classList.remove('hidden');
-        menu.style.transition = 'none';
-        gsap.set(mainTitle, { autoAlpha: 0 });
-        gsap.set(buttons, { y: 250, autoAlpha: 0 });
+        // 如果 main-menu 还是隐藏状态（用户过早点击），先显示
+        if (menu.classList.contains('hidden')) {
+            menu.classList.remove('hidden');
+            menu.style.transition = 'none';
+            gsap.set(mainTitle, { x: 0, y: 0, scale: 1, autoAlpha: 1 });
+            gsap.set(allButtons, { y: 0, autoAlpha: 1 });
+            continueText.style.display = 'none';
+            continueBg.style.display = 'none';
+            if (onComplete) onComplete();
+            return;
+        }
 
         const tl = gsap.timeline({
             onComplete: () => {
-                if (this._tempTitle) {
-                    this._tempTitle.remove();
-                    this._tempTitle = null;
-                }
                 continueText.style.display = 'none';
                 continueBg.style.display = 'none';
-                menu.style.pointerEvents = '';
                 menu.style.transition = '';
                 if (onComplete) onComplete();
             }
@@ -329,31 +327,28 @@ export class LoadingBackground {
             duration: 0.3,
             ease: 'power2.in'
         }, 0)
-        // 标题移动到最终位置
-        .to(tempTitle, {
-            x: deltaX,
-            y: deltaY,
+        // 标题上移到最终位置
+        .to(mainTitle, {
+            x: 0,
+            y: 0,
             duration: 0.5,
             ease: 'power3.inOut'
         }, 0)
-        // 真实标题淡入，隐藏临时标题
-        .to(mainTitle, { autoAlpha: 1, duration: 0.15 }, '>-=0.1')
-        .set(tempTitle, { display: 'none' }, '<')
-        // 按钮从下方冲上来
-        .to(buttons, {
+        // 按钮从下方冲上来（包括设置按钮）
+        .to(allButtons, {
             y: 0,
             autoAlpha: 1,
             duration: 0.5,
             stagger: 0.08,
             ease: 'back.out(1)'
-        }, '<');
+        }, '>-=0.15');
     }
 
     fadeIn() {
         gsap.to(this._canvas, {
             autoAlpha: 1,
             duration: FADEIN_DURATION,
-            ease: 'power2.inOut'
+            ease: 'power2.out'
         });
     }
 
@@ -682,6 +677,9 @@ export class LoadingBackground {
                 }
             }, `enter+=${L8_ROLL_START}`);
 
+            // 背景渐变
+            tl.to(overlay, { background: OVERLAY_COLOR, duration: OVERLAY_DUR, ease: OVERLAY_EASE }, 'enter');
+
             tl.to(avatars[8], {
                 x: L8_FINAL_X,
                 duration: PHASE2_DUR, ease: 'power2.out',
@@ -710,11 +708,8 @@ export class LoadingBackground {
                 ease: CONTAINER_EASE
             }, `enter`);
 
-            // 背景渐变
-            tl.to(overlay, { background: OVERLAY_COLOR, duration: OVERLAY_DUR, ease: OVERLAY_EASE }, 'enter+=0.15');
-
             // B2. 其余头像依次从屏幕外下落（x固定不变，旋转角度各自可调）
-            const otherLevels = [6, 7, 9, 5, 4, 3, 2, 1, 0];
+            const otherLevels = [7, 6, 9, 5, 4, 3, 2, 1, 0];
             otherLevels.forEach((lv, i) => {
                 const pos = avatarParams[lv];
                 const stagger = i * OTHER_STAGGER;
