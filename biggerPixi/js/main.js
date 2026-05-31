@@ -994,8 +994,7 @@ function handleResize() {
     const newWidth = Math.floor(PANEL_WIDTH * scale);
     const newHeight = Math.floor(PANEL_HEIGHT * scale);
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    app.renderer.resolution = dpr;
+    app.renderer.resolution = getQualityResolution();
     app.renderer.resize(newWidth, newHeight);
 
     if (app && app.stage && scale > 0) {
@@ -1084,7 +1083,7 @@ async function init() {
         width: PANEL_WIDTH,
         height: PANEL_HEIGHT,
         backgroundAlpha: 0,
-        resolution: Math.min(window.devicePixelRatio || 1, 2),
+        resolution: getQualityResolution(),
         autoDensity: true,
         antialias: true,
     });
@@ -1147,13 +1146,15 @@ async function init() {
     // 加载背景动画
     const bgContainer = document.getElementById('loading-bg-container');
     await loadingBg.init(bgContainer);
-    const spritesheetImg = await new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = 'images/spritesheet.png';
-    });
-    await loadingBg.startWithSpritesheet(spritesheetImg);
+    if (currentQuality === 'high') {
+        const spritesheetImg = await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = 'images/spritesheet.png';
+        });
+        await loadingBg.startWithSpritesheet(spritesheetImg);
+    }
 
     loadingManager.tick('正在+5000…');
     panelSprite = await loadSprite('images/3-panel.png');
@@ -1313,6 +1314,55 @@ function saveVolumeSettings(sfx, music) {
     try {
         localStorage.setItem('biggerPixi_volumes', JSON.stringify({ sfx, music }));
     } catch (e) { }
+}
+
+function loadQualitySetting() {
+    try {
+        return localStorage.getItem('biggerPixi_quality') || 'high';
+    } catch (e) { return 'high'; }
+}
+
+function saveQualitySetting(quality) {
+    try {
+        localStorage.setItem('biggerPixi_quality', quality);
+    } catch (e) { }
+}
+
+let currentQuality = loadQualitySetting();
+
+function getQualityResolution() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    return currentQuality === 'low' ? 1 : dpr;
+}
+
+function applyQualityButtons() {
+    const buttons = document.querySelectorAll('.quality-btn');
+    buttons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.quality === currentQuality);
+    });
+}
+
+function updateQualityUI() {
+    applyQualityButtons();
+    if (app && app.renderer) {
+        handleResize();
+    }
+    if (loadingBg && loadingBg._canvas) {
+        loadingBg._canvas.style.display = currentQuality === 'low' ? 'none' : '';
+    }
+}
+
+function setupQualityToggle() {
+    applyQualityButtons();
+
+    document.querySelectorAll('.quality-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.dataset.quality === currentQuality) return;
+            currentQuality = btn.dataset.quality;
+            saveQualitySetting(currentQuality);
+            updateQualityUI();
+        });
+    });
 }
 
 function applyVolumeSettings() {
@@ -1513,6 +1563,7 @@ function setupHTMLButtons() {
 
 setupHTMLButtons();
 setupSettingsSliders();
+setupQualityToggle();
 
 function setupRecordsScrollListener() {
     const wrap = document.querySelector('.records-table-wrap');
