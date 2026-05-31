@@ -1332,6 +1332,9 @@ function setupSettingsSliders() {
         soundManager.setSfxVolume(v);
         const vol = loadVolumeSettings();
         saveVolumeSettings(v, vol.music);
+    };
+
+    const onSfxChange = () => {
         soundManager.playAlienVoice();
     };
 
@@ -1346,6 +1349,7 @@ function setupSettingsSliders() {
         onSfxInput(v);
         if (pauseSfxSlider) pauseSfxSlider.value = sfxSlider.value;
     });
+    sfxSlider.addEventListener('change', onSfxChange);
 
     musicSlider.addEventListener('input', () => {
         const v = musicSlider.value / 100;
@@ -1359,6 +1363,7 @@ function setupSettingsSliders() {
             onSfxInput(v);
             if (sfxSlider) sfxSlider.value = pauseSfxSlider.value;
         });
+        pauseSfxSlider.addEventListener('change', onSfxChange);
     }
 
     if (pauseMusicSlider) {
