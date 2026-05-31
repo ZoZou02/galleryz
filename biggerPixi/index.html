@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -15,10 +16,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/style.css" version="0.14.1">
+    <link rel="stylesheet" href="css/style.css" version="0.14.2">
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/GSDevTools.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
 
     <script type="importmap">
     {
@@ -28,6 +31,7 @@
     }
     </script>
 </head>
+
 <body>
     <!-- 全局头像网格背景 -->
     <div id="loading-bg-container">
@@ -122,7 +126,11 @@
             <div class="records-table-wrap">
                 <table id="records-table">
                     <thead>
-                        <tr><th>排名</th><th>分数</th><th>时长</th></tr>
+                        <tr>
+                            <th>排名</th>
+                            <th>分数</th>
+                            <th>时长</th>
+                        </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
@@ -139,12 +147,159 @@
             <div class="modal-stamp">ABOUT</div>
             <h1>关于游戏</h1>
             <div class="score-stars"></div>
-            <div class="about-info">
-                <p class="about-line">合成大GB</p>
-                <p class="about-line">同类水果合成，不断升级</p>
-                <p class="about-line">触碰到顶部危险线即告失败</p>
-                <p class="about-line">合理利用 UFO 技能扭转战局</p>
+            <div class="about-info-wrap">
+                <div class="about-info">
+                    <p class="about-line">感谢游玩！</p>
+                    <div class="footer-section">
+                        <p class="footer-section-content">本网站仅供娱乐使用，不代表任何官方或立场。</p>
+                        <p class="footer-section-content">素材包含二创或来源于公开网络，其版权归原作者所有。</p>
+                        <p class="footer-section-content">请勿将本站内容用于商业或其他正式用途。</p>
+                        <p class="footer-section-content">如有涉及侵权或其他问题，请联系作者。</p>
+                        <p class="footer-section-title">【开发】</p>
+                        <p class="footer-section-content">ZoZou</p>
+                        <p class="footer-section-title">【美术】</p>
+                        <p class="footer-section-content">ZoZou</p>
+                        <p class="footer-section-title">【音乐 | 音效】</p>
+                        <p class="footer-section-content"><a href="https://pixabay.com/zh/" target="_blank">pixabay</a>
+                        </p>
+                        <p class="footer-section-title">【字体】</p>
+                        <p class="footer-section-content"><a href="https://fusion-pixel-font.takwolf.com/"
+                                target="_blank">fusion-pixel-font</a></p>
+                        <p class="footer-section-title">【参考】</p>
+                        <p class="footer-section-content">胜利女神:NIKKE</p>
+                        <p class="footer-section-content">夏活小游戏 BFG:Clean Up!</p>
+                        <p class="footer-section-title">【特别感谢】</p>
+                        <p class="footer-section-content">*排名不分先后</p>
+                        <p class="footer-section-content"><a href="https://space.bilibili.com/4731411"
+                                target="_blank"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                                    fill-rule="evenodd" height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24"
+                                    width="1em" class="link-icon">
+                                    <title>bilibili</title>
+                                    <path clip-rule="evenodd"
+                                        d="M4.977 3.561a1.31 1.31 0 111.818-1.884l2.828 2.728c.08.078.149.163.205.254h4.277a1.32 1.32 0 01.205-.254l2.828-2.728a1.31 1.31 0 011.818 1.884L17.82 4.66h.848A5.333 5.333 0 0124 9.992v7.34a5.333 5.333 0 01-5.333 5.334H5.333A5.333 5.333 0 010 17.333V9.992a5.333 5.333 0 015.333-5.333h.781L4.977 3.56zm.356 3.67a2.667 2.667 0 00-2.666 2.667v7.529a2.667 2.667 0 002.666 2.666h13.334a2.667 2.667 0 002.666-2.666v-7.53a2.667 2.667 0 00-2.666-2.666H5.333zm1.334 5.192a1.333 1.333 0 112.666 0v1.192a1.333 1.333 0 11-2.666 0v-1.192zM16 11.09c-.736 0-1.333.597-1.333 1.333v1.192a1.333 1.333 0 102.666 0v-1.192c0-.736-.597-1.333-1.333-1.333z" />
+                                </svg>牧牧川</a></p>
+                        <p class="footer-section-content"><a href="https://space.bilibili.com/310941"
+                                target="_blank"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                                    fill-rule="evenodd" height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24"
+                                    width="1em" class="link-icon">
+                                    <title>bilibili</title>
+                                    <path clip-rule="evenodd"
+                                        d="M4.977 3.561a1.31 1.31 0 111.818-1.884l2.828 2.728c.08.078.149.163.205.254h4.277a1.32 1.32 0 01.205-.254l2.828-2.728a1.31 1.31 0 011.818 1.884L17.82 4.66h.848A5.333 5.333 0 0124 9.992v7.34a5.333 5.333 0 01-5.333 5.334H5.333A5.333 5.333 0 010 17.333V9.992a5.333 5.333 0 015.333-5.333h.781L4.977 3.56zm.356 3.67a2.667 2.667 0 00-2.666 2.667v7.529a2.667 2.667 0 002.666 2.666h13.334a2.667 2.667 0 002.666-2.666v-7.53a2.667 2.667 0 00-2.666-2.666H5.333zm1.334 5.192a1.333 1.333 0 112.666 0v1.192a1.333 1.333 0 11-2.666 0v-1.192zM16 11.09c-.736 0-1.333.597-1.333 1.333v1.192a1.333 1.333 0 102.666 0v-1.192c0-.736-.597-1.333-1.333-1.333z" />
+                                </svg>黑無象</a></p>
+                        <p class="footer-section-content"><a href="https://space.bilibili.com/773977"
+                                target="_blank"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                                    fill-rule="evenodd" height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24"
+                                    width="1em" class="link-icon">
+                                    <title>bilibili</title>
+                                    <path clip-rule="evenodd"
+                                        d="M4.977 3.561a1.31 1.31 0 111.818-1.884l2.828 2.728c.08.078.149.163.205.254h4.277a1.32 1.32 0 01.205-.254l2.828-2.728a1.31 1.31 0 011.818 1.884L17.82 4.66h.848A5.333 5.333 0 0124 9.992v7.34a5.333 5.333 0 01-5.333 5.334H5.333A5.333 5.333 0 010 17.333V9.992a5.333 5.333 0 015.333-5.333h.781L4.977 3.56zm.356 3.67a2.667 2.667 0 00-2.666 2.667v7.529a2.667 2.667 0 002.666 2.666h13.334a2.667 2.667 0 002.666-2.666v-7.53a2.667 2.667 0 00-2.666-2.666H5.333zm1.334 5.192a1.333 1.333 0 112.666 0v1.192a1.333 1.333 0 11-2.666 0v-1.192zM16 11.09c-.736 0-1.333.597-1.333 1.333v1.192a1.333 1.333 0 102.666 0v-1.192c0-.736-.597-1.333-1.333-1.333z" />
+                                </svg>Lee唉咯</a></p>
+                        <p class="footer-section-content"><a href="https://space.bilibili.com/480992315"
+                                target="_blank"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                                    fill-rule="evenodd" height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24"
+                                    width="1em" class="link-icon">
+                                    <title>bilibili</title>
+                                    <path clip-rule="evenodd"
+                                        d="M4.977 3.561a1.31 1.31 0 111.818-1.884l2.828 2.728c.08.078.149.163.205.254h4.277a1.32 1.32 0 01.205-.254l2.828-2.728a1.31 1.31 0 011.818 1.884L17.82 4.66h.848A5.333 5.333 0 0124 9.992v7.34a5.333 5.333 0 01-5.333 5.334H5.333A5.333 5.333 0 010 17.333V9.992a5.333 5.333 0 015.333-5.333h.781L4.977 3.56zm.356 3.67a2.667 2.667 0 00-2.666 2.667v7.529a2.667 2.667 0 002.666 2.666h13.334a2.667 2.667 0 002.666-2.666v-7.53a2.667 2.667 0 00-2.666-2.666H5.333zm1.334 5.192a1.333 1.333 0 112.666 0v1.192a1.333 1.333 0 11-2.666 0v-1.192zM16 11.09c-.736 0-1.333.597-1.333 1.333v1.192a1.333 1.333 0 102.666 0v-1.192c0-.736-.597-1.333-1.333-1.333z" />
+                                </svg>樱井飞鸟</a></p>
+
+                        <p class="footer-section-content"><a href="https://space.bilibili.com/355316181"
+                                target="_blank"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                                    fill-rule="evenodd" height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24"
+                                    width="1em" class="link-icon">
+                                    <title>bilibili</title>
+                                    <path clip-rule="evenodd"
+                                        d="M4.977 3.561a1.31 1.31 0 111.818-1.884l2.828 2.728c.08.078.149.163.205.254h4.277a1.32 1.32 0 01.205-.254l2.828-2.728a1.31 1.31 0 011.818 1.884L17.82 4.66h.848A5.333 5.333 0 0124 9.992v7.34a5.333 5.333 0 01-5.333 5.334H5.333A5.333 5.333 0 010 17.333V9.992a5.333 5.333 0 015.333-5.333h.781L4.977 3.56zm.356 3.67a2.667 2.667 0 00-2.666 2.667v7.529a2.667 2.667 0 002.666 2.666h13.334a2.667 2.667 0 002.666-2.666v-7.53a2.667 2.667 0 00-2.666-2.666H5.333zm1.334 5.192a1.333 1.333 0 112.666 0v1.192a1.333 1.333 0 11-2.666 0v-1.192zM16 11.09c-.736 0-1.333.597-1.333 1.333v1.192a1.333 1.333 0 102.666 0v-1.192c0-.736-.597-1.333-1.333-1.333z" />
+                                </svg>袖子杨杨</a></p>
+                        <p class="footer-section-content"><a href="https://space.bilibili.com/25691069"
+                                target="_blank"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                                    fill-rule="evenodd" height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24"
+                                    width="1em" class="link-icon">
+                                    <title>bilibili</title>
+                                    <path clip-rule="evenodd"
+                                        d="M4.977 3.561a1.31 1.31 0 111.818-1.884l2.828 2.728c.08.078.149.163.205.254h4.277a1.32 1.32 0 01.205-.254l2.828-2.728a1.31 1.31 0 011.818 1.884L17.82 4.66h.848A5.333 5.333 0 0124 9.992v7.34a5.333 5.333 0 01-5.333 5.334H5.333A5.333 5.333 0 010 17.333V9.992a5.333 5.333 0 015.333-5.333h.781L4.977 3.56zm.356 3.67a2.667 2.667 0 00-2.666 2.667v7.529a2.667 2.667 0 002.666 2.666h13.334a2.667 2.667 0 002.666-2.666v-7.53a2.667 2.667 0 00-2.666-2.666H5.333zm1.334 5.192a1.333 1.333 0 112.666 0v1.192a1.333 1.333 0 11-2.666 0v-1.192zM16 11.09c-.736 0-1.333.597-1.333 1.333v1.192a1.333 1.333 0 102.666 0v-1.192c0-.736-.597-1.333-1.333-1.333z" />
+                                </svg>小咒kojiko</a></p>
+                        <p class="footer-section-content"><a href="https://space.bilibili.com/31807853"
+                                target="_blank"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                                    fill-rule="evenodd" height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24"
+                                    width="1em" class="link-icon">
+                                    <title>bilibili</title>
+                                    <path clip-rule="evenodd"
+                                        d="M4.977 3.561a1.31 1.31 0 111.818-1.884l2.828 2.728c.08.078.149.163.205.254h4.277a1.32 1.32 0 01.205-.254l2.828-2.728a1.31 1.31 0 011.818 1.884L17.82 4.66h.848A5.333 5.333 0 0124 9.992v7.34a5.333 5.333 0 01-5.333 5.334H5.333A5.333 5.333 0 010 17.333V9.992a5.333 5.333 0 015.333-5.333h.781L4.977 3.56zm.356 3.67a2.667 2.667 0 00-2.666 2.667v7.529a2.667 2.667 0 002.666 2.666h13.334a2.667 2.667 0 002.666-2.666v-7.53a2.667 2.667 0 00-2.666-2.666H5.333zm1.334 5.192a1.333 1.333 0 112.666 0v1.192a1.333 1.333 0 11-2.666 0v-1.192zM16 11.09c-.736 0-1.333.597-1.333 1.333v1.192a1.333 1.333 0 102.666 0v-1.192c0-.736-.597-1.333-1.333-1.333z" />
+                                </svg>芙老大kawa</a></p>
+                        <p class="footer-section-content"><a href="https://space.bilibili.com/15264115"
+                                target="_blank"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                                    fill-rule="evenodd" height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24"
+                                    width="1em" class="link-icon">
+                                    <title>bilibili</title>
+                                    <path clip-rule="evenodd"
+                                        d="M4.977 3.561a1.31 1.31 0 111.818-1.884l2.828 2.728c.08.078.149.163.205.254h4.277a1.32 1.32 0 01.205-.254l2.828-2.728a1.31 1.31 0 011.818 1.884L17.82 4.66h.848A5.333 5.333 0 0124 9.992v7.34a5.333 5.333 0 01-5.333 5.334H5.333A5.333 5.333 0 010 17.333V9.992a5.333 5.333 0 015.333-5.333h.781L4.977 3.56zm.356 3.67a2.667 2.667 0 00-2.666 2.667v7.529a2.667 2.667 0 002.666 2.666h13.334a2.667 2.667 0 002.666-2.666v-7.53a2.667 2.667 0 00-2.666-2.666H5.333zm1.334 5.192a1.333 1.333 0 112.666 0v1.192a1.333 1.333 0 11-2.666 0v-1.192zM16 11.09c-.736 0-1.333.597-1.333 1.333v1.192a1.333 1.333 0 102.666 0v-1.192c0-.736-.597-1.333-1.333-1.333z" />
+                                </svg>我Geebar谁啊</a></p>
+                        <p class="footer-section-content"><a href="https://space.bilibili.com/24453454"
+                                target="_blank"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                                    fill-rule="evenodd" height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24"
+                                    width="1em" class="link-icon">
+                                    <title>bilibili</title>
+                                    <path clip-rule="evenodd"
+                                        d="M4.977 3.561a1.31 1.31 0 111.818-1.884l2.828 2.728c.08.078.149.163.205.254h4.277a1.32 1.32 0 01.205-.254l2.828-2.728a1.31 1.31 0 011.818 1.884L17.82 4.66h.848A5.333 5.333 0 0124 9.992v7.34a5.333 5.333 0 01-5.333 5.334H5.333A5.333 5.333 0 010 17.333V9.992a5.333 5.333 0 015.333-5.333h.781L4.977 3.56zm.356 3.67a2.667 2.667 0 00-2.666 2.667v7.529a2.667 2.667 0 002.666 2.666h13.334a2.667 2.667 0 002.666-2.666v-7.53a2.667 2.667 0 00-2.666-2.666H5.333zm1.334 5.192a1.333 1.333 0 112.666 0v1.192a1.333 1.333 0 11-2.666 0v-1.192zM16 11.09c-.736 0-1.333.597-1.333 1.333v1.192a1.333 1.333 0 102.666 0v-1.192c0-.736-.597-1.333-1.333-1.333z" />
+                                </svg>残杀Top丶KILL</a></p>
+                        <p class="footer-section-content"><a href="https://space.bilibili.com/1638789"
+                                target="_blank"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                                    fill-rule="evenodd" height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24"
+                                    width="1em" class="link-icon">
+                                    <title>bilibili</title>
+                                    <path clip-rule="evenodd"
+                                        d="M4.977 3.561a1.31 1.31 0 111.818-1.884l2.828 2.728c.08.078.149.163.205.254h4.277a1.32 1.32 0 01.205-.254l2.828-2.728a1.31 1.31 0 011.818 1.884L17.82 4.66h.848A5.333 5.333 0 0124 9.992v7.34a5.333 5.333 0 01-5.333 5.334H5.333A5.333 5.333 0 010 17.333V9.992a5.333 5.333 0 015.333-5.333h.781L4.977 3.56zm.356 3.67a2.667 2.667 0 00-2.666 2.667v7.529a2.667 2.667 0 002.666 2.666h13.334a2.667 2.667 0 002.666-2.666v-7.53a2.667 2.667 0 00-2.666-2.666H5.333zm1.334 5.192a1.333 1.333 0 112.666 0v1.192a1.333 1.333 0 11-2.666 0v-1.192zM16 11.09c-.736 0-1.333.597-1.333 1.333v1.192a1.333 1.333 0 102.666 0v-1.192c0-.736-.597-1.333-1.333-1.333z" />
+                                </svg>悠姆帕不是大果冻</a></p>
+                        <p class="footer-section-content"><a href="https://space.bilibili.com/2702376"
+                                target="_blank"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                                    fill-rule="evenodd" height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24"
+                                    width="1em" class="link-icon">
+                                    <title>bilibili</title>
+                                    <path clip-rule="evenodd"
+                                        d="M4.977 3.561a1.31 1.31 0 111.818-1.884l2.828 2.728c.08.078.149.163.205.254h4.277a1.32 1.32 0 01.205-.254l2.828-2.728a1.31 1.31 0 011.818 1.884L17.82 4.66h.848A5.333 5.333 0 0124 9.992v7.34a5.333 5.333 0 01-5.333 5.334H5.333A5.333 5.333 0 010 17.333V9.992a5.333 5.333 0 015.333-5.333h.781L4.977 3.56zm.356 3.67a2.667 2.667 0 00-2.666 2.667v7.529a2.667 2.667 0 002.666 2.666h13.334a2.667 2.667 0 002.666-2.666v-7.53a2.667 2.667 0 00-2.666-2.666H5.333zm1.334 5.192a1.333 1.333 0 112.666 0v1.192a1.333 1.333 0 11-2.666 0v-1.192zM16 11.09c-.736 0-1.333.597-1.333 1.333v1.192a1.333 1.333 0 102.666 0v-1.192c0-.736-.597-1.333-1.333-1.333z" />
+                                </svg>阿Miao今天马枪了吗</a></p>
+                        <p class="footer-section-content">*喵哥送的键盘</p>
+                        <p class="footer-section-content">TRAE</p>
+                        <p class="footer-section-content">DeepSeek-V4-Pro</p>
+                        <p class="footer-section-content">Kimi-K2.6</p>
+                        <p class="footer-section-content">Qwen3.6-Plus</p>
+                        <p class="footer-section-content">Doubao-Seed-2.0-Code</p>
+                        <p class="footer-section-content">???</p>
+                        <p class="footer-section-content">初音未来</p>
+                        <p class="footer-section-content">洛天依</p>
+                        <p class="footer-section-content">诗岸</p>
+                        <p class="footer-section-content">星尘</p>
+                        <p class="footer-section-content">Mr. Moon</p>
+                        <p class="footer-section-content">一斤肥牛</p>
+                        <p class="footer-section-content">佐伊</p>
+                        <p class="footer-section-content">GQuuuuuux</p>
+
+                        <p class="footer-section-title">【联系方式】</p>
+                        <p class="footer-section-content"><a href="https://github.com/ZoZou02" target="_blank"><svg
+                                    width="16" height="16" viewBox="0 0 24 24" class="link-icon">
+                                    <path
+                                        d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3">
+                                    </path>
+                                </svg>ZoZou02</a></p>
+                        <p class="footer-section-content"><a href="https://space.bilibili.com/28593347"
+                                target="_blank"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+                                    fill-rule="evenodd" height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24"
+                                    width="1em" class="link-icon">
+                                    <title>bilibili</title>
+                                    <path clip-rule="evenodd"
+                                        d="M4.977 3.561a1.31 1.31 0 111.818-1.884l2.828 2.728c.08.078.149.163.205.254h4.277a1.32 1.32 0 01.205-.254l2.828-2.728a1.31 1.31 0 011.818 1.884L17.82 4.66h.848A5.333 5.333 0 0124 9.992v7.34a5.333 5.333 0 01-5.333 5.334H5.333A5.333 5.333 0 010 17.333V9.992a5.333 5.333 0 015.333-5.333h.781L4.977 3.56zm.356 3.67a2.667 2.667 0 00-2.666 2.667v7.529a2.667 2.667 0 002.666 2.666h13.334a2.667 2.667 0 002.666-2.666v-7.53a2.667 2.667 0 00-2.666-2.666H5.333zm1.334 5.192a1.333 1.333 0 112.666 0v1.192a1.333 1.333 0 11-2.666 0v-1.192zM16 11.09c-.736 0-1.333.597-1.333 1.333v1.192a1.333 1.333 0 102.666 0v-1.192c0-.736-.597-1.333-1.333-1.333z" />
+                                </svg>_ZoZou_</a></p>
+                        <p class="footer-section-content"><a href="mailto:zozou0610@163.com" target="_blank"><svg
+                                    width="16" height="16" viewBox="0 0 24 24" class="link-icon">
+                                    <path
+                                        d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"
+                                        fill="currentColor"></path>
+                                </svg> zozou0610@163.com</a></p>
+                    </div>
+                </div>
             </div>
+            <div class="about-scroll-hint"></div>
             <button class="modal-btn modal-btn-purple btn-about-close" id="close-about-btn">返回</button>
         </div>
     </div>
@@ -184,8 +339,8 @@
         </div>
     </div>
 
-
-    <div class="version-tag">v0.14.1 by zozou</div>
-    <script type="module" src="js/main.js" version="0.14.1"></script>   
+    <div class="version-tag">v0.14.2 by zozou</div>
+    <script type="module" src="js/main.js" version="0.14.2"></script>
 </body>
+
 </html>

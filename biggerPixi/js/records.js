@@ -82,3 +82,13 @@ function updateScrollHint() {
         wrap.classList.remove('overflow', 'scrolled-bottom');
     }
 }
+
+function updateAboutScrollHint() {
+    const wrap = document.querySelector('.about-info-wrap');
+    if (!wrap) return;
+    if (wrap.scrollHeight > wrap.clientHeight) {
+        wrap.classList.add('overflow');
+    } else {
+        wrap.classList.remove('overflow', 'scrolled-bottom');
+    }
+}

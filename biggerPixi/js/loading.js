@@ -45,6 +45,7 @@ export class LoadingManager {
         this._startTime = 0;
         this._onReadyCallback = null;
         this._clickHandler = null;
+        this._shrinkTimeoutId = null;
     }
 
     init() {
@@ -176,7 +177,7 @@ export class LoadingManager {
                     loadingBg.fadeOverlay(0.8, ANIM.OVERLAY_FADE_DURATION);
                     loadingBg.showContinueTextAndBg();
                     // 过渡衔接：缩小下移 continue 条 + 标题从 scale 0.1 弹出
-                    setTimeout(() => loadingBg.shrinkContinueAndShowTitle(), 200);
+                    this._shrinkTimeoutId = setTimeout(() => loadingBg.shrinkContinueAndShowTitle(), 200);
                     this._setupClickToReveal();
                 }
             });
@@ -197,6 +198,10 @@ export class LoadingManager {
         this._clickHandler = () => {
             this._screen.removeEventListener('click', this._clickHandler);
             this._clickHandler = null;
+            if (this._shrinkTimeoutId) {
+                clearTimeout(this._shrinkTimeoutId);
+                this._shrinkTimeoutId = null;
+            }
             soundManager.playButton();
 
             loadingBg.animateToMainMenu(() => {
@@ -230,6 +235,10 @@ export class LoadingManager {
         if (this._clickHandler) {
             this._screen.removeEventListener('click', this._clickHandler);
             this._clickHandler = null;
+        }
+        if (this._shrinkTimeoutId) {
+            clearTimeout(this._shrinkTimeoutId);
+            this._shrinkTimeoutId = null;
         }
 
         gsap.to(this._screen, {

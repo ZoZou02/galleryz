@@ -1274,6 +1274,15 @@ function closeRecords() {
 
 function openAbout() {
     document.getElementById('about-screen').classList.remove('hidden');
+    requestAnimationFrame(() => {
+        const wrap = document.querySelector('.about-info-wrap');
+        if (!wrap) return;
+        if (wrap.scrollHeight > wrap.clientHeight) {
+            wrap.classList.add('overflow');
+        } else {
+            wrap.classList.remove('overflow', 'scrolled-bottom');
+        }
+    });
 }
 
 function closeAbout() {
@@ -1517,7 +1526,20 @@ function setupRecordsScrollListener() {
     });
 }
 
+function setupAboutScrollListener() {
+    const wrap = document.querySelector('.about-info-wrap');
+    if (!wrap) return;
+    wrap.addEventListener('scroll', () => {
+        if (wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 8) {
+            wrap.classList.add('scrolled-bottom');
+        } else {
+            wrap.classList.remove('scrolled-bottom');
+        }
+    });
+}
+
 setupRecordsScrollListener();
+setupAboutScrollListener();
 init();
 
 // ========== 页面聚焦/失焦处理 ==========

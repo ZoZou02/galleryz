@@ -4,6 +4,7 @@
     --red: #e24365;
     --red-dark: #b82d4f;
     --panel: #fafcfd;
+    --primary-text: #495995;
     --secondary-text: #495995;
     --secondary-bg: #e5edf7;
     --secondary-line: #e6eaf2;
@@ -441,6 +442,7 @@ body.game-active {
     text-align: center;
     box-shadow: 0 6px 0 rgba(0, 0, 0, 0.15);
     width: 320px;
+    max-height: 600px;
     /* min-width: 310px;
     max-width: 356px; */
     transform: scale(0.5) rotate(-2deg);
@@ -932,7 +934,9 @@ body.game-active {
     flex-direction: column;
     align-items: center;
     gap: 10px;
-    margin-bottom: 20px;
+    padding: 16px 20px;
+    background: var(--secondary-bg);
+    border-radius: 4px;
     font-family: 'FusionPixel', sans-serif;
 }
 
@@ -940,6 +944,83 @@ body.game-active {
     font-size: 16px;
     color: var(--secondary-text);
     letter-spacing: 1px;
+}
+
+.about-info-wrap {
+    max-height: 340px;
+    overflow-y: auto;
+    margin-bottom: 18px;
+    scrollbar-width: none;
+    position: relative;
+}
+
+.about-info-wrap::-webkit-scrollbar {
+    display: none;
+}
+
+.about-scroll-hint {
+    display: none;
+    position: absolute;
+    bottom: 16%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 10px solid var(--secondary-text);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.about-info-wrap.overflow + .about-scroll-hint {
+    display: block;
+}
+
+.about-info-wrap.scrolled-bottom + .about-scroll-hint {
+    display: none;
+}
+
+.footer-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.footer-section-title {
+    font-size: 14px;
+    color: var(--primary-text);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+    margin-top: 6px;
+    font-weight: bold;
+}
+
+.footer-section-content {
+    font-size: 14px;
+    color: var(--secondary-text);
+}
+
+.footer-section-content a {
+    color: var(--secondary-text);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s;
+}
+
+.footer-section-content a:hover {
+    color: var(--red);
+}
+
+.link-icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    flex-shrink: 0;
 }
 
 #about-screen {
