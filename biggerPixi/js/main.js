@@ -1013,10 +1013,26 @@ function handleResize() {
         settingsBtn.style.left = (aboutRect.left - btnSize - gap) + 'px';
         settingsBtn.style.top = (aboutRect.bottom - btnSize) + 'px';
         settingsBtn.style.bottom = 'auto';
+
+        const sponsorBtn = document.getElementById('sponsor-btn');
+        if (sponsorBtn) {
+            sponsorBtn.style.left = (aboutRect.right + gap) + 'px';
+            sponsorBtn.style.top = (aboutRect.bottom - btnSize) + 'px';
+            sponsorBtn.style.bottom = 'auto';
+            sponsorBtn.style.right = 'auto';
+        }
     } else if (settingsBtn) {
         settingsBtn.style.left = '';
         settingsBtn.style.top = '';
         settingsBtn.style.bottom = '';
+
+        const sponsorBtn = document.getElementById('sponsor-btn');
+        if (sponsorBtn) {
+            sponsorBtn.style.left = '';
+            sponsorBtn.style.right = '';
+            sponsorBtn.style.top = '';
+            sponsorBtn.style.bottom = '';
+        }
     }
 }
 
@@ -1304,6 +1320,14 @@ function closeSettings() {
     document.getElementById('settings-screen').classList.add('hidden');
 }
 
+function openSponsor() {
+    document.getElementById('sponsor-screen').classList.remove('hidden');
+}
+
+function closeSponsor() {
+    document.getElementById('sponsor-screen').classList.add('hidden');
+}
+
 function loadVolumeSettings() {
     try {
         const raw = localStorage.getItem('biggerPixi_volumes');
@@ -1540,6 +1564,9 @@ function setupHTMLButtons() {
     const settingsBtn = document.getElementById('settings-btn');
     if (settingsBtn) addHoverBounce(settingsBtn);
 
+    const sponsorBtn = document.getElementById('sponsor-btn');
+    if (sponsorBtn) addHoverBounce(sponsorBtn);
+
     const bind = (id, handler) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('click', (e) => {
@@ -1561,6 +1588,8 @@ function setupHTMLButtons() {
     bind('close-about-btn', closeAbout);
     bind('settings-btn', openSettings);
     bind('close-settings-btn', closeSettings);
+    bind('sponsor-btn', openSponsor);
+    bind('close-sponsor-btn', closeSponsor);
 }
 
 setupHTMLButtons();

@@ -266,6 +266,7 @@ export class LoadingBackground {
         const mainTitle = menu.querySelector('.title-image');
         const startButtons = menu.querySelectorAll('.start-btn-main');
         const settingsBtn = document.getElementById('settings-btn');
+        const sponsorBtn = document.getElementById('sponsor-btn');
 
         menu.classList.remove('hidden');
         menu.style.transition = 'none';
@@ -279,9 +280,10 @@ export class LoadingBackground {
 
         // 标题定位到 continue 条上方，scale 0.1
         gsap.set(mainTitle, { x: offsetX, y: offsetY, scale: 0.1, autoAlpha: 0 });
-        // 所有按钮隐藏（包括设置按钮）
+        // 所有按钮隐藏（包括设置按钮、赞赏按钮）
         gsap.set(startButtons, { y: 250, autoAlpha: 0 });
         gsap.set(settingsBtn, { y: 250, autoAlpha: 0 });
+        gsap.set(sponsorBtn, { y: 250, autoAlpha: 0 });
 
         // 标题从 scale 0.1 弹出
         gsap.to(mainTitle, {
@@ -304,7 +306,8 @@ export class LoadingBackground {
         const mainTitle = menu.querySelector('.title-image');
         const startButtons = menu.querySelectorAll('.start-btn-main');
         const settingsBtn = document.getElementById('settings-btn');
-        const allButtons = [...startButtons, settingsBtn];
+        const sponsorBtn = document.getElementById('sponsor-btn');
+        const allButtons = [...startButtons, settingsBtn, sponsorBtn];
 
         // 如果 main-menu 还是隐藏状态（用户过早点击），先显示
         if (menu.classList.contains('hidden')) {

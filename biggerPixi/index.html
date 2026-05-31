@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="css/style.css" version="0.14.7">
+    <link rel="stylesheet" href="css/style.css" version="0.15.0">
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/GSDevTools.min.js"></script>
@@ -69,7 +69,18 @@
             <button id="records-btn" class="start-btn-main">本地排行</button>
             <button id="about-btn" class="start-btn-main">关于游戏</button>
         </div>
-        <button id="settings-btn" class="settings-btn"></button>
+        <button id="settings-btn" class="settings-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="settings-btn-icon">
+                <path
+                    d="M259.1 73.5C262.1 58.7 275.2 48 290.4 48L350.2 48C365.4 48 378.5 58.7 381.5 73.5L396 143.5C410.1 149.5 423.3 157.2 435.3 166.3L503.1 143.8C517.5 139 533.3 145 540.9 158.2L570.8 210C578.4 223.2 575.7 239.8 564.3 249.9L511 297.3C511.9 304.7 512.3 312.3 512.3 320C512.3 327.7 511.8 335.3 511 342.7L564.4 390.2C575.8 400.3 578.4 417 570.9 430.1L541 481.9C533.4 495 517.6 501.1 503.2 496.3L435.4 473.8C423.3 482.9 410.1 490.5 396.1 496.6L381.7 566.5C378.6 581.4 365.5 592 350.4 592L290.6 592C275.4 592 262.3 581.3 259.3 566.5L244.9 496.6C230.8 490.6 217.7 482.9 205.6 473.8L137.5 496.3C123.1 501.1 107.3 495.1 99.7 481.9L69.8 430.1C62.2 416.9 64.9 400.3 76.3 390.2L129.7 342.7C128.8 335.3 128.4 327.7 128.4 320C128.4 312.3 128.9 304.7 129.7 297.3L76.3 249.8C64.9 239.7 62.3 223 69.8 209.9L99.7 158.1C107.3 144.9 123.1 138.9 137.5 143.7L205.3 166.2C217.4 157.1 230.6 149.5 244.6 143.4L259.1 73.5zM320.3 400C364.5 399.8 400.2 363.9 400 319.7C399.8 275.5 363.9 239.8 319.7 240C275.5 240.2 239.8 276.1 240 320.3C240.2 364.5 276.1 400.2 320.3 400z" />
+            </svg>
+        </button>
+        <button id="sponsor-btn" class="sponsor-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="sponsor-btn-icon">
+                <path
+                    d="M305 151.1L320 171.8L335 151.1C360 116.5 400.2 96 442.9 96C516.4 96 576 155.6 576 229.1L576 231.7C576 343.9 436.1 474.2 363.1 529.9C350.7 539.3 335.5 544 320 544C304.5 544 289.2 539.4 276.9 529.9C203.9 474.2 64 343.9 64 231.7L64 229.1C64 155.6 123.6 96 197.1 96C239.8 96 280 116.5 305 151.1z" />
+            </svg>
+        </button>
     </div>
 
     <div id="settings-screen" class="hidden">
@@ -96,6 +107,23 @@
                 </div> -->
             </div>
             <button class="modal-btn modal-btn-purple" id="close-settings-btn">返回</button>
+        </div>
+    </div>
+
+    <div id="sponsor-screen" class="hidden">
+        <div class="modal-bg-deco"></div>
+        <div class="modal-content records-content">
+            <div class="modal-stamp">SPONSOR</div>
+            <h1>支持</h1>
+            <div class="score-stars"></div>
+            <div class="footer-section-content">如果这个游戏让你感到开心</div>
+            <div class="footer-section-content">我就很满足了😊</div>
+            <div class="footer-section-content">如果你愿意的话</div>
+            <div class="footer-section-content">可以请我吃个TACO🌮</div>
+            <div class="sponsor-body">
+                <img class="sponsor-image" src="images/0-sponsor.jpg" alt="赞赏码" />
+            </div>
+            <button class="modal-btn modal-btn-purple" id="close-sponsor-btn">返回</button>
         </div>
     </div>
 
@@ -304,6 +332,8 @@
                                         d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"
                                         fill="currentColor"></path>
                                 </svg> zozou0610@163.com</a></p>
+                        <p class="footer-section-content">-------------</p>
+                        <p class="footer-section-content">感谢你能看到这里~</p>
                     </div>
                 </div>
             </div>
@@ -347,8 +377,8 @@
         </div>
     </div>
 
-    <div class="version-tag">v0.14.7</div> 
-    <script type="module" src="js/main.js" version="0.14.7"></script>   
+    <div class="version-tag">v0.15.0</div>
+    <script type="module" src="js/main.js" version="0.15.0"></script>
 </body>
 
 </html>
