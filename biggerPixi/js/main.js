@@ -1153,6 +1153,7 @@ async function init() {
     // 加载头像纹理
     loadingManager.tick('正在从中华田园犬变成人形…');
     const spritesheetUrl = useLowResSpritesheet ? 'images/spritesheet0.25.png' : 'images/spritesheet.png';
+    console.log('加载头像纹理:', spritesheetUrl);
     spritesheetTexture = await Assets.load(spritesheetUrl);
     frameW = spritesheetTexture.width / 5;
     frameH = spritesheetTexture.height / 11;
