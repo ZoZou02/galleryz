@@ -1372,7 +1372,7 @@ function getMaxTextureSize() {
 }
 
 const maxTextureSize = getMaxTextureSize();
-const useLowResSpritesheet = maxTextureSize <= 2048;
+const useLowResSpritesheet = maxTextureSize <= 4096;
 
 function getQualityResolution() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
