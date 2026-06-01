@@ -147,6 +147,11 @@ export class AlienMode {
         this._enabled = true;
         document.body.classList.add('alien-mode');
 
+        // 播放 level0-1 音效
+        import('./audio.js').then(({ soundManager }) => {
+            soundManager.playVoice(0);
+        });
+
         // 隐藏👽气泡
         if (this._alienBubble) {
             gsap.killTweensOf(this._alienBubble);

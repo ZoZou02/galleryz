@@ -8,6 +8,7 @@ import {
     FRUITS, DIFFICULTY, PHYSICS, ANIM, MERGE_AUDIO_CFG, SKILLS,
     DROP_DELAY, formatScore, VOICE_CFG
 } from './config.js';
+import { alienMode } from './alienMode.js';
 
 const { Engine, World, Bodies, Body, Events, Composite } = window.Matter;
 
@@ -158,7 +159,8 @@ export class Game {
             _pendingMergeId: null
         });
 
-        this.sound.playDrop(this.currentFruitLevel);
+        const dropVoiceLevel = alienMode.isAlienMode() ? 0 : this.currentFruitLevel;
+        this.sound.playDrop(dropVoiceLevel);
 
         const droppedLevel = this.currentFruitLevel;
         this.currentFruitLevel = this.nextFruitLevel;
@@ -532,7 +534,12 @@ export class Game {
         fruit.mergeAnimStartTime = now;
 
         if (this.alienTransformIndex % 4 === 0) {
-            this.sound.playAlienVoice();
+            const voiceLevel = alienMode.isAlienMode() ? 0 : null;
+            if (voiceLevel !== null) {
+                this.sound.playVoice(voiceLevel);
+            } else {
+                this.sound.playAlienVoice();
+            }
         }
 
         this.alienTransformIndex++;

@@ -4,6 +4,7 @@
  */
 
 import { MERGE_AUDIO_CFG, VOICE_CFG } from './config.js';
+import { alienMode } from './alienMode.js';
 
 class SoundManager {
     constructor() {
@@ -155,8 +156,11 @@ class SoundManager {
         const rate = MERGE_AUDIO_CFG.base_pitch + newLevel * MERGE_AUDIO_CFG.pitch_per_level;
         this.play('merge', { rate });
 
-        if (newLevel >= 5 && newLevel > this._mergeMaxLevel) {
-            const buf = this._pickVoice(newLevel);
+        const voiceLevel = alienMode.isAlienMode() ? 0 : newLevel;
+        const shouldVoice = newLevel >= 5 && newLevel > this._mergeMaxLevel;
+
+        if (shouldVoice) {
+            const buf = this._pickVoice(voiceLevel);
             if (buf) {
                 this._mergeMaxLevel = newLevel;
                 this._mergeMaxBuf = buf;
