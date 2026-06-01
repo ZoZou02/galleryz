@@ -480,6 +480,12 @@ function updateFruitSprites() {
     const now = performance.now();
     const activeIds = new Set();
 
+    let maxLevel = -1;
+    for (const fruit of game.fruits) {
+        if (game.gameOverAnimating && game.fruits.indexOf(fruit) < game.gameOverExplodeIndex) continue;
+        if (fruit.level > maxLevel) maxLevel = fruit.level;
+    }
+
     for (const fruit of game.fruits) {
         if (game.gameOverAnimating && game.fruits.indexOf(fruit) < game.gameOverExplodeIndex) continue;
 
@@ -494,7 +500,7 @@ function updateFruitSprites() {
         }
 
         const state = fruit.state || 'idle';
-        const ufoFace = game.ufoActive;
+        const ufoFace = game.ufoActive && fruit.level < maxLevel;
         const frameIdx = (state === 'hit' || ufoFace) ? 4 : getAnimationFrameIndex(now, fruit.animationOffset);
         const texture = fruitTextures[fruit.level][frameIdx];
         sprite.texture = texture;

@@ -47,6 +47,7 @@ export class Game {
         this.ufoEndCooldown = 0;
         this.alienChargeCount = 0;
         this.ufoSummoned = false;
+        this.ufoSummonedOnce = false;
 
         this.alienTransformQueue = null;
         this.alienTransformIndex = 0;
@@ -164,10 +165,11 @@ export class Game {
         this.nextFruitLevel = this._getRandomInitialLevel();
         this.lastDropTime = now;
 
-        if (droppedLevel === 0 && this.ufoUsesLeft <= 0) {
+        if (droppedLevel === 0 && this.ufoUsesLeft <= 0 && !this.ufoSummonedOnce) {
             this.alienChargeCount++;
             if (this.alienChargeCount >= SKILLS.alienDropCharge) {
                 this.ufoSummoned = true;
+                this.ufoSummonedOnce = true;
                 this.alienChargeCount = 0;
             }
         }
@@ -484,10 +486,17 @@ export class Game {
         if (!this.ufoSummoned || this.gameOver) return;
         this.ufoSummoned = false;
 
-        const sortedFruits = [...this.fruits].sort((a, b) => {
-            return (a.body.position.y - FRUITS[a.level].radius) -
-                   (b.body.position.y - FRUITS[b.level].radius);
-        });
+        let maxLevel = -1;
+        for (const f of this.fruits) {
+            if (f.level > maxLevel) maxLevel = f.level;
+        }
+
+        const sortedFruits = [...this.fruits]
+            .filter(f => f.level < maxLevel)
+            .sort((a, b) => {
+                return (a.body.position.y - FRUITS[a.level].radius) -
+                       (b.body.position.y - FRUITS[b.level].radius);
+            });
 
         this.alienTransformQueue = sortedFruits;
         this.alienTransformIndex = 0;
@@ -558,6 +567,7 @@ export class Game {
         this.ufoEndCooldown = 0;
         this.alienChargeCount = 0;
         this.ufoSummoned = false;
+        this.ufoSummonedOnce = false;
 
         this.alienTransformQueue = null;
         this.alienTransformIndex = 0;
