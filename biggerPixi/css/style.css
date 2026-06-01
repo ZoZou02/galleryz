@@ -1106,7 +1106,7 @@ body.game-active {
 .version-tag {
     position: fixed;
     right: 12px;
-    bottom: 8px;
+    top: 8px;
     font-family: 'FusionPixel', sans-serif;
     font-size: 16px;
     color: var(--white);

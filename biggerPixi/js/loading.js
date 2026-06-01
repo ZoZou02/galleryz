@@ -174,7 +174,7 @@ export class LoadingManager {
                     await loadingBg.startEntranceAnimation(() => soundManager.startBGM());
                     // 入场动画完成后，显示背景网格 + 遮罩 + touch to continue
                     loadingBg.fadeIn();
-                    loadingBg.fadeOverlay(0.8, ANIM.OVERLAY_FADE_DURATION);
+                    loadingBg.fadeOverlay(0.85, ANIM.OVERLAY_FADE_DURATION);
                     loadingBg.showContinueTextAndBg();
                     // 过渡衔接：缩小下移 continue 条 + 标题从 scale 0.1 弹出
                     this._shrinkTimeoutId = setTimeout(() => loadingBg.shrinkContinueAndShowTitle(), 200);

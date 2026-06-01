@@ -16,12 +16,12 @@ const SHAPE_PATHS = {
 // ========== 可调节动画参数 ==========
 // ※ SCROLL_DURATION 是循环核心参数，修改后 cycleH / scrollT 均随之变化，直接影响循环流程
 const SCROLL_DURATION = 30;    // [★循环关键] 头像网格滚动一整圈的时长(秒)，越大越慢
-const SWAY_ANGLE = 3;          // 左右倾斜最大角度(度)，0-10 合适，不影响循环
-const SWAY_DURATION = 10;       // 左右倾斜往复一次的时长(秒)，与滚动周期独立，不影响循环
-const FADEIN_DURATION = 1;   // 头像网格首次淡入时长(秒)，不影响循环
-const GAME_BLUR = 3;           // 游戏模式下头像模糊量(px)，0-10，不影响循环
-const GAME_DARKEN = 0.35;      // 游戏模式下暗色遮罩透明度(0-1)，越大越暗，不影响循环
-const GAME_MODE_DURATION = 0.5;// 进入/退出游戏模式过渡时长(秒)，不影响循环
+const SWAY_ANGLE = 3;          // 左右倾斜最大角度(度)，0-10 合适
+const SWAY_DURATION = 10;       // 左右倾斜往复一次的时长(秒)，与滚动周期独立
+const FADEIN_DURATION = 1;   // 头像网格首次淡入时长(秒)
+const GAME_BLUR = 5;           // 游戏模式下头像模糊量(px)，0-10
+const GAME_DARKEN = 0.50;      // 游戏模式下暗色遮罩透明度(0-1)，越大越暗
+const GAME_MODE_DURATION = 0.5;// 进入/退出游戏模式过渡时长(秒)
 
 export class LoadingBackground {
     constructor() {
@@ -41,6 +41,7 @@ export class LoadingBackground {
         this._animAbsTime = 0;
         this._animLastTime = 0;
         this._animPaused = false;
+        this._forceLevel = -1;
     }
 
     async init(containerEl) {
@@ -118,7 +119,7 @@ export class LoadingBackground {
 
         for (let viewCol = 0; viewCol < totalCols; viewCol++) {
             const colIdx = ((viewCol - extraCols) % this._numCols + this._numCols) % this._numCols;
-            const fruitLevel = colIdx;
+            const fruitLevel = this._forceLevel >= 0 ? this._forceLevel : colIdx;
             const shapeType = this._shapeTypes[colIdx];
             const cx = viewCol * cellW;
 
@@ -443,6 +444,53 @@ export class LoadingBackground {
         this._canvas = null;
         this._ctx = null;
         this._running = false;
+    }
+
+    /** 外星人模式：背景网格全部替换为 level0 头像 */
+    setAlienBgGrid() {
+        if (!this._running || !this._spritesheetImg) return;
+        this._forceLevel = 0;
+        this._stopAnimation();
+        this._animCurrentY = 0;
+        this._animAbsTime = 0;
+        this._buildGrid();
+        this._startAnimation();
+    }
+
+    /** 恢复普通模式背景网格 */
+    restoreBgGrid() {
+        if (!this._running || !this._spritesheetImg) return;
+        this._forceLevel = -1;
+        this._stopAnimation();
+        this._animCurrentY = 0;
+        this._animAbsTime = 0;
+        this._buildGrid();
+        this._startAnimation();
+    }
+
+    /** 外星人模式：入场头像全部替换为 level0 */
+    setAlienEntranceAvatars() {
+        if (!this._entranceAvatars) return;
+        const fw = this._frameW;
+        for (const el of this._entranceAvatars) {
+            if (!el._origLevel) {
+                el._origLevel = parseInt(el.dataset.level);
+            }
+            el.dataset.level = '0';
+            el.style.backgroundPosition = `0px -0px`;
+        }
+    }
+
+    /** 恢复入场头像原始等级 */
+    restoreEntranceAvatars() {
+        if (!this._entranceAvatars) return;
+        const fh = this._frameH;
+        for (const el of this._entranceAvatars) {
+            const lv = el._origLevel != null ? el._origLevel : parseInt(el.dataset.level);
+            el.dataset.level = String(lv);
+            el.style.backgroundPosition = `0px -${lv * fh}px`;
+            delete el._origLevel;
+        }
     }
 
     // 启动入口头像动画

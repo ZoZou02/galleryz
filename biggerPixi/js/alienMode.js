@@ -51,9 +51,9 @@ const ALIEN_TEXT_MAP = [
     { selector: '#records-table thead th:nth-child(3)', normal: '时长', alien: '時長' },
     // 赞助页面文字
     { selector: '#sponsor-screen .footer-section-content:nth-child(4)', normal: '如果这个游戏让你感到开心', alien: '铷惈適嗰遊戱讓沵憾菿閞杺' },
-    { selector: '#sponsor-screen .footer-section-content:nth-child(5)', normal: '我就很满足了😊', alien: '莪僦詪慲娖孒😊' },
+    { selector: '#sponsor-screen .footer-section-content:nth-child(5)', normal: '我就很满足了😊', alien: '莪僦詪慲娖孒👽' },
     { selector: '#sponsor-screen .footer-section-content:nth-child(6)', normal: '如果你愿意的话', alien: '铷惈沵蒝嬑哋話' },
-    { selector: '#sponsor-screen .footer-section-content:nth-child(7)', normal: '可以请我吃个TACO🌮', alien: '妸姒埥莪阣嗰TACO🌮' },
+    { selector: '#sponsor-screen .footer-section-content:nth-child(7)', normal: '可以请我吃个TACO🌮', alien: '埥幫ィ莪褈踺傢園🚀' },
     // 设置/暂停页面的音效/音乐标签
     { selector: '#settings-screen .setting-row:nth-child(1) .setting-label', normal: '音效', alien: '堷效' },
     { selector: '#settings-screen .setting-row:nth-child(2) .setting-label', normal: '音乐', alien: '堷泺' },
@@ -202,6 +202,12 @@ export class AlienMode {
             soundManager.playVoice(0);
         });
 
+        // 背景网格 + 入场头像全部替换为 level0
+        import('./loadingBg.js').then(({ loadingBg }) => {
+            loadingBg.setAlienBgGrid();
+            loadingBg.setAlienEntranceAvatars();
+        });
+
         // 隐藏👽气泡
         if (this._alienBubble) {
             gsap.killTweensOf(this._alienBubble);
@@ -224,6 +230,12 @@ export class AlienMode {
         this._enabled = false;
         document.body.classList.remove('alien-mode');
         this._restoreNormalTexts();
+
+        // 恢复背景网格 + 入场头像
+        import('./loadingBg.js').then(({ loadingBg }) => {
+            loadingBg.restoreBgGrid();
+            loadingBg.restoreEntranceAvatars();
+        });
 
         // 隐藏🌍气泡
         if (this._earthBubble) {

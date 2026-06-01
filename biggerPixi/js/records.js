@@ -73,7 +73,7 @@ export function renderRecordsTable() {
     tbody.innerHTML = '';
 
     if (records.length === 0) {
-        const emptyText = alienMode.isAlienMode() ? '暂无入侵记录' : '暂无记录';
+        const emptyText = alienMode.isAlienMode() ? '暫嘸記錄' : '暂无记录';
         tbody.innerHTML = '<tr><td colspan="3" class="empty-records">' + emptyText + '</td></tr>';
         updateScrollHint();
         return;
