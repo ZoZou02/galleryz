@@ -12,9 +12,10 @@ import {
 } from './config.js';
 import { Game } from './game.js';
 import { soundManager } from './audio.js';
-import { loadRecords, saveRecord, getRecordRank, isNewRecord, renderRecordsTable } from './records.js';
+import { loadRecords, saveRecord, getRecordRank, isNewRecord, renderRecordsTable, setRecordsKey, RECORDS_KEY, ALIEN_RECORDS_KEY } from './records.js';
 import { loadingManager } from './loading.js';
 import { loadingBg } from './loadingBg.js';
+import { alienMode } from './alienMode.js';
 
 /** -------------------- 全局变量 -------------------- */
 
@@ -384,6 +385,8 @@ function buildUfoSummon() {
 }
 
 // 头像列表
+let levelIconsList = [];
+
 function buildLevelIcons() {
     levelIconsContainer = new Container();
     app.stage.addChild(levelIconsContainer);
@@ -393,6 +396,7 @@ function buildLevelIcons() {
     const margin = (PANEL_WIDTH - totalWidth) / 2;
     const y = GAME_HEIGHT + 175;
 
+    levelIconsList = [];
     for (let i = 0; i < FRUITS.length; i++) {
         const x = margin + iconSize / 2 + i * iconSize;
         const icon = new Sprite(fruitTextures[i][0]);
@@ -402,6 +406,15 @@ function buildLevelIcons() {
         icon.width = iconSize;
         icon.height = iconSize;
         levelIconsContainer.addChild(icon);
+        levelIconsList.push(icon);
+    }
+}
+
+function updateLevelIconsForAlienMode() {
+    const isAlien = alienMode.isAlienMode();
+    for (let i = 0; i < levelIconsList.length; i++) {
+        const displayLevel = isAlien ? 0 : i;
+        levelIconsList[i].texture = fruitTextures[displayLevel][0];
     }
 }
 
@@ -479,6 +492,7 @@ function isInsidePauseBtn(localX, localY) {
 function updateFruitSprites() {
     const now = performance.now();
     const activeIds = new Set();
+    const isAlien = alienMode.isAlienMode();
 
     let maxLevel = -1;
     for (const fruit of game.fruits) {
@@ -492,17 +506,19 @@ function updateFruitSprites() {
         activeIds.add(fruit.body.id);
         let sprite = fruitSprites.get(fruit.body.id);
 
+        const displayLevel = isAlien ? 0 : fruit.level;
+
         if (!sprite) {
-            sprite = new Sprite(fruitTextures[fruit.level][0]);
+            sprite = new Sprite(fruitTextures[displayLevel][0]);
             sprite.anchor.set(0.5);
             fruitContainer.addChild(sprite);
             fruitSprites.set(fruit.body.id, sprite);
         }
 
         const state = fruit.state || 'idle';
-        const ufoFace = game.ufoActive && fruit.level < maxLevel;
+        const ufoFace = !isAlien && game.ufoActive && fruit.level < maxLevel;
         const frameIdx = (state === 'hit' || ufoFace) ? 4 : getAnimationFrameIndex(now, fruit.animationOffset);
-        const texture = fruitTextures[fruit.level][frameIdx];
+        const texture = fruitTextures[displayLevel][frameIdx];
         sprite.texture = texture;
 
         const baseScale = (FRUITS[fruit.level].radius * 2.2) / texture.width;
@@ -602,6 +618,7 @@ function updateCurrentFruit() {
     currentFruitContainer.visible = true;
 
     const level = game.currentFruitLevel;
+    const displayLevel = alienMode.isAlienMode() ? 0 : level;
     const fruitInfo = FRUITS[level];
     let globalX = pointerPos.x;
     if (globalX === undefined) globalX = PANEL_WIDTH / 2;
@@ -610,7 +627,7 @@ function updateCurrentFruit() {
     const y = 80;
     const now = performance.now();
     const frameIdx = getAnimationFrameIndex(now, previewOffset1);
-    const texture = fruitTextures[level][frameIdx];
+    const texture = fruitTextures[displayLevel][frameIdx];
     currentFruitSprite.texture = texture;
 
     if (level !== currentPrevLevel) {
@@ -639,6 +656,7 @@ function updateCurrentFruit() {
 function updateNextFruitPreview() {
     if (!game) return;
     const level = game.nextFruitLevel;
+    const displayLevel = alienMode.isAlienMode() ? 0 : level;
     const now = performance.now();
     const frameIdx = getAnimationFrameIndex(now, previewOffset2);
 
@@ -656,7 +674,7 @@ function updateNextFruitPreview() {
         previewAnimStartTime = now;
     }
 
-    const texture = fruitTextures[level][frameIdx];
+    const texture = fruitTextures[displayLevel][frameIdx];
     previewSprite.texture = texture;
 
     const baseScale = PREVIEW_DISPLAY_SIZE / texture.width;
@@ -893,6 +911,13 @@ function _startUfoFloat() {
 
 function updateUfoSummon() {
     if (!ufoSummonEl || !game) return;
+
+    if (alienMode.isAlienMode()) {
+        ufoSummonEl.style.display = 'none';
+        ufoFlyingAway = false;
+        ufoPaused = false;
+        return;
+    }
 
     if (ufoFlyingAway) return;
 
@@ -1231,6 +1256,7 @@ async function init() {
     loadingManager.onReady(() => {
         // main-menu 已在 animateToMainMenu 衔接动画中显示
         // loading-screen 的淡出也由衔接动画回调处理
+        setTimeout(() => alienMode.init(), 500);
     });
 
     loadingManager.showReady();
@@ -1249,6 +1275,12 @@ async function init() {
 }
 
 function startGame() {
+    if (alienMode.isAlienMode()) {
+        setRecordsKey(ALIEN_RECORDS_KEY);
+    } else {
+        setRecordsKey(RECORDS_KEY);
+    }
+    alienMode.hideBubbles();
     document.getElementById('main-menu').classList.add('hidden');
     const pixiContainer = document.getElementById('pixi-container');
     pixiContainer.classList.remove('hidden');
@@ -1263,6 +1295,12 @@ function startGame() {
     applyVolumeSettings();
     soundManager.crossfadeTo('gameplay');
     game.start();
+
+    if (alienMode.isAlienMode()) {
+        game.ufoUsesLeft = 0;
+        game.ufoSummonedOnce = true;
+    }
+    updateLevelIconsForAlienMode();
 
     //gsap 动画写法
     // const pixiContainer = document.getElementById('pixi-container');
@@ -1286,6 +1324,11 @@ function startGame() {
 }
 
 function openRecords() {
+    if (alienMode.isAlienMode()) {
+        setRecordsKey(ALIEN_RECORDS_KEY);
+    } else {
+        setRecordsKey(RECORDS_KEY);
+    }
     renderRecordsTable();
     document.getElementById('records-screen').classList.remove('hidden');
 }
@@ -1516,6 +1559,7 @@ function quitToHome() {
     game.paused = false;
     resetUfoSummonState();
     soundManager.crossfadeTo('menu');
+    alienMode.showBubbles();
 }
 
 function restartFromModal() {

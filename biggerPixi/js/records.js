@@ -5,9 +5,23 @@
 
 import { RECORDS_KEY, MAX_RECORDS, formatScore, formatTime } from './config.js';
 
+const ALIEN_RECORDS_KEY = 'gb_merge_records_alien';
+
+let currentRecordsKey = RECORDS_KEY;
+
+export function setRecordsKey(key) {
+    currentRecordsKey = key;
+}
+
+export function getRecordsKey() {
+    return currentRecordsKey;
+}
+
+export { ALIEN_RECORDS_KEY, RECORDS_KEY };
+
 export function loadRecords() {
     try {
-        const data = localStorage.getItem(RECORDS_KEY);
+        const data = localStorage.getItem(currentRecordsKey);
         if (!data) return [];
         const records = JSON.parse(data);
         if (!Array.isArray(records)) return [];
@@ -22,7 +36,7 @@ export function saveRecord(scoreVal, durationSec, gbCount) {
     records.push(record);
     records.sort((a, b) => b.score - a.score);
     records = records.slice(0, MAX_RECORDS);
-    try { localStorage.setItem(RECORDS_KEY, JSON.stringify(records)); } catch (e) {}
+    try { localStorage.setItem(currentRecordsKey, JSON.stringify(records)); } catch (e) {}
     return records;
 }
 

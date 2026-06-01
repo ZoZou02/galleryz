@@ -12,6 +12,7 @@
     --btn-purple: #bcb5ff;
     --btn-yellow: #fab545;
     --btn-blue: #9ddef6;
+    --alien: #7fd32a;
 }
 
 * {
@@ -1409,4 +1410,129 @@ body.game-active {
     border-radius: 4px;
     border: 2px solid var(--secondary-line);
     image-rendering: auto;
+}
+
+/* ====== 外星人模式聊天气泡 ====== */
+.alien-chat-bubble {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: auto;
+    cursor: url('../images/cursor_e.png'), auto;
+}
+
+.alien-chat-bubble:hover {
+    cursor: url('../images/cursor_e.png'), auto;
+}
+
+.alien-bubble-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    fill: var(--alien);
+    filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.2));
+}
+
+.alien-bubble-emoji {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-55%, -55%);
+    font-size: 18px;
+    pointer-events: none;
+    line-height: 1;
+}
+
+/* ====== 外星人模式配色覆盖 ====== */
+body.alien-mode .start-btn-main {
+    background: var(--alien);
+}
+
+body.alien-mode #start-btn::after {
+    background: var(--alien);
+}
+
+body.alien-mode #records-btn {
+    background: var(--alien);
+    color: #fafcfd;
+}
+
+body.alien-mode #records-btn::after {
+    background: var(--alien);
+}
+
+body.alien-mode #about-btn {
+    background: var(--alien);
+    color: #fafcfd;
+}
+
+body.alien-mode #about-btn::after {
+    background: var(--alien);
+}
+
+body.alien-mode .settings-btn {
+    background: var(--alien);
+}
+
+body.alien-mode .sponsor-btn {
+    background: var(--alien);
+}
+
+body.alien-mode .modal-stamp {
+    background: var(--alien);
+}
+
+body.alien-mode .title-image {
+    filter: hue-rotate(-75deg) saturate(1.5);
+}
+
+body.alien-mode .loading-bg-coutinue-text {
+    color: var(--alien);
+}
+
+body.alien-mode .modal-btn-primary {
+    background: var(--alien);
+}
+
+body.alien-mode .modal-btn-primary::after {
+    background: var(--alien);
+}
+
+body.alien-mode .modal-btn-secondary {
+    background: var(--alien);
+    color: #fafcfd;
+}
+
+body.alien-mode .modal-btn-secondary::after {
+    background: var(--alien);
+}
+
+body.alien-mode .modal-btn-purple {
+    background: var(--alien);
+    color: #fafcfd;
+}
+
+body.alien-mode .modal-btn-purple::after {
+    background: var(--alien);
+}
+
+body.alien-mode .version-tag {
+    color: var(--alien);
+}
+
+body.alien-mode .new-record-tag {
+    background: var(--alien);
+}
+
+body.alien-mode .score-display {
+    color: var(--alien);
+}
+
+body.alien-mode .loading-item-name {
+    color: var(--alien);
+}
+
+body.alien-mode .loading-counter {
+    color: var(--alien);
 }
