@@ -1152,7 +1152,8 @@ async function init() {
 
     // 加载头像纹理
     loadingManager.tick('正在从中华田园犬变成人形…');
-    spritesheetTexture = await Assets.load('images/spritesheet0.25.png');
+    const spritesheetUrl = useLowResSpritesheet ? 'images/spritesheet0.25.png' : 'images/spritesheet.png';
+    spritesheetTexture = await Assets.load(spritesheetUrl);
     frameW = spritesheetTexture.width / 5;
     frameH = spritesheetTexture.height / 11;
     for (let level = 0; level < FRUITS.length; level++) {
@@ -1165,19 +1166,18 @@ async function init() {
         }
     }
 
-    console.log('spritesheetTexture:', spritesheetTexture);
-
     // 加载背景动画
     const bgContainer = document.getElementById('loading-bg-container');
     await loadingBg.init(bgContainer);
     if (currentQuality === 'high') {
+        const bgSpritesheetUrl = useLowResSpritesheet ? 'images/spritesheet0.5.png' : 'images/spritesheet.png';
         const spritesheetImg = await new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => resolve(img);
             img.onerror = reject;
-            img.src = 'images/spritesheet0.5.png';
+            img.src = bgSpritesheetUrl;
         });
-        await loadingBg.startWithSpritesheet(spritesheetImg);
+        await loadingBg.startWithSpritesheet(spritesheetImg, useLowResSpritesheet);
     }
 
     loadingManager.tick('正在+5000…');
@@ -1361,6 +1361,18 @@ function saveQualitySetting(quality) {
 }
 
 let currentQuality = loadQualitySetting();
+
+// 获取最大纹理尺寸
+function getMaxTextureSize() {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    console.log('纹理上限:', gl.getParameter(gl.MAX_TEXTURE_SIZE), 'GPU:', gl.getParameter(gl.RENDERER))
+    if (!gl) return 2048;
+    return gl.getParameter(gl.MAX_TEXTURE_SIZE);
+}
+
+const maxTextureSize = getMaxTextureSize();
+const useLowResSpritesheet = maxTextureSize <= 2048;
 
 function getQualityResolution() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);

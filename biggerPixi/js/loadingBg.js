@@ -62,10 +62,11 @@ export class LoadingBackground {
         this._container.appendChild(this._darkOverlay);
     }
 
-    async startWithSpritesheet(img) {
+    async startWithSpritesheet(img, useLowRes = false) {
         this._spritesheetImg = img;
         this._frameW = img.width / 5;
         this._frameH = img.height / 11;
+        this._useLowRes = useLowRes;
 
         this._animCurrentY = 0;
         this._animAbsTime = 0;
@@ -466,8 +467,8 @@ export class LoadingBackground {
         // ==========================================
 
         // -- 精灵图缩放常量（影响所有距离和大小参数） --
-        const SPRITE_SCALE = 0.5;                                      // 精灵图分辨率缩放比例
-        const containerScale = 2;
+        const SPRITE_SCALE = this._useLowRes ? 0.5 : 1;             // 精灵图分辨率缩放比例
+        const containerScale = this._useLowRes ? 2 : 1;
 
         // -- 基础间距 --
         const GAP = 32 * SPRITE_SCALE;
