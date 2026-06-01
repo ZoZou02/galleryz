@@ -909,6 +909,7 @@ function _startUfoFloat() {
         .to(ufoSummonEl, { y: 0, duration: 2.5, ease: 'sine.inOut' });
 }
 
+// 更新 UFO 召唤状态
 function updateUfoSummon() {
     if (!ufoSummonEl || !game) return;
 
@@ -1110,6 +1111,7 @@ function showGameOverModal(finalScore, gbCount) {
 
     const newRecTag = document.getElementById('new-record-tag');
     if (newRecTag) {
+        newRecTag.textContent = alienMode.isAlienMode() ? 'NEW ALIEN' : 'NEW RECORD';
         if (newRec && finalScore > 0) {
             newRecTag.classList.remove('hidden');
         } else {

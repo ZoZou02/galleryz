@@ -13,6 +13,7 @@
     --btn-yellow: #fab545;
     --btn-blue: #9ddef6;
     --alien: #7fd32a;
+    --alien-secondary: #eef8e7;
 }
 
 * {
@@ -1255,7 +1256,6 @@ body.game-active {
     background: var(--secondary-highlight);
     border: 2px solid #fafcfd;
     border-radius: 4px;
-
 }
 
 .volume-slider::-moz-range-thumb {
@@ -1415,7 +1415,7 @@ body.game-active {
 /* ====== 外星人模式聊天气泡 ====== */
 .alien-chat-bubble {
     position: fixed;
-    z-index: 9999;
+    z-index: 1500;
     pointer-events: auto;
     cursor: url('../images/cursor_e.png'), auto;
 }
@@ -1445,13 +1445,14 @@ body.game-active {
 }
 
 /* ====== 外星人模式配色覆盖 ====== */
-body.alien-mode .start-btn-main {
+body.alien-mode #start-btn {
     background: var(--alien);
 }
 
 body.alien-mode #start-btn::after {
     background: var(--alien);
 }
+
 
 body.alien-mode #records-btn {
     background: var(--alien);
@@ -1529,10 +1530,158 @@ body.alien-mode .score-display {
     color: var(--alien);
 }
 
+body.alien-mode .final-score-wrap {
+    background: var(--alien-secondary);
+}
+
 body.alien-mode .loading-item-name {
     color: var(--alien);
 }
 
 body.alien-mode .loading-counter {
     color: var(--alien);
+}
+
+/* 二级面板标题 */
+body.alien-mode .modal-content h1,
+body.alien-mode #pause-screen .modal-content h1,
+body.alien-mode #records-screen .modal-content h1,
+body.alien-mode #about-screen .modal-content h1,
+body.alien-mode #settings-screen .modal-content h1,
+body.alien-mode #sponsor-screen .modal-content h1 {
+    color: var(--alien);
+}
+
+/* 统计区域 */
+body.alien-mode .game-stats {
+    color: var(--alien);
+}
+
+body.alien-mode .stat-label {
+    color: var(--alien);
+}
+
+/* 设置标签 */
+body.alien-mode .setting-label {
+    color: var(--alien);
+}
+
+/* 排行榜空状态 */
+body.alien-mode #records-table .empty-records {
+    color: var(--alien);
+}
+
+/* 按钮边框和阴影 */
+body.alien-mode .modal-btn-primary {
+    border-color: var(--white);
+    box-shadow: 0 0 0 1px var(--alien), 0 6px 0 rgba(0, 0, 0, 0.1);
+}
+
+body.alien-mode .modal-btn-primary:hover {
+    box-shadow: 0 0 0 1px var(--alien), 0 6px 0 rgba(0, 0, 0, 0.1);
+}
+
+body.alien-mode .modal-btn-secondary {
+    border-color: var(--white);
+    box-shadow: 0 0 0 1px var(--alien), 0 6px 0 rgba(0, 0, 0, 0.1);
+}
+
+body.alien-mode .modal-btn-secondary:hover {
+    box-shadow: 0 0 0 1px var(--alien), 0 6px 0 rgba(0, 0, 0, 0.1);
+}
+
+body.alien-mode .modal-btn-purple {
+    border-color: var(--white);
+    box-shadow: 0 0 0 1px var(--alien), 0 6px 0 rgba(0, 0, 0, 0.1);
+}
+
+body.alien-mode .modal-btn-purple:hover {
+    box-shadow: 0 0 0 1px var(--alien), 0 6px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* 按钮 ::before 装饰色点 */
+body.alien-mode .modal-btn::before {
+    background:
+        radial-gradient(circle at -5px -5px, #fafcfd 5px, transparent 5px),
+        radial-gradient(circle at calc(100% + 5px) -5px, #fafcfd 5px, transparent 5px),
+        radial-gradient(circle at -5px calc(100% + 5px), #fafcfd 5px, transparent 5px),
+        radial-gradient(circle at calc(100% + 5px) calc(100% + 5px), #fafcfd 5px, transparent 5px),
+        radial-gradient(circle at -5px -5px, var(--alien) 3px, transparent 3px),
+        radial-gradient(circle at calc(100% + 5px) -5px, var(--alien) 3px, transparent 3px),
+        radial-gradient(circle at -5px calc(100% + 5px), var(--alien) 3px, transparent 3px),
+        radial-gradient(circle at calc(100% + 5px) calc(100% + 5px), var(--alien) 3px, transparent 3px);
+}
+
+/* 统计行背景 */
+body.alien-mode .stat-row {
+    background: rgba(127, 211, 42, 0.1);
+}
+
+body.alien-mode .volume-slider {
+    background: var(--alien-secondary);
+    border: 2px solid #fafcfd;
+}
+
+body.alien-mode .volume-slider::-webkit-slider-thumb {
+    background: var(--alien);
+    border: 2px solid #fafcfd;
+
+}
+
+body.alien-mode .volume-slider::-moz-range-thumb {
+    background: var(--alien);
+    border: 2px solid #fafcfd;
+}
+
+/* 排行榜表头 */
+body.alien-mode #records-table {
+    color: var(--alien);
+}
+
+body.alien-mode #records-table th {
+    color: var(--alien);
+}
+
+/* 排行榜数据行背景 */
+body.alien-mode #records-table td {
+    background: rgba(127, 211, 42, 0.08);
+}
+
+/* 排行榜底部文字 */
+body.alien-mode .records-footer {
+    color: var(--alien);
+}
+
+/* 排行榜滚动提示 */
+body.alien-mode .records-scroll-hint {
+    border-top: 10px solid var(--alien);
+}
+
+/* 关于赞助页面文字 */
+body.alien-mode .footer-section-content {
+    color: var(--alien);
+}
+
+body.alien-mode .footer-section-content a {
+    color: var(--alien);
+}
+
+body.alien-mode .score-stars {
+    background: var(--alien-secondary);
+}
+
+body.alien-mode .footer-section-title {
+    color: var(--alien);
+}
+
+body.alien-mode .about-line {
+    color: var(--alien);
+}
+
+body.alien-mode .about-info {
+    background: var(--alien-secondary);
+}
+
+body.alien-mode .about-scroll-hint {
+    border-top: 10px solid var(--alien);
 }

@@ -158,7 +158,7 @@ export class Game {
             mergeAnimStartTime: 0,
             _pendingMergeId: null
         });
-
+        // 播放掉落音效
         const dropVoiceLevel = alienMode.isAlienMode() ? 0 : this.currentFruitLevel;
         this.sound.playDrop(dropVoiceLevel);
 

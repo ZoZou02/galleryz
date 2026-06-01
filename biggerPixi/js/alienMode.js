@@ -6,11 +6,60 @@
  */
 
 // ========== 可调节参数 ==========
-const ALIEN_BUBBLE_INTERVAL = 30000;   // 👽气泡弹出间隔(ms)
+const ALIEN_BUBBLE_INTERVAL = 1000;   // 👽气泡弹出间隔(ms)
 const ALIEN_BUBBLE_DURATION = 5000;    // 👽气泡显示时长(ms)
 const ALIEN_BUBBLE_SIZE = 44;          // 气泡大小(px)
 
 const ALIEN_RECORDS_KEY = 'gb_merge_records_alien';
+
+// 外星人模式文本映射：selector -> { normal: 原文, alien: 外星人模式文本 }
+const ALIEN_TEXT_MAP = [
+    { selector: '#start-btn', normal: '开始游戏', alien: '閞ㄝ蝣戱' },
+    { selector: '#records-btn', normal: '本地排行', alien: '夲哋棑洐' },
+    { selector: '#about-btn', normal: '关于游戏', alien: '関チ遊戲' },
+    { selector: '#game-over-modal h1', normal: '游戏结束', alien: '蝣戲糹吉娕' },
+    { selector: '#pause-screen h1', normal: '游戏暂停', alien: '蝣戲暫諪' },
+    { selector: '#records-screen h1', normal: '本地排行', alien: '夲哋棑洐' },
+    { selector: '#about-screen h1', normal: '关于游戏', alien: '関チ遊戲' },
+    { selector: '#settings-screen h1', normal: '设置', alien: '蔎寘' },
+    { selector: '#sponsor-screen h1', normal: '支持', alien: '偅踺镓園' },
+    { selector: '#restart-btn', normal: '再来一局', alien: '侢麳嬄梮' },
+    { selector: '#resume-btn', normal: '继续游戏', alien: '繼續氵斿戲' },
+    { selector: '#pause-restart-btn', normal: '重新开始', alien: '褈噺鬦ㄝ台' },
+    { selector: '#quit-btn-1', normal: '结束游戏', alien: '詰涑氵斿戲' },
+    { selector: '#quit-btn-2', normal: '返回主页', alien: '仮囘宔頁' },
+    { selector: '#close-records-btn', normal: '返回', alien: '仮囘' },
+    { selector: '#close-about-btn', normal: '返回', alien: '仮冋' },
+    { selector: '#close-settings-btn', normal: '返回', alien: '仮迴' },
+    { selector: '#close-sponsor-btn', normal: '返回', alien: '仮囙' },
+    { selector: '.records-footer', normal: '*分数仅保存在本地', alien: '*忿數僅ィ呆洊菑夲土也' },
+    // 游戏结束弹窗统计标签
+    { selector: '#game-stats .stat-row:nth-child(1) .stat-label', normal: '游戏时间', alien: '蝣戲蒔簡' },
+    { selector: '#game-stats .stat-row:nth-child(2) .stat-label', normal: '分数名次', alien: '鈖數茗絘' },
+    { selector: '#game-stats .stat-row:nth-child(3) .stat-label', normal: '最高记录', alien: '蕞鎬汜淥' },
+    { selector: '#game-stats .stat-row:nth-child(4) .stat-label', normal: 'GB数量', alien: '👽' },
+    // modal-stamp 印章文字
+    { selector: '#game-over-modal .modal-stamp', normal: 'GAME OVER', alien: 'ɡαмＥ ○∨ёя' },
+    { selector: '#pause-screen .modal-stamp', normal: 'PAUSE', alien: 'ㄗáǚＳΣ' },
+    { selector: '#records-screen .modal-stamp', normal: 'RECORDS', alien: 'яΣ℃○яDＳ' },
+    { selector: '#about-screen .modal-stamp', normal: 'ABOUT', alien: 'αｂ○ǚㄒ' },
+    { selector: '#settings-screen .modal-stamp', normal: 'SETTINGS', alien: 'ＳΣTTīⓃgＳ' },
+    { selector: '#sponsor-screen .modal-stamp', normal: 'SPONSOR', alien: 'Ｓ卩○иＳ○я' },
+    // 排行榜表头
+    { selector: '#records-table thead th:nth-child(1)', normal: '排名', alien: '棑洺' },
+    { selector: '#records-table thead th:nth-child(2)', normal: '分数', alien: '忿數' },
+    { selector: '#records-table thead th:nth-child(3)', normal: '时长', alien: '時長' },
+    // 赞助页面文字
+    { selector: '#sponsor-screen .footer-section-content:nth-child(4)', normal: '如果这个游戏让你感到开心', alien: '铷惈適嗰遊戱讓沵憾菿閞杺' },
+    { selector: '#sponsor-screen .footer-section-content:nth-child(5)', normal: '我就很满足了😊', alien: '莪僦詪慲娖孒😊' },
+    { selector: '#sponsor-screen .footer-section-content:nth-child(6)', normal: '如果你愿意的话', alien: '铷惈沵蒝嬑哋話' },
+    { selector: '#sponsor-screen .footer-section-content:nth-child(7)', normal: '可以请我吃个TACO🌮', alien: '妸姒埥莪阣嗰TACO🌮' },
+    // 设置/暂停页面的音效/音乐标签
+    { selector: '#settings-screen .setting-row:nth-child(1) .setting-label', normal: '音效', alien: '堷效' },
+    { selector: '#settings-screen .setting-row:nth-child(2) .setting-label', normal: '音乐', alien: '堷泺' },
+    { selector: '#pause-screen .setting-row:nth-child(1) .setting-label', normal: '音效', alien: '堷效' },
+    { selector: '#pause-screen .setting-row:nth-child(2) .setting-label', normal: '音乐', alien: '堷泺' },
+];
 
 export class AlienMode {
     constructor() {
@@ -146,6 +195,7 @@ export class AlienMode {
     _enterAlienMode() {
         this._enabled = true;
         document.body.classList.add('alien-mode');
+        this._applyAlienTexts();
 
         // 播放 level0-1 音效
         import('./audio.js').then(({ soundManager }) => {
@@ -173,6 +223,7 @@ export class AlienMode {
     _exitAlienMode() {
         this._enabled = false;
         document.body.classList.remove('alien-mode');
+        this._restoreNormalTexts();
 
         // 隐藏🌍气泡
         if (this._earthBubble) {
@@ -186,6 +237,30 @@ export class AlienMode {
 
         // 重新启动👽气泡定时器
         this._startAlienBubbleTimer();
+    }
+
+    /** 应用外星人模式文本 */
+    _applyAlienTexts() {
+        for (const item of ALIEN_TEXT_MAP) {
+            const els = document.querySelectorAll(item.selector);
+            for (const el of els) {
+                if (el && el.textContent === item.normal) {
+                    el.textContent = item.alien;
+                }
+            }
+        }
+    }
+
+    /** 恢复普通模式文本 */
+    _restoreNormalTexts() {
+        for (const item of ALIEN_TEXT_MAP) {
+            const els = document.querySelectorAll(item.selector);
+            for (const el of els) {
+                if (el && el.textContent === item.alien) {
+                    el.textContent = item.normal;
+                }
+            }
+        }
     }
 
     /** 启动位置更新轮询（监听窗口大小变化等） */

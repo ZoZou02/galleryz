@@ -4,6 +4,7 @@
  */
 
 import { RECORDS_KEY, MAX_RECORDS, formatScore, formatTime } from './config.js';
+import { alienMode } from './alienMode.js';
 
 const ALIEN_RECORDS_KEY = 'gb_merge_records_alien';
 
@@ -57,29 +58,44 @@ export function isNewRecord(scoreVal, records) {
 
 export function renderRecordsTable() {
     const records = loadRecords();
-    const tbody = document.querySelector('#records-table tbody');
+    const table = document.getElementById('records-table');
+    if (!table) return;
+    const tbody = table.querySelector('tbody');
     if (!tbody) return;
+
+    // 同步表头文本
+    const headers = table.querySelectorAll('thead th');
+    const headerTexts = alienMode.isAlienMode() ? ['棑洺', '忿數', '時長'] : ['排名', '分数', '时长'];
+    headers.forEach((th, i) => {
+        if (headerTexts[i]) th.textContent = headerTexts[i];
+    });
+
     tbody.innerHTML = '';
 
     if (records.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="empty-records">暂无记录</td></tr>';
+        const emptyText = alienMode.isAlienMode() ? '暂无入侵记录' : '暂无记录';
+        tbody.innerHTML = '<tr><td colspan="3" class="empty-records">' + emptyText + '</td></tr>';
         updateScrollHint();
         return;
     }
 
     records.forEach((r, i) => {
         const tr = document.createElement('tr');
-        const gbTag = (r.gb && r.gb > 0) ? '<span class="gb-tag">G</span>' : '';
+        const gbTag = (r.gb && r.gb > 0)
+            ? (alienMode.isAlienMode() ? '<span class="gb-tag">👽</span>' : '<span class="gb-tag">G</span>')
+            : '';
         tr.innerHTML =
             '<td>' + (i + 1) + '</td>' +
             '<td>' + formatScore(r.score)  + '</td>' +
             '<td>' + formatTime(r.duration)+ gbTag + '</td>';
-        if (i === 0) {
-            tr.classList.add('rank-1');
-        } else if (i === 1) {
-            tr.classList.add('rank-2');
-        } else if (i === 2) {
-            tr.classList.add('rank-3');
+        if (!alienMode.isAlienMode()) {
+            if (i === 0) {
+                tr.classList.add('rank-1');
+            } else if (i === 1) {
+                tr.classList.add('rank-2');
+            } else if (i === 2) {
+                tr.classList.add('rank-3');
+            }
         }
         tbody.appendChild(tr);
     });
