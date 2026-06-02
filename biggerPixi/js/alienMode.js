@@ -55,10 +55,10 @@ const ALIEN_TEXT_MAP = [
     { selector: '#sponsor-screen .footer-section-content:nth-child(6)', normal: '如果你愿意的话', alien: '铷惈沵蒝嬑哋話' },
     { selector: '#sponsor-screen .footer-section-content:nth-child(7)', normal: '可以请我吃个TACO🌮', alien: '埥幫ィ莪褈踺傢園🚀' },
     // 设置/暂停页面的音效/音乐标签
-    { selector: '#settings-screen .setting-row:nth-child(1) .setting-label', normal: '音效', alien: '堷效' },
-    { selector: '#settings-screen .setting-row:nth-child(2) .setting-label', normal: '音乐', alien: '堷泺' },
-    { selector: '#pause-screen .setting-row:nth-child(1) .setting-label', normal: '音效', alien: '堷效' },
-    { selector: '#pause-screen .setting-row:nth-child(2) .setting-label', normal: '音乐', alien: '堷泺' },
+    { selector: '#settings-screen .setting-row:nth-child(1) .setting-label', normal: '音效', alien: '堷楽' },
+    { selector: '#settings-screen .setting-row:nth-child(2) .setting-label', normal: '音乐', alien: '諳田' },
+    { selector: '#pause-screen .setting-row:nth-child(1) .setting-label', normal: '音效', alien: '堷楽' },
+    { selector: '#pause-screen .setting-row:nth-child(2) .setting-label', normal: '音乐', alien: '諳滧' },
 ];
 
 export class AlienMode {

@@ -245,16 +245,22 @@ export class LoadingBackground {
     }
 
     hideContinueTextAndBg() {
-        gsap.killTweensOf(this._container.querySelector('.loading-bg-coutinue-text'));
-        gsap.killTweensOf(this._container.querySelector('.loading-bg-text-bg'));
-        gsap.to([".loading-bg-coutinue-text", ".loading-bg-text-bg", ".loading-bg-text"], {
+        const continueEl = this._container.querySelector('.loading-bg-coutinue-text');
+        const textEl = this._container.querySelector('.loading-bg-text');
+        const bgEl = this._container.querySelector('.loading-bg-text-bg');
+
+        gsap.killTweensOf(continueEl);
+        gsap.killTweensOf(textEl);
+        gsap.killTweensOf(bgEl);
+
+        gsap.to([continueEl, textEl, bgEl], {
             opacity: 0,
             duration: 0.2,
             ease: "power2.inOut",
             onComplete: () => {
-                document.querySelector(".loading-bg-coutinue-text").style.display = "none";
-                document.querySelector(".loading-bg-text-bg").style.display = "none";
-                document.querySelector(".loading-bg-text").style.display = "none";
+                continueEl.style.display = "none";
+                textEl.style.display = "none";
+                bgEl.style.display = "none";
             }
         });
     }
