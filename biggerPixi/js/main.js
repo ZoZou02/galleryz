@@ -847,17 +847,21 @@ function updateScorePopups() {
         const alpha = age < 600 ? 1 : Math.max(0, 1 - (age - 600) / 400);
         if (alpha <= 0) continue;
 
-        const rise = (age / 800) * -30;
+        const isBigPopup = popup.fontSize > 16;
+        const rise = isBigPopup ? (age / 1000) * -50 : (age / 800) * -30;
+        const popupFontSize = popup.fontSize || 16;
         const style = new TextStyle({
             fontFamily: 'FusionPixel, sans-serif',
-            fontSize: 16,
+            fontSize: popupFontSize,
             fill: popup.color,
+            fontWeight: isBigPopup ? 'bold' : 'normal',
             dropShadow: true,
-            dropShadowColor: '#666666',
-            dropShadowBlur: 1,
-            dropShadowDistance: 2
+            dropShadowColor: isBigPopup ? '#000000' : '#666666',
+            dropShadowBlur: isBigPopup ? 4 : 1,
+            dropShadowDistance: isBigPopup ? 4 : 2
         });
-        const text = new Text({ text: formatScore(popup.amount), style });
+        const displayText = popup.amount > 0 && String(popup.amount).startsWith('+') ? formatScore(popup.amount) : (popup.amount > 0 ? '+' + formatScore(popup.amount) : formatScore(popup.amount));
+        const text = new Text({ text: displayText, style });
         text.anchor.set(0.5, 0);
         text.x = GAME_WIDTH / 2;
         text.y = popup.baseY + rise;

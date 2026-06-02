@@ -59,6 +59,7 @@ export class Game {
         this.pauseStart = 0;
         this.gameOverStartTime = 0;
         this.elapsed = 0;
+        this._hasLevel10 = false;
 
         this._init();
     }
@@ -311,6 +312,17 @@ export class Game {
             if (pm.newLevel === 10) this.gbCount++;
             this._addScorePopup(newFruitInfo.score, '#f9ca71');
 
+            // 加分点：合成出 level10 后，再合成 level9 直接 +5000（外星人模式下不触发）
+            if (!alienMode.isAlienMode()) {
+                if (pm.newLevel === 10) {
+                    this._hasLevel10 = true;
+                }
+                if (this._hasLevel10 && pm.newLevel === 9) {
+                    this.score += 5000;
+                    this._addScorePopup(5000, '#ff4444', 32);
+                }
+            }
+
             this.mergeEffects.push({
                 x: pm.newPos.x, y: pm.newPos.y,
                 radius: newFruitInfo.radius,
@@ -323,11 +335,12 @@ export class Game {
         }
     }
 
-    _addScorePopup(amount, colorHex) {
+    _addScorePopup(amount, colorHex, fontSize = 16) {
+        const isBig = fontSize > 16;
         this.scorePopups.push({
-            amount, color: colorHex,
+            amount, color: colorHex, fontSize,
             startTime: performance.now(),
-            baseY: 25
+            baseY: isBig ? GAME_HEIGHT / 2 - 40 : 25
         });
     }
 
@@ -564,6 +577,7 @@ export class Game {
         this._countdownPlayed = false;
         this.lastDropTime = 0;
         this.lastPopupBaseY = 15;
+        this._hasLevel10 = false;
         this.sound.reset();
 
         this.world.gravity.y = PHYSICS.gravity;

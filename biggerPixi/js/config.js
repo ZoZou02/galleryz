@@ -19,7 +19,7 @@ export const PHYSICS = {
 };
 
 export const DIFFICULTY = {
-    initialFruitMaxLevel: 4,
+    initialFruitMaxLevel: 9,
     dangerTimeoutSeconds: 5
 };
 
