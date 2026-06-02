@@ -5,7 +5,7 @@
 
 import {
     GAME_WIDTH, GAME_HEIGHT, WALL_THICKNESS, GAME_OFFSET_X, GAME_OFFSET_Y,
-    FRUITS, DIFFICULTY, PHYSICS, ANIM, MERGE_AUDIO_CFG, SKILLS,
+    FRUITS, DIFFICULTY, PHYSICS, ANIM, MERGE_AUDIO_CFG, SKILLS, MERGE_VANISH,
     DROP_DELAY, formatScore, VOICE_CFG
 } from './config.js';
 import { alienMode } from './alienMode.js';
@@ -247,10 +247,10 @@ export class Game {
             if (processedFruits.has(bodyA.id) || processedFruits.has(bodyB.id)) continue;
             if (!fruitA || !fruitB) continue;
             if (fruitA.level !== fruitB.level) continue;
-            if (fruitA.level >= FRUITS.length - 1) continue;
             if (fruitA._pendingMergeId != null || fruitB._pendingMergeId != null) continue;
 
-            const newLevel = fruitA.level + 1;
+            const isMaxLevel = fruitA.level >= FRUITS.length - 1;
+            const newLevel = isMaxLevel ? fruitA.level : fruitA.level + 1;
             const newPos = {
                 x: (fruitA.body.position.x + fruitB.body.position.x) / 2,
                 y: (fruitA.body.position.y + fruitB.body.position.y) / 2
@@ -264,7 +264,8 @@ export class Game {
             fruitB._pendingMergeId = mergeId;
             this.pendingMerges.push({
                 fruitA, fruitB, newLevel, newPos, mergeId,
-                startTime: performance.now()
+                startTime: performance.now(),
+                isVanish: isMaxLevel
             });
         }
     }
@@ -289,6 +290,23 @@ export class Game {
             Composite.remove(this.world, fa.body);
             Composite.remove(this.world, fb.body);
             this.fruits = this.fruits.filter(f => f._pendingMergeId !== pm.mergeId);
+
+            if (pm.isVanish) {
+                const vanishScore = MERGE_VANISH.maxLevelVanishScore;
+                this.score += vanishScore;
+                this._addScorePopup(vanishScore, '#ff4444', 32);
+
+                this.mergeEffects.push({
+                    x: pm.newPos.x, y: pm.newPos.y,
+                    radius: FRUITS[pm.newLevel].radius,
+                    startTime: now,
+                    frame: 0
+                });
+
+                this.sound.playMerge(pm.newLevel);
+                this.pendingMerges.splice(i, 1);
+                continue;
+            }
 
             const newFruitInfo = FRUITS[pm.newLevel];
             const newBody = Bodies.circle(pm.newPos.x, pm.newPos.y, newFruitInfo.radius, {

@@ -3,7 +3,7 @@
  * 包含所有常量、参数、水果信息
  */
 
-export const GAME_WIDTH = 350;
+export const GAME_WIDTH = 360;
 export const GAME_HEIGHT = 550;
 export const WALL_THICKNESS = 20;
 export const PANEL_WIDTH = 425;
@@ -14,7 +14,7 @@ export const GAME_OFFSET_Y = (PANEL_WIDTH - GAME_WIDTH) / 2 - 10;
 export const PHYSICS = {
     gravity: 1.2,
     restitution: 0.2,
-    friction: 0.1,
+    friction: 0.2,
     density: 0.001
 };
 
@@ -23,11 +23,16 @@ export const DIFFICULTY = {
     dangerTimeoutSeconds: 5
 };
 
+// 最大合并等级的消失分数
+export const MERGE_VANISH = {
+    maxLevelVanishScore: 20000
+};
+
 export const FRUITS = [
-    { name: '👽',     radius: 16, color: '#9B59B6', score: 10,  row: 0 },
-    { name: '残杀',   radius: 22, color: '#E74C3C', score: 20,  row: 1 },
-    { name: '口几口', radius: 28, color: '#F39C12', score: 30,  row: 2 },
-    { name: '象姐',   radius: 34, color: '#F1C40F', score: 40,  row: 3 },
+    { name: '👽',     radius: 14, color: '#9B59B6', score: 10,  row: 0 },
+    { name: '残杀',   radius: 20, color: '#E74C3C', score: 20,  row: 1 },
+    { name: '口几口', radius: 26, color: '#F39C12', score: 30,  row: 2 },
+    { name: '象姐',   radius: 32, color: '#F1C40F', score: 40,  row: 3 },
     { name: '芙老大', radius: 38, color: '#8BC34A', score: 50,  row: 4 },
     { name: '牧牧川', radius: 44, color: '#E67E22', score: 60,  row: 5 },
     { name: '抽子',   radius: 50, color: '#FFB6C1', score: 70,  row: 6 },
@@ -50,7 +55,7 @@ export const ANIM = {
 
 // 合并音效配置
 export const MERGE_AUDIO_CFG = {
-    delay_time: 80,
+    delay_time: 60,
     base_pitch: 0.7,
     pitch_per_level: 0.2
 };

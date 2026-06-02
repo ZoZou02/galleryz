@@ -20,7 +20,7 @@ import { alienMode } from './alienMode.js';
 /** -------------------- 全局变量 -------------------- */
 
 let app, game;
-let panelSprite, frontSprite;
+let panelSprite;
 let spritesheetTexture, boopTexture, ufoTexture;
 let fruitTextures = [];
 let frameW = 0, frameH = 0;
@@ -108,12 +108,6 @@ function buildScene() {
 
     dropGuideLineGfx = new Graphics();
     gameContainer.addChild(dropGuideLineGfx);
-
-    frontSprite.x = 0;
-    frontSprite.y = 0;
-    frontSprite.width = GAME_WIDTH;
-    frontSprite.height = GAME_HEIGHT;
-    gameContainer.addChild(frontSprite);
 
     const dangerStyle = new TextStyle({
         fontFamily: 'FusionPixel, sans-serif',
@@ -516,7 +510,7 @@ function updateFruitSprites() {
         }
 
         const state = fruit.state || 'idle';
-        const ufoFace = !isAlien && game.ufoActive && fruit.level < maxLevel;
+        const ufoFace = !isAlien && game.ufoActive;
         const frameIdx = (state === 'hit' || ufoFace) ? 4 : getAnimationFrameIndex(now, fruit.animationOffset);
         const texture = fruitTextures[displayLevel][frameIdx];
         sprite.texture = texture;
@@ -663,8 +657,8 @@ function updateNextFruitPreview() {
     if (!previewSprite) {
         previewSprite = new Sprite(fruitTextures[0][0]);
         previewSprite.anchor.set(0.5);
-        previewSprite.x = GAME_WIDTH + 2;
-        previewSprite.y = 55;
+        previewSprite.x = GAME_WIDTH-2;
+        previewSprite.y = 57;
         gameContainer.addChild(previewSprite);
         previewPrevLevel = level;
     }
@@ -1216,9 +1210,6 @@ async function init() {
     panelSprite = await loadSprite('images/3-panel.png');
     panelSprite.width = PANEL_WIDTH;
     panelSprite.height = PANEL_HEIGHT;
-
-    loadingManager.tick('正在咕咕嘎嘎…');
-    frontSprite = await loadSprite('images/0-front.png');
 
     loadingManager.tick('正在刘C梦…');
     ufoTexture = await Assets.load('images/0-ufo.png');
