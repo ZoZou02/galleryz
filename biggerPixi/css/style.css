@@ -861,6 +861,7 @@ body.game-active {
     color: var(--secondary-text);
     font-size: 16px;
     font-family: 'FusionPixel', sans-serif;
+    font-weight: bold;
     white-space: nowrap;
 }
 
@@ -888,19 +889,16 @@ body.game-active {
 
 #records-table tr.rank-1 td {
     color: #f9a825;
-    font-weight: bold;
     background: #fff8e1;
 }
 
 #records-table tr.rank-2 td {
     color: #8b789c;
-    font-weight: bold;
     background: #f9effd;
 }
 
 #records-table tr.rank-3 td {
     color: #5b91b7;
-    font-weight: bold;
     background: #e2f3ff;
 }
 
@@ -917,7 +915,7 @@ body.game-active {
     right: 6px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 12px;
+    font-size: 14px;
     font-weight: bold;
     color: var(--red);
 }
