@@ -6,7 +6,7 @@
  */
 
 // ========== 可调节参数 ==========
-const ALIEN_BUBBLE_INTERVAL = 1000;   // 👽气泡弹出间隔(ms)
+const ALIEN_BUBBLE_INTERVAL = 30000;   // 👽气泡弹出间隔(ms)
 const ALIEN_BUBBLE_DURATION = 5000;    // 👽气泡显示时长(ms)
 const ALIEN_BUBBLE_SIZE = 44;          // 气泡大小(px)
 
