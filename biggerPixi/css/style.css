@@ -918,6 +918,7 @@ body.game-active {
     font-size: 14px;
     font-weight: bold;
     color: var(--red);
+    display: none;
 }
 
 .records-footer {
@@ -1115,7 +1116,7 @@ body.game-active {
 
 .settings-btn {
     position: fixed;
-    background: #bcb5ff;
+    background: var(--btn-blue);
     border: 12px solid #fafcfd;
     outline: none;
     z-index: 1600;
