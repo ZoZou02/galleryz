@@ -325,6 +325,7 @@ export class LoadingBackground {
             gsap.set(allButtons, { y: 0, autoAlpha: 1 });
             continueText.style.display = 'none';
             continueBg.style.display = 'none';
+            loadingText.style.display = 'none';
             if (onComplete) onComplete();
             return;
         }
