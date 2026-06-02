@@ -67,6 +67,7 @@ export class AlienMode {
         this._alienBubble = null;
         this._earthBubble = null;
         this._timerId = null;
+        this._hideTimerId = null;
         this._updatePosTimer = null;
     }
 
@@ -167,6 +168,10 @@ export class AlienMode {
             clearTimeout(this._timerId);
             this._timerId = null;
         }
+        if (this._hideTimerId) {
+            clearTimeout(this._hideTimerId);
+            this._hideTimerId = null;
+        }
     }
 
     /** 显示👽气泡，5s后自动隐藏 */
@@ -178,7 +183,7 @@ export class AlienMode {
             autoAlpha: 1, scale: 1, duration: 0.3, ease: 'back.out(1.7)'
         });
 
-        setTimeout(() => {
+        this._hideTimerId = setTimeout(() => {
             if (this._alienBubble && this._alienBubble.style.display !== 'none') {
                 gsap.to(this._alienBubble, {
                     autoAlpha: 0, scale: 0.5, duration: 0.3, ease: 'power2.in',
