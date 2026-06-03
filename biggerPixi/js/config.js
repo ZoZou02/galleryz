@@ -20,7 +20,7 @@ export const PHYSICS = {
 
 export const DIFFICULTY = {
     initialFruitMaxLevel: 4,
-    dangerTimeoutSeconds: 5
+    dangerTimeoutSeconds: 3
 };
 
 // 最大合并等级的消失分数
@@ -64,7 +64,7 @@ export const MERGE_AUDIO_CFG = {
 export const SKILLS = {
     btnW: 90, btnH: 52,
     btnGap: 18,
-    btnY: GAME_OFFSET_Y + GAME_HEIGHT + 40,
+    btnY: GAME_OFFSET_Y + GAME_HEIGHT + 60,
     ufoMaxUses: 2,
     ufoDuration: 3500,//UFO吸引时间
     ufoUpAccel: 0.0080,

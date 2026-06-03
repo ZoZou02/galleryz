@@ -1168,8 +1168,9 @@ async function init() {
         console.warn('Failed to fetch sound config:', e);
     }
 
-    // 加载资源数量统计
-    loadingManager.setTotal(5 + 3 + 1 + voiceCount);
+    // 加载资源数量统计：字体1 + 头像1 + 背景1 + 面板1 + ufo1 + boop1 + 音效6 + bgm2 + level50001 + voiceConfig1 + voiceCount
+    loadingManager.setTotal(16 + 11);
+    console.log('voiceCount:', voiceCount);
 
     // 加载字体
     loadingManager.tick('正在tb山沟搜索911612…');
@@ -1193,6 +1194,7 @@ async function init() {
     }
 
     // 加载背景动画
+    loadingManager.tick('正在加载煎牛排…');
     const bgContainer = document.getElementById('loading-bg-container');
     await loadingBg.init(bgContainer);
     if (currentQuality === 'high') {
@@ -1206,7 +1208,7 @@ async function init() {
         await loadingBg.startWithSpritesheet(spritesheetImg, useLowResSpritesheet);
     }
 
-    loadingManager.tick('正在+5000…');
+    loadingManager.tick('正在很想逃避很想瓦…');
     panelSprite = await loadSprite('images/3-panel.png');
     panelSprite.width = PANEL_WIDTH;
     panelSprite.height = PANEL_HEIGHT;
@@ -1242,14 +1244,16 @@ async function init() {
     await soundManager.load('countdown', 'sound/count_down.mp3');
     loadingManager.tick('正在单排上神话…');
     await soundManager.load('alien', 'sound/ufo.mp3');
+    loadingManager.tick('正在+5000…');
+    await soundManager.load('level5000', 'sound/level5000.mp3');
 
     if (voiceCount > 0) {
         await soundManager.loadVoiceConfig(voiceConfig, (level) => {
-            loadingManager.tick(`正在戒烟 day${level}`);
+            loadingManager.tick(`正在孟博 day${level}`);
         });
     }
 
-    loadingManager.tick('正在急急急…');
+    loadingManager.tick('正在编译着色器 889434/911612…');
     loadingManager.onReady(() => {
         // main-menu 已在 animateToMainMenu 衔接动画中显示
         // loading-screen 的淡出也由衔接动画回调处理

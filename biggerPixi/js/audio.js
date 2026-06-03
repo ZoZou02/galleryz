@@ -147,7 +147,7 @@ class SoundManager {
         if (Math.random() < VOICE_CFG.voiceChance) {
             setTimeout(() => {
                 const buf = this._pickVoice(level);
-                if (buf) this._playBuf(buf, { duration: 2.5 });
+                if (buf) this._playBuf(buf, { duration: 3 });
             }, this._voiceDelay);
         }
     }
@@ -170,7 +170,7 @@ class SoundManager {
         if (this._mergeVoiceTimerId) clearTimeout(this._mergeVoiceTimerId);
         this._mergeVoiceTimerId = setTimeout(() => {
             if (this._mergeMaxBuf) {
-                this._playBuf(this._mergeMaxBuf, { rate: 1, duration: 3 });
+                this._playBuf(this._mergeMaxBuf, { rate: 1, duration: 4 });
             }
             this._mergeVoiceTimerId = null;
             this._mergeMaxLevel = -1;
