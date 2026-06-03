@@ -334,6 +334,7 @@ export class Game {
                 if (hasLevel10OnField && pm.newLevel === 9) {
                     this.score += 5000;
                     this._addScorePopup(5000, '#ff4444', 32);
+                    this.sound.play('level5000');
                 }
             }
 
@@ -407,7 +408,7 @@ export class Game {
         if (this.dangerTime > 0) {
             const elapsed = (now - this.dangerTime) / 1000;
             if (!this._countdownPlayed) {
-                this.sound.play('countdown');
+                this.sound.play('countdown',{duration: 3});
                 this._countdownPlayed = true;
             }
             if (elapsed > DIFFICULTY.dangerTimeoutSeconds) {

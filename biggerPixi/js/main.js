@@ -1253,7 +1253,7 @@ async function init() {
         });
     }
 
-    loadingManager.tick('正在编译着色器 889434/911612…');
+    loadingManager.tick('正在编译着色器99%');
     loadingManager.onReady(() => {
         // main-menu 已在 animateToMainMenu 衔接动画中显示
         // loading-screen 的淡出也由衔接动画回调处理
