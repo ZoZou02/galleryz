@@ -48,10 +48,12 @@ let gameContainer, fruitContainer, effectContainer;
 let currentFruitSprite, currentFruitContainer;
 let dangerLineGfx, dangerCountText;
 let dropGuideLineGfx;
+
+// 标签统一样式（shadow 参考按钮阴影 alpha=0.3）
+const labelStyle = { fontFamily: 'FusionPixel, sans-serif', fontSize: 16, fontWeight: 'bold', fill: 0xffffff, dropShadow: true, dropShadowAlpha: 0.3, dropShadowDistance: 2, dropShadowColor: 0x000000, dropShadowBlur: 0, dropShadowAngle: Math.PI / 2 };
 let scoreText, timerText, pauseBtnContainer;
 let ufoBtn;
 let ufoShadowGfx;
-let ufoArcGfx;
 let skillBtnContainer;
 let levelIconsContainer;
 let previewSprite;
@@ -59,6 +61,7 @@ let previewPrevLevel = -1;
 let previewAnimStartTime = 0;
 let currentPrevLevel = -1;
 let currentAnimStartTime = 0;
+let previewBgGfx, previewShadowGfx;
 const PREVIEW_ANIM_SHRINK = 80;
 const PREVIEW_ANIM_GROW = 120;
 const PREVIEW_ANIM_MIN = 0.3;
@@ -257,24 +260,26 @@ function buildSkillButtons() {
     skillBtnContainer = new Container();
     app.stage.addChild(skillBtnContainer);
 
-    const circleD = 50;
-    const startX = GAME_OFFSET_X - circleD / 2;
+    const btnW = SKILLS.btnW;
+    const btnH = SKILLS.btnH;
+    const startX = (PANEL_WIDTH - btnW) / 2;
 
-    ufoBtn = createCircleSkillButton(startX, SKILLS.btnY, circleD, '#fab545');
+    ufoBtn = createUfoSkillButton(startX, SKILLS.btnY, btnW, btnH, '#fab545');
 
     ufoShadowGfx = new Graphics();
     skillBtnContainer.addChild(ufoShadowGfx);
 
-    ufoArcGfx = new Graphics();
-    ufoArcGfx.x = startX;
-    ufoArcGfx.y = SKILLS.btnY;
-    skillBtnContainer.addChild(ufoArcGfx);
-
     skillBtnContainer.addChild(ufoBtn.container);
+
+    // SKILL 标签
+    // const skillLabel = new Text({ text: 'skill', style: labelStyle });
+    // skillLabel.anchor.set(0.5, 0);
+    // skillLabel.x = startX + btnW / 2;
+    // skillLabel.y = SKILLS.btnY + btnH + 6;
+    // skillBtnContainer.addChild(skillLabel);
 }
 
-function createCircleSkillButton(x, y, d, accentColor) {
-    const r = d / 2;
+function createUfoSkillButton(x, y, w, h, accentColor) {
     const container = new Container();
     container.x = x;
     container.y = y;
@@ -283,15 +288,15 @@ function createCircleSkillButton(x, y, d, accentColor) {
     container.addChild(bg);
 
     const highlight = new Graphics();
-    highlight.circle(r, r, r - 4);
+    highlight.roundRect(3, 3, w - 6, h / 2 - 6, 5);
     highlight.fill({ color: 0xffffff, alpha: 0.04 });
     container.addChild(highlight);
 
-    const iconSize = d * 0.48;
+    const iconSize = h * 0.8;
     const ufoIcon = new Sprite(ufoTexture);
     ufoIcon.anchor.set(0.5);
-    ufoIcon.x = r;
-    ufoIcon.y = r;
+    ufoIcon.x = w / 2;
+    ufoIcon.y = h / 2;
     ufoIcon.width = iconSize;
     ufoIcon.height = iconSize;
     ufoIcon.tint = 0xffffff;
@@ -300,12 +305,32 @@ function createCircleSkillButton(x, y, d, accentColor) {
     const slash = new Graphics();
     container.addChild(slash);
 
-    const maxUses = SKILLS.ufoMaxUses;
+    // 剩余次数徽标（右上角）
+    const badge = new Container();
+    const badgeR = 9;
+    const badgeBg = new Graphics();
+    badgeBg.circle(badgeR, badgeR, badgeR);
+    badgeBg.fill({ color: 0xff4444 });
+    badgeBg.circle(badgeR, badgeR, badgeR);
+    badgeBg.stroke({ color: 0xffffff, width: 2 });
+    badge.addChild(badgeBg);
+    const badgeText = new Text({
+        text: '',
+        style: { fontFamily: 'FusionPixel, sans-serif', fontSize: 12, fill: 0xffffff, fontWeight: 'bold' }
+    });
+    badgeText.anchor.set(0.5);
+    badgeText.x = badgeR + 2;
+    badgeText.y = badgeR;
+    badge.addChild(badgeText);
+    badge.x = w - badgeR - 2;
+    badge.y = -badgeR + 2;
+    badge.visible = false;
+    container.addChild(badge);
 
     return {
-        container, bg, highlight, ufoIcon, slash,
-        maxUses, r,
-        x, y, w: d, h: d, accentColor, isCircle: true
+        container, bg, highlight, ufoIcon, slash, badge, badgeText,
+        maxUses: SKILLS.ufoMaxUses,
+        x, y, w, h, accentColor
     };
 }
 
@@ -691,6 +716,7 @@ function updateCurrentFruit() {
     currentFruitSprite.y = y;
 }
 
+// 下一个水果预览
 function updateNextFruitPreview() {
     if (!game) return;
     const level = game.nextFruitLevel;
@@ -698,11 +724,41 @@ function updateNextFruitPreview() {
     const now = performance.now();
     const frameIdx = getAnimationFrameIndex(now, previewOffset2);
 
+    const circleD = 60;
+    const circleR = circleD / 2;
+    // 圆心与技能按钮 y 相同，x 关于游戏面板中心对称（gameContainer 坐标）
+    const bgCx = GAME_WIDTH - 3;
+    const bgCy = 66;
+
+    if (!previewBgGfx) {
+        previewShadowGfx = new Graphics();
+        gameContainer.addChild(previewShadowGfx);
+
+        previewBgGfx = new Graphics();
+        previewBgGfx.circle(bgCx, bgCy, circleR);
+        previewBgGfx.fill({ color: 0xfab545 });
+        previewBgGfx.circle(bgCx, bgCy, circleR);
+        previewBgGfx.stroke({ color: 0xffffff, width: 5 });
+        gameContainer.addChild(previewBgGfx);
+
+        // NEXT 标签
+        // const nextLabel = new Text({ text: 'NEXT', style: labelStyle });
+        // nextLabel.anchor.set(0.5, 0);
+        // nextLabel.x = bgCx;
+        // nextLabel.y = bgCy + circleR - 8;
+        // gameContainer.addChild(nextLabel);
+    }
+
+    // 阴影（固定，不动画）
+    previewShadowGfx.clear();
+    previewShadowGfx.circle(bgCx, bgCy + 4, circleR + 2);
+    previewShadowGfx.fill({ color: 0x000000, alpha: 0.1 });
+
     if (!previewSprite) {
         previewSprite = new Sprite(fruitTextures[0][0]);
         previewSprite.anchor.set(0.5);
-        previewSprite.x = GAME_WIDTH-3;
-        previewSprite.y = 59;
+        previewSprite.x = bgCx;
+        previewSprite.y = bgCy;
         gameContainer.addChild(previewSprite);
         previewPrevLevel = level;
     }
@@ -789,56 +845,46 @@ function drawSkillBtnVisual(btn, usesLeft, hovered, isCharging, chargeMax, charg
         bgColor = active ? parseInt(btn.accentColor.replace('#', ''), 16) : 0x555555;
     }
 
-    if (btn.isCircle) {
-        const r = btn.w / 2;
-        const accentNum = parseInt(btn.accentColor.replace('#', ''), 16);
+    if (btn.ufoIcon) {
+        // UFO 技能按钮（长方形）
         const hoverActive = hovered && active;
 
-        const shadowCx = btn.x + r;
-        const shadowCy = btn.y + r + 4;
-        const shadowR = r + 2;
+        // 阴影（固定，不随按钮动画移动）
         ufoShadowGfx.clear();
-        ufoShadowGfx.circle(shadowCx, shadowCy, shadowR);
-        ufoShadowGfx.fill({ color: 0x000000, alpha: 0.1 });
+        ufoShadowGfx.roundRect(btn.x, btn.y + 4, btn.w, btn.h, 8);
+        ufoShadowGfx.fill({ color: 0x000000, alpha: 0.3 });
 
         btn.bg.clear();
-        // 按钮禁用（技能使用中或次数用完）= 全灰；否则按剩余次数显示
-        if (!active && !isCharging) {
-            btn.bg.circle(r, r, r);
-            btn.bg.fill({ color: 0x666666 });
-        } else if (usesLeft >= 2) {
-            btn.bg.circle(r, r, r);
+        if (active) {
+            btn.bg.roundRect(0, 0, btn.w, btn.h, 8);
             btn.bg.fill({ color: bgColor });
-        } else if (usesLeft === 1) {
-            // 右半圆灰色
-            btn.bg.moveTo(r, r);
-            btn.bg.arc(r, r, r, -Math.PI / 2, Math.PI / 2);
-            btn.bg.fill({ color: 0x666666 });
-            // 左半圆黄色
-            btn.bg.moveTo(r, r);
-            btn.bg.arc(r, r, r, Math.PI / 2, -Math.PI / 2);
-            btn.bg.fill({ color: accentNum });
         } else {
-            btn.bg.circle(r, r, r);
+            btn.bg.roundRect(0, 0, btn.w, btn.h, 8);
             btn.bg.fill({ color: 0x666666 });
         }
         // 描边
-        btn.bg.circle(r, r, r);
-        btn.bg.stroke({ color: 0xffffff, width: 5 });
+        btn.bg.roundRect(0, 0, btn.w, btn.h, 8);
+        btn.bg.stroke({ color: 0xffffff, width: 3 });
 
-        btn.highlight.alpha = hoverActive ? 0.80 : 0.06;
+        // 剩余次数徽标
+        if (usesLeft > 0) {
+            btn.badge.visible = true;
+            btn.badgeText.text = String(usesLeft);
+        } else {
+            btn.badge.visible = false;
+        }
 
-        btn.ufoIcon.alpha = !active && !isCharging ? 0.12 : 0.35;
+        btn.highlight.alpha = hoverActive ? 0.24 : 0.04;
+        btn.ufoIcon.alpha = active ? 0.35 : 0.12;
 
         btn.slash.clear();
         if (!active && !isCharging) {
-            const inset = r * 0.3;
-            btn.slash.moveTo(inset, inset);
-            btn.slash.lineTo(btn.w - inset, btn.h - inset);
+            // 斜线长度，越大越短
+            const margin = 2;
+            btn.slash.moveTo(margin, margin);
+            btn.slash.lineTo(btn.w - margin, btn.h - margin);
             btn.slash.stroke({ color: 0xffffff, width: 4, alpha: 0.5 });
         }
-
-        ufoArcGfx.clear();
     } else {
         const iconAlpha = !active && !isCharging ? 0.4 : (isCharging && usesLeft === 0 ? 0.47 : 1);
         const textColor = !active && !isCharging ? '#aaaaaa' : (isCharging && usesLeft === 0 ? '#999999' : '#ffffff');

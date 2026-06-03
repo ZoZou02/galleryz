@@ -62,9 +62,9 @@ export const MERGE_AUDIO_CFG = {
 
 // 技能配置
 export const SKILLS = {
-    btnW: 90, btnH: 52,
+    btnW: 70, btnH: 40,
     btnGap: 18,
-    btnY: GAME_OFFSET_Y + 37, // 与 next 预览位置 y 相同
+    btnY: PANEL_HEIGHT - 112, // 中间下边位置
     ufoMaxUses: 2,
     ufoDuration: 3500,//UFO吸引时间
     ufoUpAccel: 0.0080,
