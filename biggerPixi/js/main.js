@@ -68,10 +68,15 @@ let fruitSprites = new Map();
 
 let pointerPos = { x: PANEL_WIDTH / 2, y: 0 };
 let pauseBtnRect = { x: 0, y: 0, w: 26, h: 24 };
-// 触屏模式下的命中区域扩展量(px)
-const TOUCH_PAD_PAUSE = 12;
-const TOUCH_PAD_SKILL = 10;
+// 触屏模式下的命中区域扩展量(px)，解决小屏设备按钮靠边难按的问题
+const TOUCH_PAD_PAUSE = 20;
+const TOUCH_PAD_SKILL = 16;
 let skillBtnHover = { ufo: false };
+
+// 调试：显示按钮触碰区域
+// 在浏览器控制台输入 window.showHitAreas = true 开启，window.showHitAreas = false 关闭
+window.showHitAreas = false;
+let debugHitGfx;
 
 const previewOffset1 = Math.floor(Math.random() * 3000);
 const previewOffset2 = Math.floor(Math.random() * 3000);
@@ -101,6 +106,11 @@ function buildScene() {
 
     dangerLineGfx = new Graphics();
     gameContainer.addChild(dangerLineGfx);
+
+    // 调试：触碰区域可视化层（始终创建，通过 window.showHitAreas 控制显示）
+    debugHitGfx = new Graphics();
+    debugHitGfx.visible = false;
+    app.stage.addChild(debugHitGfx);
 
     currentFruitContainer = new Container();
     gameContainer.addChild(currentFruitContainer);
@@ -419,7 +429,8 @@ function updateLevelIconsForAlienMode() {
 
 function setupInput() {
     app.stage.eventMode = 'static';
-    app.stage.hitArea = app.screen;
+    // hitArea 使用逻辑尺寸（PANEL_WIDTH x PANEL_HEIGHT），因为 e.global 是 stage 本地坐标
+    app.stage.hitArea = new Rectangle(0, 0, PANEL_WIDTH, PANEL_HEIGHT);
 
     app.stage.on('pointermove', (e) => {
         pointerPos.x = e.global.x;
@@ -485,6 +496,32 @@ function isInsidePauseBtn(localX, localY) {
     // 扩展触屏命中区域，上下左右各加 TOUCH_PAD_PAUSE
     return localX >= pauseBtnRect.x - TOUCH_PAD_PAUSE && localX <= pauseBtnRect.x + pauseBtnRect.w + TOUCH_PAD_PAUSE &&
         localY >= pauseBtnRect.y - TOUCH_PAD_PAUSE && localY <= pauseBtnRect.y + pauseBtnRect.h + TOUCH_PAD_PAUSE;
+}
+
+// 调试：绘制按钮触碰区域
+function drawDebugHitAreas() {
+    if (!debugHitGfx) return;
+    debugHitGfx.clear();
+
+    // 暂停按钮触碰区域（gameContainer 本地坐标 -> stage 全局坐标）
+    const pauseGlobalX = GAME_OFFSET_X + pauseBtnRect.x - TOUCH_PAD_PAUSE;
+    const pauseGlobalY = GAME_OFFSET_Y + pauseBtnRect.y - TOUCH_PAD_PAUSE;
+    const pauseGlobalW = pauseBtnRect.w + TOUCH_PAD_PAUSE * 2;
+    const pauseGlobalH = pauseBtnRect.h + TOUCH_PAD_PAUSE * 2;
+    debugHitGfx.rect(pauseGlobalX, pauseGlobalY, pauseGlobalW, pauseGlobalH);
+    debugHitGfx.stroke({ color: 0xff0000, width: 2 });
+    debugHitGfx.fill({ color: 0xff0000, alpha: 0.15 });
+
+    // UFO 按钮触碰区域（skillBtnContainer 在 stage 上，ufoBtn.container 在 skillBtnContainer 内）
+    if (ufoBtn) {
+        const ufoGlobalX = ufoBtn.x - TOUCH_PAD_SKILL;
+        const ufoGlobalY = ufoBtn.y - TOUCH_PAD_SKILL;
+        const ufoGlobalW = ufoBtn.w + TOUCH_PAD_SKILL * 2;
+        const ufoGlobalH = ufoBtn.h + TOUCH_PAD_SKILL * 2;
+        debugHitGfx.rect(ufoGlobalX, ufoGlobalY, ufoGlobalW, ufoGlobalH);
+        debugHitGfx.stroke({ color: 0x00ff00, width: 2 });
+        debugHitGfx.fill({ color: 0x00ff00, alpha: 0.15 });
+    }
 }
 
 /** -------------------- 渲染更新 -------------------- */
@@ -1019,6 +1056,13 @@ function render() {
 
     updateUfoSummon();
 
+    if (window.showHitAreas) {
+        debugHitGfx.visible = true;
+        drawDebugHitAreas();
+    } else if (debugHitGfx) {
+        debugHitGfx.visible = false;
+    }
+
     app.render();
 }
 
@@ -1035,6 +1079,11 @@ function handleResize() {
 
     if (app && app.stage && scale > 0) {
         app.stage.scale.set(scale);
+    }
+
+    // 更新 stage 的 hitArea，使用逻辑尺寸确保覆盖整个 stage 坐标系
+    if (app && app.stage) {
+        app.stage.hitArea = new Rectangle(0, 0, PANEL_WIDTH, PANEL_HEIGHT);
     }
 
     const settingsBtn = document.getElementById('settings-btn');
