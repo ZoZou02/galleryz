@@ -64,7 +64,7 @@ export const MERGE_AUDIO_CFG = {
 export const SKILLS = {
     btnW: 90, btnH: 52,
     btnGap: 18,
-    btnY: GAME_OFFSET_Y + GAME_HEIGHT + 60,
+    btnY: GAME_OFFSET_Y + 37, // 与 next 预览位置 y 相同
     ufoMaxUses: 2,
     ufoDuration: 3500,//UFO吸引时间
     ufoUpAccel: 0.0080,

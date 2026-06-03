@@ -70,7 +70,7 @@ let pointerPos = { x: PANEL_WIDTH / 2, y: 0 };
 let pauseBtnRect = { x: 0, y: 0, w: 26, h: 24 };
 // 触屏模式下的命中区域扩展量(px)，解决小屏设备按钮靠边难按的问题
 const TOUCH_PAD_PAUSE = 20;
-const TOUCH_PAD_SKILL = 16;
+const TOUCH_PAD_SKILL = 2;
 let skillBtnHover = { ufo: false };
 
 // 调试：显示按钮触碰区域
@@ -252,12 +252,13 @@ function buildUI() {
     gameContainer.addChild(pauseBtnContainer);
 }
 
+// 技能按钮
 function buildSkillButtons() {
     skillBtnContainer = new Container();
     app.stage.addChild(skillBtnContainer);
 
-    const circleD = 62;
-    const startX = (PANEL_WIDTH - circleD) / 2;
+    const circleD = 50;
+    const startX = GAME_OFFSET_X - circleD / 2;
 
     ufoBtn = createCircleSkillButton(startX, SKILLS.btnY, circleD, '#fab545');
 
@@ -700,8 +701,8 @@ function updateNextFruitPreview() {
     if (!previewSprite) {
         previewSprite = new Sprite(fruitTextures[0][0]);
         previewSprite.anchor.set(0.5);
-        previewSprite.x = GAME_WIDTH-2;
-        previewSprite.y = 57;
+        previewSprite.x = GAME_WIDTH-3;
+        previewSprite.y = 59;
         gameContainer.addChild(previewSprite);
         previewPrevLevel = level;
     }
@@ -801,10 +802,29 @@ function drawSkillBtnVisual(btn, usesLeft, hovered, isCharging, chargeMax, charg
         ufoShadowGfx.fill({ color: 0x000000, alpha: 0.1 });
 
         btn.bg.clear();
+        // 按钮禁用（技能使用中或次数用完）= 全灰；否则按剩余次数显示
+        if (!active && !isCharging) {
+            btn.bg.circle(r, r, r);
+            btn.bg.fill({ color: 0x666666 });
+        } else if (usesLeft >= 2) {
+            btn.bg.circle(r, r, r);
+            btn.bg.fill({ color: bgColor });
+        } else if (usesLeft === 1) {
+            // 右半圆灰色
+            btn.bg.moveTo(r, r);
+            btn.bg.arc(r, r, r, -Math.PI / 2, Math.PI / 2);
+            btn.bg.fill({ color: 0x666666 });
+            // 左半圆黄色
+            btn.bg.moveTo(r, r);
+            btn.bg.arc(r, r, r, Math.PI / 2, -Math.PI / 2);
+            btn.bg.fill({ color: accentNum });
+        } else {
+            btn.bg.circle(r, r, r);
+            btn.bg.fill({ color: 0x666666 });
+        }
+        // 描边
         btn.bg.circle(r, r, r);
-        btn.bg.fill({ color: bgColor });
-        btn.bg.circle(r, r, r);
-        btn.bg.stroke({ color: 0xffffff, width: 4 });
+        btn.bg.stroke({ color: 0xffffff, width: 5 });
 
         btn.highlight.alpha = hoverActive ? 0.80 : 0.06;
 
@@ -818,21 +838,7 @@ function drawSkillBtnVisual(btn, usesLeft, hovered, isCharging, chargeMax, charg
             btn.slash.stroke({ color: 0xffffff, width: 4, alpha: 0.5 });
         }
 
-        const dotR = 7;
-        const dotGap = 14;
-        const dotX = r * 2 + 10;
-
         ufoArcGfx.clear();
-        for (let i = 0; i < btn.maxUses; i++) {
-            const dotY = r - dotGap / 2 + i * dotGap;
-            const filled = i >= btn.maxUses - usesLeft;
-
-            ufoArcGfx.circle(dotX, dotY, dotR);
-            ufoArcGfx.fill({ color: 0xffffff });
-
-            ufoArcGfx.circle(dotX, dotY, dotR - 2.5);
-            ufoArcGfx.fill({ color: filled ? 0xfab545 : 0x666666 });
-        }
     } else {
         const iconAlpha = !active && !isCharging ? 0.4 : (isCharging && usesLeft === 0 ? 0.47 : 1);
         const textColor = !active && !isCharging ? '#aaaaaa' : (isCharging && usesLeft === 0 ? '#999999' : '#ffffff');
