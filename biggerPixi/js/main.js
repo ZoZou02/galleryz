@@ -207,14 +207,14 @@ function buildUI() {
     timerText = new Text({ text: '0:00', style: textStyle });
     timerText.anchor.set(0, 0.5);
     timerText.x = margin + 10;
-    timerText.y = textCenterY - 2;
+    timerText.y = textCenterY;
     gameContainer.addChild(timerText);
 
     // --- 中间：分数 ---
     scoreText = new Text({ text: '0', style: textStyle });
     scoreText.anchor.set(0.5, 0.5);
     scoreText.x = GAME_WIDTH / 2;
-    scoreText.y = textCenterY - 2;
+    scoreText.y = textCenterY;
     gameContainer.addChild(scoreText);
 
     // --- 右侧：暂停按钮 ---
