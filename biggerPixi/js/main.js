@@ -1224,15 +1224,17 @@ async function init() {
     }
 
     // 加载资源数量统计：字体1 + 头像1 + 背景1 + 面板1 + ufo1 + boop1 + 音效6 + bgm2 + level50001 + voiceConfig1 + voiceCount
-    loadingManager.setTotal(16 + 11);
+    loadingManager.setTotal(16);
     console.log('voiceCount:', voiceCount);
 
     // 加载字体
     loadingManager.tick('正在tb山沟搜索911612…');
-    await Assets.load('https://fusion-pixel-font.takwolf.com/fusion-pixel-12px-proportional-zh_hans.otf.woff2');
+    await Assets.load('fonts/fusion-pixel-subset.woff2');
 
     // 加载头像纹理
-    loadingManager.tick('正在从中华田园犬变成人形…');
+    loadingManager.tick('首次加载速度较慢，请稍等或者更换网络环境…');
+    // const spritesheetUrl = 'images/spritesheet0.25.png';
+    
     const spritesheetUrl = useLowResSpritesheet ? 'images/spritesheet0.25.png' : 'images/spritesheet.png';
     console.log('加载头像纹理:', spritesheetUrl);
     spritesheetTexture = await Assets.load(spritesheetUrl);
@@ -1248,18 +1250,29 @@ async function init() {
         }
     }
 
+    console.log('spritesheetTexture:', spritesheetTexture);
+
     // 加载背景动画
-    loadingManager.tick('正在加载煎牛排…');
+    loadingManager.tick('正在煎牛排…');
     const bgContainer = document.getElementById('loading-bg-container');
     await loadingBg.init(bgContainer);
     if (currentQuality === 'high') {
-        const bgSpritesheetUrl = useLowResSpritesheet ? 'images/spritesheet0.5.png' : 'images/spritesheet.png';
+        // 复用已加载的 spritesheetTexture，避免重复请求同一张图片
+        // PixiJS v8 的 source.resource 是 ImageBitmap，需要转成 HTMLImageElement 才能获取 src
+        const imageBitmap = spritesheetTexture.source.resource;
+        const canvas = document.createElement('canvas');
+        canvas.width = imageBitmap.width;
+        canvas.height = imageBitmap.height;
+        canvas.getContext('2d').drawImage(imageBitmap, 0, 0);
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const blobUrl = URL.createObjectURL(blob);
         const spritesheetImg = await new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => resolve(img);
             img.onerror = reject;
-            img.src = bgSpritesheetUrl;
+            img.src = blobUrl;
         });
+        spritesheetImg._blobUrl = blobUrl; // 标记以便后续释放
         await loadingBg.startWithSpritesheet(spritesheetImg, useLowResSpritesheet);
     }
 
@@ -1291,7 +1304,7 @@ async function init() {
     await soundManager.load('gameover', 'sound/gameover.mp3');
     loadingManager.tick('正在部署爆能器…');
     await soundManager.load('button', 'sound/button.mp3');
-    loadingManager.tick('正在G头刷抖…');
+    loadingManager.tick('正在从中华田园犬变成人形…');
     await soundManager.loadBGM('menu', 'sound/menu_bgm.mp3');
     loadingManager.tick('正在马来的路上…');
     await soundManager.loadBGM('gameplay', 'sound/gameplay_bgm.mp3');
@@ -1302,12 +1315,6 @@ async function init() {
     loadingManager.tick('正在+5000…');
     await soundManager.load('level5000', 'sound/level5000.mp3');
 
-    if (voiceCount > 0) {
-        await soundManager.loadVoiceConfig(voiceConfig, (level) => {
-            loadingManager.tick(`正在孟博 day${level}`);
-        });
-    }
-
     loadingManager.tick('正在编译着色器99%');
     loadingManager.onReady(() => {
         // main-menu 已在 animateToMainMenu 衔接动画中显示
@@ -1316,6 +1323,11 @@ async function init() {
     });
 
     loadingManager.showReady();
+
+    // 人声语音在后台静默加载，不阻塞主页面显示
+    if (voiceCount > 0) {
+        soundManager.loadVoiceConfig(voiceConfig, () => {}).catch(() => {});
+    }
 
     game = new Game(soundManager);
 

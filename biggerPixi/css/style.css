@@ -77,7 +77,7 @@ body.game-active {
 
 @font-face {
     font-family: 'FusionPixel';
-    src: url('https://fusion-pixel-font.takwolf.com/fusion-pixel-12px-proportional-zh_hans.otf.woff2') format('woff2');
+    src: url('../fonts/fusion-pixel-subset.woff2') format('woff2');
     font-display: swap;
 }
 

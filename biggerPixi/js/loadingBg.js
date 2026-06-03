@@ -522,8 +522,10 @@ export class LoadingBackground {
         // ==========================================
 
         // -- 精灵图缩放常量（影响所有距离和大小参数） --
-        const SPRITE_SCALE = this._useLowRes ? 0.5 : 1;             // 精灵图分辨率缩放比例
-        const containerScale = this._useLowRes ? 2 : 1;
+        // this._useLowRes = true;
+        const SPRITE_SCALE = this._useLowRes ? 0.25 : 1;             // 精灵图分辨率缩放比例
+        const containerScale = this._useLowRes ? 4 : 1;
+        console.log('this._useLowRes:', this._useLowRes, 'containerScale:', containerScale);
 
         // -- 基础间距 --
         const GAP = 32 * SPRITE_SCALE;
