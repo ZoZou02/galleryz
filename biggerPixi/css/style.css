@@ -1411,6 +1411,13 @@ body.game-active {
     image-rendering: auto;
 }
 
+.footer-section-copyright {
+    font-family: 'FusionPixel', sans-serif;
+    font-size: 12px;
+    color: var(--secondary-text);
+    margin-top: 12px;
+}
+
 /* ====== 外星人模式聊天气泡 ====== */
 .alien-chat-bubble {
     position: fixed;

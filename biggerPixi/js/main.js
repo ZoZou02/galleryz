@@ -68,6 +68,9 @@ let fruitSprites = new Map();
 
 let pointerPos = { x: PANEL_WIDTH / 2, y: 0 };
 let pauseBtnRect = { x: 0, y: 0, w: 26, h: 24 };
+// 触屏模式下的命中区域扩展量(px)
+const TOUCH_PAD_PAUSE = 12;
+const TOUCH_PAD_SKILL = 10;
 let skillBtnHover = { ufo: false };
 
 const previewOffset1 = Math.floor(Math.random() * 3000);
@@ -473,12 +476,15 @@ function setupInput() {
 function updateSkillBtnHover(globalPos) {
     if (!ufoBtn) return;
     const ufoLocal = ufoBtn.container.toLocal(globalPos);
-    skillBtnHover.ufo = ufoLocal.x >= 0 && ufoLocal.x <= ufoBtn.w && ufoLocal.y >= 0 && ufoLocal.y <= ufoBtn.h;
+    // 扩展触屏命中区域，上下左右各加 TOUCH_PAD_SKILL
+    skillBtnHover.ufo = ufoLocal.x >= -TOUCH_PAD_SKILL && ufoLocal.x <= ufoBtn.w + TOUCH_PAD_SKILL &&
+        ufoLocal.y >= -TOUCH_PAD_SKILL && ufoLocal.y <= ufoBtn.h + TOUCH_PAD_SKILL;
 }
 
 function isInsidePauseBtn(localX, localY) {
-    return localX >= pauseBtnRect.x && localX <= pauseBtnRect.x + pauseBtnRect.w &&
-        localY >= pauseBtnRect.y && localY <= pauseBtnRect.y + pauseBtnRect.h;
+    // 扩展触屏命中区域，上下左右各加 TOUCH_PAD_PAUSE
+    return localX >= pauseBtnRect.x - TOUCH_PAD_PAUSE && localX <= pauseBtnRect.x + pauseBtnRect.w + TOUCH_PAD_PAUSE &&
+        localY >= pauseBtnRect.y - TOUCH_PAD_PAUSE && localY <= pauseBtnRect.y + pauseBtnRect.h + TOUCH_PAD_PAUSE;
 }
 
 /** -------------------- 渲染更新 -------------------- */

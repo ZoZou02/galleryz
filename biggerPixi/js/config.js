@@ -25,7 +25,7 @@ export const DIFFICULTY = {
 
 // 最大合并等级的消失分数
 export const MERGE_VANISH = {
-    maxLevelVanishScore: 20000
+    maxLevelVanishScore: 300
 };
 
 export const FRUITS = [
@@ -71,7 +71,7 @@ export const SKILLS = {
     ufoMaxUpSpeed: 2.5,
     ufoDamping: 0.97,
     ufoUpBaseline: 0.2,
-    alienDropCharge: 10,// UFO飞行触发所需的level0掉落个数
+    alienDropCharge: 12,// UFO飞行触发所需的level0掉落个数
     alienTransformDelay: 120 // 外星人逐个变身的间隔(ms)
 };
 
