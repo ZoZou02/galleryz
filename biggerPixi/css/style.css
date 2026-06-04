@@ -333,6 +333,7 @@ body.game-active {
     align-items: center;
     gap: 40px;
     z-index: 1;
+    margin-top: -80px;
 }
 
 .title-image {
@@ -1530,6 +1531,7 @@ body.alien-mode .version-tag {
 
 body.alien-mode .new-record-tag {
     background: var(--alien);
+    box-shadow: 0 2px var(--alien-secondary);
 }
 
 body.alien-mode .score-display {
