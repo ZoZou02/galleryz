@@ -1365,11 +1365,11 @@ async function init() {
 
     loadingManager.tick('正在长按重生geebar…');
     await soundManager.load('falling', 'sound/falling.mp3');
-    loadingManager.tick('正在和弹幕吵架…');
+    loadingManager.tick('正在单排上神话…');
     await soundManager.load('merge', 'sound/bubble.mp3');
     loadingManager.tick('正在双人站市场…');
     await soundManager.load('gameover', 'sound/gameover.mp3');
-    loadingManager.tick('正在部署爆能器…');
+    loadingManager.tick('正在和弹幕吵架…');
     await soundManager.load('button', 'sound/button.mp3');
     loadingManager.tick('正在从中华田园犬变成人形…');
     await soundManager.loadBGM('menu', 'sound/menu_bgm.mp3');
@@ -1377,7 +1377,7 @@ async function init() {
     await soundManager.loadBGM('gameplay', 'sound/gameplay_bgm.mp3');
     loadingManager.tick('正在bbkk…');
     await soundManager.load('countdown', 'sound/count_down.mp3');
-    loadingManager.tick('正在单排上神话…');
+    loadingManager.tick('正在部署爆能器…');
     await soundManager.load('alien', 'sound/ufo.mp3');
     loadingManager.tick('正在+5000…');
     await soundManager.load('level5000', 'sound/level5000.mp3');
