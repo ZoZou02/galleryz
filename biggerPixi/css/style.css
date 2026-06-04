@@ -336,6 +336,12 @@ body.game-active {
     margin-top: -80px;
 }
 
+@media (orientation: portrait) {
+    .start-content {
+        margin-top: 0;
+    }
+}
+
 .title-image {
     width: 320px;
     height: auto;
