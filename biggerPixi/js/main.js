@@ -86,9 +86,24 @@ const previewOffset2 = Math.floor(Math.random() * 3000);
 
 /** -------------------- 资源加载与初始化 -------------------- */
 
-async function loadSprite(url) {
-    const tex = await Assets.load(url);
-    return new Sprite(tex);
+/**
+ * 使用 fetch + 浏览器缓存加载图片纹理，避免每次页面加载都重新下载
+ * @param {string} url - 图片URL
+ * @returns {Promise<Texture>}
+ */
+async function loadImageTexture(url) {
+    const response = await fetch(url, { cache: 'force-cache' });
+    if (!response.ok) throw new Error(`Failed to load image: ${url} (${response.status})`);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const img = await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error(`Failed to decode image: ${url}`));
+        image.src = objectUrl;
+    });
+    URL.revokeObjectURL(objectUrl);
+    return Texture.from(img);
 }
 
 /** -------------------- 场景 & UI 构建 -------------------- */
@@ -1268,7 +1283,7 @@ async function init() {
     let voiceCount = 0;
     let voiceConfig = {};
     try {
-        const res = await fetch('sound/index.json');
+        const res = await fetch('sound/index.json', { cache: 'force-cache' });
         voiceConfig = await res.json();
         voiceCount = Object.values(voiceConfig).reduce((sum, c) => sum + (c || 0), 0);
     } catch (e) {
@@ -1289,7 +1304,7 @@ async function init() {
     
     const spritesheetUrl = useLowResSpritesheet ? 'images/spritesheet0.25.png' : 'images/spritesheet.png';
     console.log('加载头像纹理:', spritesheetUrl);
-    spritesheetTexture = await Assets.load(spritesheetUrl);
+    spritesheetTexture = await loadImageTexture(spritesheetUrl);
     frameW = spritesheetTexture.width / 5;
     frameH = spritesheetTexture.height / 11;
     for (let level = 0; level < FRUITS.length; level++) {
@@ -1310,12 +1325,11 @@ async function init() {
     await loadingBg.init(bgContainer);
     if (currentQuality === 'high') {
         // 复用已加载的 spritesheetTexture，避免重复请求同一张图片
-        // PixiJS v8 的 source.resource 是 ImageBitmap，需要转成 HTMLImageElement 才能获取 src
-        const imageBitmap = spritesheetTexture.source.resource;
+        const sourceImg = spritesheetTexture.source.resource;
         const canvas = document.createElement('canvas');
-        canvas.width = imageBitmap.width;
-        canvas.height = imageBitmap.height;
-        canvas.getContext('2d').drawImage(imageBitmap, 0, 0);
+        canvas.width = sourceImg.width;
+        canvas.height = sourceImg.height;
+        canvas.getContext('2d').drawImage(sourceImg, 0, 0);
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
         const blobUrl = URL.createObjectURL(blob);
         const spritesheetImg = await new Promise((resolve, reject) => {
@@ -1329,15 +1343,16 @@ async function init() {
     }
 
     loadingManager.tick('正在很想逃避很想瓦…');
-    panelSprite = await loadSprite('images/3-panel.png');
+    const panelTexture = await loadImageTexture('images/3-panel.png');
+    panelSprite = new Sprite(panelTexture);
     panelSprite.width = PANEL_WIDTH;
     panelSprite.height = PANEL_HEIGHT;
 
     loadingManager.tick('正在刘C梦…');
-    ufoTexture = await Assets.load('images/0-ufo.png');
+    ufoTexture = await loadImageTexture('images/0-ufo.png');
 
     loadingManager.tick('正在刺死…');
-    boopTexture = await Assets.load('images/0-boop.png');
+    boopTexture = await loadImageTexture('images/0-boop.png');
     boopFrameH = boopTexture.height / 5;
     for (let f = 0; f < 5; f++) {
         boopSubTextures[f] = new Texture({
