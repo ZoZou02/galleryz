@@ -1691,3 +1691,7 @@ body.alien-mode .about-info {
 body.alien-mode .about-scroll-hint {
     border-top: 10px solid var(--alien);
 }
+
+body.alien-mode .footer-section-copyright {
+    color: var(--alien);
+}
