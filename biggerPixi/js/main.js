@@ -92,7 +92,7 @@ const previewOffset2 = Math.floor(Math.random() * 3000);
  * @returns {Promise<Texture>}
  */
 // 资源版本号
-const ASSET_VERSION = '1.0.10';
+const ASSET_VERSION = '1.0.11';
 
 async function loadImageTexture(url) {
     const urlWithVersion = url + (url.includes('?') ? '&' : '?') + 'v=' + ASSET_VERSION;
