@@ -91,8 +91,12 @@ const previewOffset2 = Math.floor(Math.random() * 3000);
  * @param {string} url - 图片URL
  * @returns {Promise<Texture>}
  */
+// 资源版本号
+const ASSET_VERSION = '1.0.10';
+
 async function loadImageTexture(url) {
-    const response = await fetch(url, { cache: 'force-cache' });
+    const urlWithVersion = url + (url.includes('?') ? '&' : '?') + 'v=' + ASSET_VERSION;
+    const response = await fetch(urlWithVersion, { cache: 'force-cache' });
     if (!response.ok) throw new Error(`Failed to load image: ${url} (${response.status})`);
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
